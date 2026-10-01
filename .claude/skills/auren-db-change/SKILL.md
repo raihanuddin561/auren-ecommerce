@@ -1,0 +1,38 @@
+---
+name: auren-db-change
+description: "Safe workflow for any AUREN database change: Prisma schema edits, migrations, indexes, constraints, seed updates, TypedSQL reporting queries. Use whenever prisma/schema.prisma, prisma/migrations, prisma/sql or prisma/seed.ts must change."
+---
+
+# AUREN Database Change Workflow
+
+Logical model: `docs/architecture/DATA-MODEL.md`. Physical model: `prisma/schema.prisma`. **They must agree at the end of the PR.**
+
+## Conventions checklist
+- [ ] Model names PascalCase singular, mapped to snake_case plural tables: `model OrderItem { ... @@map("order_items") }`; columns camelCase in Prisma with `@map("snake_case")`.
+- [ ] `id String @id @default(uuid(7)) @db.Uuid` (if the installed Prisma lacks `uuid(7)`, generate UUIDv7 in `lib/ids.ts` and use `@default(dbgenerated(...))` or app-side IDs; record the choice in DECISIONS.md).
+- [ ] `createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)`; `updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)`.
+- [ ] Money: `BigInt` + sibling `currency String @db.Char(3)` on the owning record. **Never `Decimal`/`Float` for money.**
+- [ ] Enums for state machines (`OrderStatus`, `PaymentStatus`…) mapped to snake_case values with `@map`.
+- [ ] Foreign keys have explicit `onDelete` (`Restrict` for financial/order data, `Cascade` only for pure children like `cart_items`).
+- [ ] Indexes from DATA-MODEL.md "Key indexes" added (`@@index`, `@@unique`). Every FK used in a WHERE/JOIN is indexed.
+- [ ] CHECK constraints, partial indexes, generated `tsvector` columns, GIN/trigram indexes: Prisma can't express them, so add them as **raw SQL appended to the generated migration** (`--create-only`, then edit).
+- [ ] Ledger tables (`stock_movements`, `audit_logs`, `store_credit_ledger`, `outbox_events`, `order_verification_attempts`) are append-only: no update/delete functions in repositories.
+
+## Steps
+1. Update `DATA-MODEL.md` first if the logical model changes (and add an ADR if it changes a decision).
+2. Edit `prisma/schema.prisma`.
+3. `pnpm prisma migrate dev --create-only --name <verb_object>` (e.g. `add_order_verification`). Names are snake_case and descriptive, never module numbers.
+4. Open the generated SQL; append raw SQL for CHECKs, partial or GIN indexes, generated columns, `CREATE EXTENSION IF NOT EXISTS pg_trgm/citext`.
+5. `pnpm prisma migrate dev` to apply, then `pnpm prisma generate`.
+6. **Destructive change?** (drop/rename column, type narrowing, NOT NULL on existing data) Use expand → migrate data → contract across separate migrations. Never edit a migration that has been applied to staging or prod.
+7. Update `prisma/seed.ts` so `pnpm db:reset` yields a realistic dataset.
+8. Reporting SQL goes in `prisma/sql/*.sql` (TypedSQL) and is called from the finance repository only.
+9. Add or adjust integration tests (Testcontainers / test DB) for constraints that guard invariants (see `auren-commerce-invariants`).
+10. Run `pnpm typecheck && pnpm test:integration`.
+
+## Query rules
+- Lock rows you will update in the same transaction: `SELECT ... FOR UPDATE` via `tx.$queryRaw` in the repository (e.g. order confirm, stock commit).
+- Stock decrement is a single conditional `UPDATE ... WHERE on_hand - reserved >= $q RETURNING *`. Check the affected row count.
+- Avoid N+1: use `include`/`select` deliberately; list pages select only displayed columns.
+- Use pagination with keyset (`created_at, id`) for admin lists > 1k rows.
+- `postgres-best-practices` skill applies for tuning; use `database-optimizer` agent for slow queries.

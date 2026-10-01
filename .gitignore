@@ -1,0 +1,36 @@
+# dependencies
+node_modules/
+
+# next.js / build
+.next/
+out/
+build/
+*.tsbuildinfo
+next-env.d.ts
+
+# env (keep the documented example)
+.env
+.env*.local
+.env.*
+!.env.example
+
+# testing
+coverage/
+playwright-report/
+test-results/
+blob-report/
+tests/e2e/__qa__/
+
+# logs / os
+*.log
+.DS_Store
+Thumbs.db
+
+# python caches (skill scripts)
+__pycache__/
+*.pyc
+
+# personal Claude Code state (shared config is .claude/settings.json)
+.claude/settings.local.json
+.claude/scheduled_tasks.lock
+.vercel
