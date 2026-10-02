@@ -408,7 +408,7 @@ CI runs Lighthouse CI on Home, PLP, PDP and Checkout, and fails the build if a b
 | CSRF | Server Actions origin check + SameSite cookies; webhooks verify provider signatures/IPN validation |
 | Abuse | Upstash rate limits on login, OTP, register, checkout submit, coupon apply, review submit |
 | Payments | Never trust client totals; server recomputes. Verify payment with provider API (not only redirect params). Idempotency keys. No card data touches our servers (hosted pages), so PCI scope is SAQ-A |
-| Headers | CSP (nonce-based), HSTS, X-Content-Type-Options, Referrer-Policy, Permissions-Policy, frame-ancestors none |
+| Headers | CSP as a static header without nonces (ADR-016: nonces are incompatible with the prerendered shell), HSTS, X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Permissions-Policy, COOP, frame-ancestors none |
 | Secrets | Zod-validated `env.ts`; Vercel encrypted env; no secrets in client bundles (`server-only`) |
 | Data | Least PII; addresses/phones only where needed; audit log for staff actions; GDPR-style export/delete for customers |
 | Supply chain | Dependabot/Renovate, `pnpm audit` in CI, lockfile enforced |

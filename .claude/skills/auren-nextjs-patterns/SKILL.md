@@ -20,7 +20,7 @@ modules/x/repository→ lib/db only
 integrations/**     → lib only
 components/**       → components, lib (no modules/*/service, no db)
 ```
-Forbidden: `@/lib/db` outside repositories; importing another module's repository; client components importing anything from `modules/` except types and actions.
+Forbidden: `@/lib/db` from `app/`, `components/` and `actions`; importing another module's repository; client components importing anything from `modules/` except types and actions. `@/lib/db` is allowed in repositories, in services (to open `db.$transaction`) and in queries (to pass `db` to a repository). Enforced by `eslint.boundaries.mjs`, proven by `tests/lint/boundaries.test.ts`.
 
 ## 2. Server Action template
 
@@ -147,3 +147,14 @@ Only for interactivity (gallery, drawers, size selector, forms). Keep them small
 
 ## 8. Request-boundary proxy
 `src/proxy.ts` (Next 16 name for middleware; use `middleware.ts` if the installed version requires it): admin session gate (cheap cookie check; real authz in layout and actions), `redirects` table lookup (cached), security headers / CSP nonce.
+
+## 9. Verified against the installed versions (Next 16.3.8, Prisma 7.10, Better Auth 1.7.6, Zod 4, Vitest 5)
+
+- `connection()` (`next/server`) keeps a route handler dynamic; without it a handler with no request APIs can be prerendered at build time (see `/api/health`).
+- With Cache Components, anything that reads cookies or headers (sessions, `requireStaff()`) must sit under `<Suspense>`; a layout that gates access renders an async shell component inside Suspense, and each page still calls `requireStaff()` itself (`tests/lint/admin-guards.test.ts` enforces this).
+- Nonce based CSP does not work with the prerendered shell (see ADR-016); CSP is a static header from `next.config.ts`.
+- Prisma 7: `prisma.config.ts` holds the datasource URL and seed command; the client is generated to `src/generated/prisma` (import from `@/generated/prisma/client`) and needs the `@prisma/adapter-pg` driver adapter; `uuid(7)` is supported; `prisma migrate diff --from-schema <old> --to-schema <new> --script` produces migration SQL without a database.
+- CLI scripts that import `server-only` code run with `tsx --import ./scripts/stub-server-only.mjs`.
+- Better Auth: credential accounts must have `account_id = user id`; `withSentryConfig` comes from `@sentry/nextjs/config`; social login never links to existing accounts and never applies to staff (ADR-017).
+- pnpm 12 blocks dependency build scripts until allowed in `pnpm-workspace.yaml` (`allowBuilds`) and rejects packages published less than a day ago (`minimumReleaseAge`).
+- Zod 4: `z.email()`, `z.url()`, `error.issues`; `.flatten()` still works but prefer `validationError(error)` from `lib/action-result`.

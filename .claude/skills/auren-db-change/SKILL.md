@@ -9,7 +9,7 @@ Logical model: `docs/architecture/DATA-MODEL.md`. Physical model: `prisma/schema
 
 ## Conventions checklist
 - [ ] Model names PascalCase singular, mapped to snake_case plural tables: `model OrderItem { ... @@map("order_items") }`; columns camelCase in Prisma with `@map("snake_case")`.
-- [ ] `id String @id @default(uuid(7)) @db.Uuid` (if the installed Prisma lacks `uuid(7)`, generate UUIDv7 in `lib/ids.ts` and use `@default(dbgenerated(...))` or app-side IDs; record the choice in DECISIONS.md).
+- [ ] `id String @id @default(uuid(7)) @db.Uuid` (supported by Prisma 7). For raw SQL inserts, fixtures and Better Auth use `newId()` from `lib/ids.ts`.
 - [ ] `createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)`; `updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)`.
 - [ ] Money: `BigInt` + sibling `currency String @db.Char(3)` on the owning record. **Never `Decimal`/`Float` for money.**
 - [ ] Enums for state machines (`OrderStatus`, `PaymentStatus`…) mapped to snake_case values with `@map`.
@@ -21,7 +21,7 @@ Logical model: `docs/architecture/DATA-MODEL.md`. Physical model: `prisma/schema
 ## Steps
 1. Update `DATA-MODEL.md` first if the logical model changes (and add an ADR if it changes a decision).
 2. Edit `prisma/schema.prisma`.
-3. `pnpm prisma migrate dev --create-only --name <verb_object>` (e.g. `add_order_verification`). Names are snake_case and descriptive, never module numbers.
+3. With a database: `pnpm prisma migrate dev --create-only --name <verb_object>`. Without one: `pnpm prisma migrate diff --from-schema <previous schema file> --to-schema prisma/schema.prisma --script > prisma/migrations/<timestamp>_<verb_object>/migration.sql`. Names are snake_case and descriptive, never module numbers.
 4. Open the generated SQL; append raw SQL for CHECKs, partial or GIN indexes, generated columns, `CREATE EXTENSION IF NOT EXISTS pg_trgm/citext`.
 5. `pnpm prisma migrate dev` to apply, then `pnpm prisma generate`.
 6. **Destructive change?** (drop/rename column, type narrowing, NOT NULL on existing data) Use expand → migrate data → contract across separate migrations. Never edit a migration that has been applied to staging or prod.
@@ -36,3 +36,9 @@ Logical model: `docs/architecture/DATA-MODEL.md`. Physical model: `prisma/schema
 - Avoid N+1: use `include`/`select` deliberately; list pages select only displayed columns.
 - Use pagination with keyset (`created_at, id`) for admin lists > 1k rows.
 - `postgres-best-practices` skill applies for tuning; use `database-optimizer` agent for slow queries.
+
+## Repo specifics
+- Shared append-only guard: `forbid_ledger_mutation()` (created in the outbox migration) backs triggers on `audit_logs`, `stock_movements` and the outbox. Reuse it for new ledgers (BEFORE UPDATE OR DELETE row trigger plus BEFORE TRUNCATE statement trigger).
+- Credential accounts: `accounts.account_id` must equal the user id for `providerId = 'credential'`.
+- Seeded system data (`role_permissions`) lives in a migration, guarded by `src/lib/__tests__/permissions.test.ts`; development data lives in `prisma/seed.ts` + `prisma/seed-data.ts`.
+- Beware JavaScript `String.replace` with `$$` when generating SQL files: `$$` collapses to `$` and breaks plpgsql bodies. Use a replacer function.

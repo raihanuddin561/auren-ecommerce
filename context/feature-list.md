@@ -36,7 +36,7 @@
 | 0.11 | Testing harness | P0 | Vitest unit; Testcontainers Postgres integration setup; Playwright with auth fixtures; axe helper |
 | 0.12 | CI pipeline | P0 | GitHub Actions: typecheck, lint, unit, integration, build, E2E on preview; required checks on `main` |
 | 0.13 | Observability | P0 | Sentry (client/server/edge), source maps, `/api/health` (DB + Redis) |
-| 0.14 | Security headers + rate limiting | P0 | CSP (nonce), HSTS etc. in `next.config`/middleware; Upstash rate limiter utility applied to auth routes |
+| 0.14 | Security headers + rate limiting | P0 | CSP (header based, no nonce: ADR-016), HSTS etc. in `next.config`; Upstash rate limiter utility applied to auth routes |
 | 0.15 | Seed data | P0 | Realistic menswear seed: 6 categories, 40 products, variants, images, 1 location, staff owner account |
 
 ## Module 1: Design System and Brand UI
