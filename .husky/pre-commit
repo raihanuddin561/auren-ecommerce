@@ -1,1 +1,2 @@
+node scripts/secret-scan.mjs
 pnpm exec lint-staged

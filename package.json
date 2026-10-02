@@ -30,7 +30,9 @@
     "test:e2e": "pnpm build && pnpm test:e2e:run",
     "test:e2e:visual": "cross-env E2E_VISUAL=1 NODE_OPTIONS=--import=./scripts/stub-server-only.mjs playwright test style-guide.visual",
     "test:e2e:run": "cross-env NODE_OPTIONS=--import=./scripts/stub-server-only.mjs playwright test",
-    "seed:images": "tsx scripts/generate-seed-images.ts"
+    "seed:images": "tsx scripts/generate-seed-images.ts",
+    "secrets:scan": "node scripts/secret-scan.mjs --all",
+    "secrets:history": "node scripts/secret-scan.mjs --history"
   },
   "dependencies": {
     "@prisma/adapter-pg": "7.10.0",
