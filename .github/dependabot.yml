@@ -1,0 +1,36 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 8
+    commit-message:
+      prefix: chore
+      include: scope
+    groups:
+      framework:
+        patterns: ['next', 'react', 'react-dom', 'eslint-config-next']
+      prisma:
+        patterns: ['prisma', '@prisma/*']
+      testing:
+        patterns:
+          [
+            'vitest',
+            '@vitest/*',
+            '@playwright/*',
+            'playwright*',
+            '@axe-core/*',
+            'testcontainers',
+            '@testcontainers/*',
+          ]
+      lint:
+        patterns:
+          ['eslint*', '@typescript-eslint/*', 'typescript-eslint', 'prettier*', '@commitlint/*']
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: ci

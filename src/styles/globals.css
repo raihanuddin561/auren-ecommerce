@@ -1,0 +1,580 @@
+@import 'tailwindcss';
+
+/*
+ * AUREN design tokens (DESIGN-SYSTEM section 2). Components use these tokens only: no raw hex
+ * values, no arbitrary Tailwind values. If a token is missing, add it here first.
+ */
+
+/* ------------------------------------------------------------------------------------------
+ * 1. Brand palette, type, shape and motion
+ * ---------------------------------------------------------------------------------------- */
+@theme {
+  /* Wipe Tailwind's default palette so only brand colours exist. */
+  --color-*: initial;
+
+  --color-ink: #0f0f0f;
+  --color-ink-soft: #2a2a2a;
+  --color-ivory: #f6f2eb;
+  --color-paper: #ffffff;
+
+  /* Warm neutral scale: borders (100-300), placeholders (400-500), muted text (600+). */
+  --color-stone-100: #efebe4;
+  --color-stone-200: #e3ded5;
+  --color-stone-300: #d0cac0;
+  --color-stone-400: #b0aa9e;
+  --color-stone-500: #8b8579;
+  --color-stone-600: #6b665d;
+  --color-stone-700: #55514a;
+  --color-stone-800: #47433e;
+  --color-stone-900: #3d3a35;
+
+  /* Accent only: active states, underlines, small badges, focus ring. Never large fills. */
+  --color-gold: #a8875a;
+  --color-gold-soft: #d9c7a6;
+  /* Darker gold for small text that must be readable on light surfaces (5:1 on ivory). */
+  --color-gold-strong: #7a5f38;
+  --color-oxblood: #5a1f24;
+
+  --color-success: #3f6b4e;
+  --color-warning: #9a6b1f;
+  /* Darker warning for text on light surfaces (the base colour is 4.2:1 on ivory). */
+  --color-warning-strong: #84581a;
+  --color-danger: #9b2c2c;
+
+  /* Fonts are loaded by next/font in src/app/fonts.ts and exposed as these variables. */
+  --font-display: var(--font-cormorant), 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+  --font-sans:
+    var(--font-manrope), 'Manrope', var(--font-bengali), ui-sans-serif, system-ui, sans-serif;
+
+  /* Fluid type scale: mobile (375px) to desktop (1440px). */
+  --text-display-xl: clamp(2.75rem, 1.606rem + 4.883vw, 6rem);
+  --text-display-xl--line-height: 1.02;
+  --text-display-xl--letter-spacing: -0.02em;
+  --text-display-lg: clamp(2.25rem, 1.634rem + 2.629vw, 4rem);
+  --text-display-lg--line-height: 1.06;
+  --text-display-lg--letter-spacing: -0.015em;
+  --text-h1: clamp(1.875rem, 1.567rem + 1.315vw, 2.75rem);
+  --text-h1--line-height: 1.12;
+  --text-h2: clamp(1.5rem, 1.324rem + 0.751vw, 2rem);
+  --text-h2--line-height: 1.2;
+  --text-h3: clamp(1.125rem, 1.037rem + 0.376vw, 1.375rem);
+  --text-h3--line-height: 1.35;
+  --text-body: clamp(0.9375rem, 0.9156rem + 0.094vw, 1rem);
+  --text-body--line-height: 1.65;
+  --text-small: 0.8125rem;
+  --text-small--line-height: 1.5;
+  /* Admin console body size (calm, data-dense). */
+  --text-admin: 0.875rem;
+  --text-admin--line-height: 1.5;
+  --text-eyebrow: clamp(0.6875rem, 0.666rem + 0.094vw, 0.75rem);
+  --text-eyebrow--line-height: 1.4;
+  --text-eyebrow--letter-spacing: 0.18em;
+
+  --tracking-wordmark: 0.32em;
+  --tracking-eyebrow: 0.18em;
+  --tracking-button: 0.12em;
+
+  /* Layout: container 1440, editorial measure 720; gutters 20px mobile / 40px desktop. */
+  --container-page: 90rem;
+  --container-editorial: 45rem;
+  --header-height: 4.5rem;
+
+  /* Shape: sharp, tailored. Pills (rounded-full) only for filter chips. */
+  --radius-*: initial;
+  --radius-xs: 1px;
+  --radius-sm: 2px;
+  --radius-md: 2px;
+  --radius-lg: 2px;
+  --radius-xl: 2px;
+  --radius-2xl: 2px;
+
+  /* Almost no shadow: one soft shadow for drawers and popovers. */
+  --shadow-*: initial;
+  --shadow-float: 0 18px 48px -16px rgb(15 15 15 / 0.22), 0 2px 6px rgb(15 15 15 / 0.06);
+
+  /* Motion */
+  --ease-auren: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-fast: 150ms;
+  --dur-base: 250ms;
+  --dur-slow: 450ms;
+  --dur-reveal: 800ms;
+
+  --animate-fade-in: auren-fade-in var(--dur-base) var(--ease-auren) both;
+  --animate-fade-out: auren-fade-out var(--dur-fast) var(--ease-auren) both;
+  --animate-pop-in: auren-pop-in var(--dur-base) var(--ease-auren) both;
+  --animate-pop-out: auren-pop-out var(--dur-fast) var(--ease-auren) both;
+  --animate-drawer-in-right: auren-drawer-in-right var(--dur-slow) var(--ease-auren) both;
+  --animate-drawer-out-right: auren-drawer-out-right var(--dur-base) var(--ease-auren) both;
+  --animate-drawer-in-left: auren-drawer-in-left var(--dur-slow) var(--ease-auren) both;
+  --animate-drawer-out-left: auren-drawer-out-left var(--dur-base) var(--ease-auren) both;
+  --animate-drawer-in-bottom: auren-drawer-in-bottom var(--dur-slow) var(--ease-auren) both;
+  --animate-drawer-out-bottom: auren-drawer-out-bottom var(--dur-base) var(--ease-auren) both;
+  --animate-accordion-down: auren-accordion-down var(--dur-base) var(--ease-auren);
+  --animate-accordion-up: auren-accordion-up var(--dur-base) var(--ease-auren);
+  --animate-skeleton: auren-skeleton 1.6s ease-in-out infinite;
+
+  @keyframes auren-fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes auren-fade-out {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+    }
+  }
+  @keyframes auren-pop-in {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes auren-pop-out {
+    from {
+      opacity: 1;
+      transform: none;
+    }
+    to {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+  }
+  @keyframes auren-drawer-in-right {
+    from {
+      transform: translateX(100%);
+    }
+    to {
+      transform: none;
+    }
+  }
+  @keyframes auren-drawer-out-right {
+    from {
+      transform: none;
+    }
+    to {
+      transform: translateX(100%);
+    }
+  }
+  @keyframes auren-drawer-in-left {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: none;
+    }
+  }
+  @keyframes auren-drawer-out-left {
+    from {
+      transform: none;
+    }
+    to {
+      transform: translateX(-100%);
+    }
+  }
+  @keyframes auren-drawer-in-bottom {
+    from {
+      transform: translateY(100%);
+    }
+    to {
+      transform: none;
+    }
+  }
+  @keyframes auren-drawer-out-bottom {
+    from {
+      transform: none;
+    }
+    to {
+      transform: translateY(100%);
+    }
+  }
+  @keyframes auren-accordion-down {
+    from {
+      height: 0;
+    }
+    to {
+      height: var(--radix-accordion-content-height);
+    }
+  }
+  @keyframes auren-accordion-up {
+    from {
+      height: var(--radix-accordion-content-height);
+    }
+    to {
+      height: 0;
+    }
+  }
+  @keyframes auren-skeleton {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.55;
+    }
+  }
+}
+
+/* ------------------------------------------------------------------------------------------
+ * 2. Semantic surfaces. Components use these (bg-page, text-fg, border-line ...) so the same
+ *    markup renders on ivory, on dark editorial sections and in the dark admin theme.
+ * ---------------------------------------------------------------------------------------- */
+:root {
+  --surface-page: var(--color-ivory);
+  --surface-raised: var(--color-paper);
+  --surface-sunken: var(--color-stone-100);
+  --fg: var(--color-ink);
+  --fg-muted: var(--color-stone-600);
+  --fg-inverse: var(--color-ivory);
+  --line: var(--color-stone-200);
+  --line-strong: var(--color-stone-500);
+  --accent-text: var(--color-gold-strong);
+  --skeleton: var(--color-stone-200);
+  --danger-text: var(--color-danger);
+  --success-text: var(--color-success);
+  --warning-text: var(--color-warning-strong);
+  --gutter: 1.25rem;
+  color-scheme: light;
+}
+
+@media (min-width: 48rem) {
+  :root {
+    --gutter: 2.5rem;
+  }
+}
+
+/* Admin console dark theme (set on the admin root by the theme toggle). */
+[data-theme='dark'] {
+  --surface-page: #141413;
+  --surface-raised: #1c1b1a;
+  --surface-sunken: #0f0f0f;
+  --fg: var(--color-ivory);
+  --fg-muted: #a9a397;
+  --fg-inverse: var(--color-ink);
+  --line: #34322e;
+  --line-strong: #8a857b;
+  --accent-text: var(--color-gold-soft);
+  --skeleton: #2a2825;
+  --danger-text: #e08585;
+  --success-text: #7fbf95;
+  --warning-text: #e0b25f;
+  color-scheme: dark;
+}
+
+/* Dark editorial sections on the storefront (ink background, ivory text). */
+[data-tone='ink'] {
+  --surface-page: var(--color-ink);
+  --surface-raised: var(--color-ink-soft);
+  --surface-sunken: var(--color-ink);
+  --fg: var(--color-ivory);
+  --fg-muted: var(--color-stone-400);
+  --fg-inverse: var(--color-ink);
+  --line: #34322e;
+  --line-strong: var(--color-stone-500);
+  --accent-text: var(--color-gold-soft);
+  --skeleton: var(--color-ink-soft);
+  --danger-text: #e08585;
+  --success-text: #7fbf95;
+  --warning-text: #e0b25f;
+}
+
+@theme inline {
+  --color-page: var(--surface-page);
+  --color-raised: var(--surface-raised);
+  --color-sunken: var(--surface-sunken);
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-inverse: var(--fg-inverse);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-accent-text: var(--accent-text);
+  --color-skeleton: var(--skeleton);
+  --color-danger-text: var(--danger-text);
+  --color-success-text: var(--success-text);
+  --color-warning-text: var(--warning-text);
+}
+
+/* ------------------------------------------------------------------------------------------
+ * 3. Base styles
+ * ---------------------------------------------------------------------------------------- */
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    scroll-padding-top: calc(var(--header-height) + 1rem);
+  }
+
+  body {
+    background: var(--surface-page);
+    color: var(--fg);
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+    font-feature-settings: 'kern', 'liga';
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Visible focus everywhere: 2px gold ring, 2px offset. */
+  /* Themed regions re-colour their text; add bg-page for the matching background. */
+  [data-tone],
+  [data-theme] {
+    color: var(--fg);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-gold);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background: var(--color-gold-soft);
+    color: var(--color-ink);
+  }
+
+  :where(a, button, [role='button'], summary, label[for]) {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  :where(button, [role='button']):not(:disabled) {
+    cursor: pointer;
+  }
+
+  :where(button, [role='button']):disabled {
+    cursor: not-allowed;
+  }
+
+  img,
+  video {
+    max-width: 100%;
+  }
+}
+
+/* ------------------------------------------------------------------------------------------
+ * 4. Type roles and layout utilities
+ * ---------------------------------------------------------------------------------------- */
+@utility type-display-xl {
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: var(--text-display-xl);
+  line-height: var(--text-display-xl--line-height);
+  letter-spacing: var(--text-display-xl--letter-spacing);
+}
+
+@utility type-display-lg {
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: var(--text-display-lg);
+  line-height: var(--text-display-lg--line-height);
+  letter-spacing: var(--text-display-lg--letter-spacing);
+}
+
+@utility type-h1 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--text-h1);
+  line-height: var(--text-h1--line-height);
+}
+
+@utility type-h2 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--text-h2);
+  line-height: var(--text-h2--line-height);
+}
+
+@utility type-h3 {
+  font-family: var(--font-sans);
+  font-weight: 500;
+  font-size: var(--text-h3);
+  line-height: var(--text-h3--line-height);
+}
+
+@utility type-body {
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  line-height: var(--text-body--line-height);
+}
+
+@utility type-small {
+  font-family: var(--font-sans);
+  font-size: var(--text-small);
+  line-height: var(--text-small--line-height);
+}
+
+@utility type-admin {
+  font-family: var(--font-sans);
+  font-size: var(--text-admin);
+  line-height: var(--text-admin--line-height);
+}
+
+@utility type-eyebrow {
+  font-family: var(--font-sans);
+  font-weight: 500;
+  font-size: var(--text-eyebrow);
+  line-height: var(--text-eyebrow--line-height);
+  letter-spacing: var(--tracking-eyebrow);
+  text-transform: uppercase;
+}
+
+@utility type-wordmark {
+  font-family: var(--font-display);
+  font-weight: 500;
+  letter-spacing: var(--tracking-wordmark);
+  text-transform: uppercase;
+}
+
+@utility type-price {
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+}
+
+/* Centered page container with responsive gutters. */
+@utility container-page {
+  width: 100%;
+  max-width: var(--container-page);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+@utility container-editorial {
+  width: 100%;
+  max-width: var(--container-editorial);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+/* Section rhythm: generous whitespace is part of the brand. */
+@utility section-y {
+  padding-block: 5rem;
+  @media (min-width: 48rem) {
+    padding-block: 8rem;
+  }
+}
+
+/* 44px minimum touch target without changing the visual size of the control. */
+@utility touch-target {
+  position: relative;
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 50% auto auto 50%;
+    width: max(100%, 2.75rem);
+    height: max(100%, 2.75rem);
+    transform: translate(-50%, -50%);
+  }
+}
+
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* ------------------------------------------------------------------------------------------
+ * 5. Motion utilities (reveal, image hover, view transitions)
+ * ---------------------------------------------------------------------------------------- */
+@utility transition-auren {
+  transition-property:
+    color, background-color, border-color, opacity, transform, box-shadow, text-decoration-color;
+  transition-duration: var(--dur-base);
+  transition-timing-function: var(--ease-auren);
+}
+
+@utility transition-auren-fast {
+  transition-property:
+    color, background-color, border-color, opacity, transform, box-shadow, text-decoration-color;
+  transition-duration: var(--dur-fast);
+  transition-timing-function: var(--ease-auren);
+}
+
+/*
+ * Reveal on scroll. Content is visible by default (no JavaScript needed); the Reveal component
+ * only hides elements that are still below the fold once it hydrates, then fades and lifts them
+ * in once.
+ */
+@utility reveal {
+  &[data-reveal='hidden'] {
+    opacity: 0;
+    transform: translateY(var(--reveal-distance, 12px));
+  }
+  &[data-reveal='shown'] {
+    opacity: 1;
+    transform: none;
+    transition:
+      opacity var(--dur-reveal) var(--ease-auren) var(--reveal-delay, 0ms),
+      transform var(--dur-reveal) var(--ease-auren) var(--reveal-delay, 0ms);
+  }
+}
+
+/* Image zoom on hover: slow 1.04 scale, only for devices that can hover. */
+@utility img-zoom {
+  transition: transform var(--dur-reveal) var(--ease-auren);
+  @media (hover: hover) and (pointer: fine) {
+    :where(.group):hover &,
+    :where(.group):focus-within & {
+      transform: scale(1.04);
+    }
+  }
+}
+
+/* Second image crossfade (product card hover). */
+@utility img-swap {
+  opacity: 0;
+  transition: opacity var(--dur-slow) var(--ease-auren);
+  @media (hover: hover) and (pointer: fine) {
+    :where(.group):hover &,
+    :where(.group):focus-within & {
+      opacity: 1;
+    }
+  }
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: var(--dur-base);
+  animation-timing-function: var(--ease-auren);
+}
+
+::view-transition-group(*) {
+  animation-duration: var(--dur-slow);
+  animation-timing-function: var(--ease-auren);
+}
+
+/* Reduced motion: movement becomes an instant state change; nothing slides, zooms or lifts. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .reveal[data-reveal='hidden'] {
+    transform: none;
+  }
+
+  .img-zoom {
+    transform: none !important;
+  }
+
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}

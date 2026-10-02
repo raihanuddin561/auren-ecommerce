@@ -1,0 +1,42 @@
+name: e2e-preview
+
+# Runs the database-free end-to-end and accessibility specs against the Vercel preview of a PR.
+on:
+  deployment_status:
+
+permissions:
+  contents: read
+  deployments: read
+
+jobs:
+  smoke:
+    name: smoke test the preview
+    if: github.event.deployment_status.state == 'success' && github.event.deployment_status.environment_url != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      E2E_BASE_URL: ${{ github.event.deployment_status.environment_url }}
+      # Needed when Vercel Deployment Protection is on for previews.
+      VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+      DATABASE_URL: postgresql://auren:auren@localhost:5432/auren_ci
+      BETTER_AUTH_SECRET: ci-secret-0123456789abcdef0123456789abcdef
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.deployment.sha }}
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm test:e2e:run
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report-preview
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7

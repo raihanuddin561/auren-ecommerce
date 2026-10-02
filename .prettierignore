@@ -1,0 +1,14 @@
+.next
+node_modules
+coverage
+pnpm-lock.yaml
+prisma/migrations
+src/generated
+playwright-report
+test-results
+context
+docs
+.claude
+.agents
+AGENTS.md
+CLAUDE.md
