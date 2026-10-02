@@ -102,7 +102,7 @@ jobs:
       - run: pnpm exec prisma migrate deploy
       - run: pnpm build
       - run: pnpm test:e2e:run
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: playwright-report
