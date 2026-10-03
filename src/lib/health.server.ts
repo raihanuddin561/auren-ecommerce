@@ -18,3 +18,25 @@ export async function runHealthChecks(): Promise<HealthReport> {
     uptimeSeconds: Math.round(process.uptime()),
   });
 }
+
+// Anonymous callers must not be able to turn the health endpoint into database load: one probe at
+// a time, reused for a few seconds.
+const CACHE_MS = 10_000;
+let cached: { at: number; report: Promise<HealthReport> } | null = null;
+
+export function getCachedHealth(): Promise<HealthReport> {
+  const now = Date.now();
+  if (!cached || now - cached.at > CACHE_MS) {
+    const entry = { at: now, report: runHealthChecks() };
+    cached = entry;
+    entry.report.catch(() => {
+      if (cached === entry) cached = null;
+    });
+  }
+  return cached.report;
+}
+
+/** Test hook: forget the cached report. */
+export const resetHealthCacheForTests = (): void => {
+  cached = null;
+};

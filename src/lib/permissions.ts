@@ -43,6 +43,8 @@ export const PERMISSIONS = [
   'analytics.read',
   'settings.manage',
   'audit.read',
+  /** Approve or reject another staff member's high-value refund or adjustment (maker-checker). */
+  'approvals.decide',
   'staff.manage',
 ] as const;
 export type Permission = (typeof PERMISSIONS)[number];
@@ -78,6 +80,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Readonly<Record<StaffRole, readonly Permi
     'promotions.manage',
     'reviews.moderate',
     'analytics.read',
+    'approvals.decide',
   ],
   order_verifier: [
     'orders.read',

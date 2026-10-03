@@ -35,7 +35,8 @@ Next.js (App Router, latest) · TypeScript strict · PostgreSQL + Prisma · Tail
 - Start a module with: "start implementation Module N: <title>"
 
 ## Local environment (as of 2026-10-01)
-- Node 26, pnpm 12, git installed. **Docker and PostgreSQL are not installed**; **Decision: Docker Desktop** (owner installs it; then `docker compose` runs Postgres + Mailpit, and Testcontainers runs integration tests).
+- Node 26, pnpm 12, git installed. **Development uses the owner's own local PostgreSQL** (Windows service on localhost:5432), not Docker: one-time setup is `scripts/local-db-setup.sql`, see `docs/runbooks/local-database.md`. Integration tests run against `TEST_DATABASE_URL` (database name must contain "test"). Docker is optional (`docker compose` for Postgres + Mailpit, Testcontainers when `TEST_DATABASE_URL` is unset); CI uses a Postgres service container.
+- **Production**: Vercel + **Supabase Postgres** (ADR-025: transaction pooler for the app, direct connection for migrations, Data API off, RLS on every table) + **Vercel Blob** for media (ADR-026; local filesystem in development). Never use the Supabase `service_role` key in the app.
 - `create-next-app` refuses non-empty folders: scaffold into a temp folder and move the files in, keeping `docs/`, `context/`, `.claude/`, `.agents/` and `CLAUDE.md`.
 
 ## Commands (filled in during sub-feature 0.1)

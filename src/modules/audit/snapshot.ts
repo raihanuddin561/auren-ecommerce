@@ -1,4 +1,5 @@
-import { createHash } from 'node:crypto';
+import { createHash, createHmac } from 'node:crypto';
+import { isPiiKey } from '@/lib/pii';
 import { isSensitiveKey } from '@/lib/sensitive';
 
 /**
@@ -8,6 +9,19 @@ import { isSensitiveKey } from '@/lib/sensitive';
  */
 
 const REDACTED = '[redacted]';
+
+/**
+ * Personal values are replaced by a short keyed fingerprint instead of a bare marker, so the
+ * audit viewer can still see THAT a field changed (the fingerprint differs) without the trail
+ * holding the person's data. The key is server-side only; without it a fingerprint cannot be
+ * reversed or confirmed against a guessed value.
+ */
+function fingerprint(value: unknown): string {
+  const key = process.env.BETTER_AUTH_SECRET ?? 'audit-fingerprint';
+  const text = typeof value === 'string' ? value : (JSON.stringify(value) ?? '');
+  const digest = createHmac('sha256', key).update('audit.pii.v1').update(text).digest('hex');
+  return `[personal:${digest.slice(0, 8)}]`;
+}
 const MAX_DEPTH = 8;
 const MAX_BYTES = 64 * 1024;
 
@@ -46,7 +60,12 @@ function convert(value: unknown, depth: number, seen: WeakSet<object>): Snapshot
     const entries: Array<[string, Snapshot]> = [];
     for (const [key, item] of Object.entries(object as Record<string, unknown>)) {
       if (item === undefined || typeof item === 'function') continue;
-      entries.push([key, isSensitiveKey(key) ? REDACTED : convert(item, depth + 1, seen)]);
+      // Secrets and personal data never enter the audit trail (INV-A9): ids and changed keys do.
+      let converted: Snapshot;
+      if (isSensitiveKey(key)) converted = REDACTED;
+      else if (isPiiKey(key)) converted = item === null ? null : fingerprint(item);
+      else converted = convert(item, depth + 1, seen);
+      entries.push([key, converted]);
     }
     result = Object.fromEntries(entries);
   }

@@ -16,6 +16,7 @@ Logical model: `docs/architecture/DATA-MODEL.md`. Physical model: `prisma/schema
 - [ ] Foreign keys have explicit `onDelete` (`Restrict` for financial/order data, `Cascade` only for pure children like `cart_items`).
 - [ ] Indexes from DATA-MODEL.md "Key indexes" added (`@@index`, `@@unique`). Every FK used in a WHERE/JOIN is indexed.
 - [ ] CHECK constraints, partial indexes, generated `tsvector` columns, GIN/trigram indexes: Prisma can't express them, so add them as **raw SQL appended to the generated migration** (`--create-only`, then edit).
+- [ ] **Every migration that creates a table ends with `ALTER TABLE "<table>" ENABLE ROW LEVEL SECURITY;` followed by `SELECT public.auren_secure_table('<table>'::regclass);`** (the helper enables RLS and adds the single `auren_app` policy; production is Supabase, whose Data API exposes the public schema to `anon`/`authenticated`, ADR-025). `tests/integration/public-schema-security.int.test.ts` fails when a table lacks RLS or an API role holds a privilege.
 - [ ] Ledger tables (`stock_movements`, `audit_logs`, `store_credit_ledger`, `outbox_events`, `order_verification_attempts`) are append-only: no update/delete functions in repositories.
 
 ## Steps
@@ -38,6 +39,8 @@ Logical model: `docs/architecture/DATA-MODEL.md`. Physical model: `prisma/schema
 - `postgres-best-practices` skill applies for tuning; use `database-optimizer` agent for slow queries.
 
 ## Repo specifics
+- Production database is Supabase Postgres (ADR-025): migrations use `DIRECT_URL` (direct or session connection, never the transaction pooler), the app uses the pooler on port 6543. Create the roles as the Supabase `postgres` user without superuser-only features (runbook section "Supabase").
+- Roles: migrations run as `auren_migrator` (DIRECT_URL, owner); the app runs as `auren_app` (DATABASE_URL, DML only; see `docs/runbooks/database-roles.md`). New tables get DML for `auren_app` by default privileges, so **every new ledger migration must `REVOKE UPDATE, DELETE ON TABLE "<ledger>" FROM "auren_app"`** and attach the `forbid_ledger_mutation()` triggers; `tests/integration/database-roles.int.test.ts` fails otherwise. Anything the app must never edit (permission maps, config seeds) gets the same REVOKE.
 - Shared append-only guard: `forbid_ledger_mutation()` (created in the outbox migration) backs triggers on `audit_logs`, `stock_movements` and the outbox. Reuse it for new ledgers (BEFORE UPDATE OR DELETE row trigger plus BEFORE TRUNCATE statement trigger).
 - Credential accounts: `accounts.account_id` must equal the user id for `providerId = 'credential'`.
 - Seeded system data (`role_permissions`) lives in a migration, guarded by `src/lib/__tests__/permissions.test.ts`; development data lives in `prisma/seed.ts` + `prisma/seed-data.ts`.

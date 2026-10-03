@@ -17,7 +17,7 @@ export interface OwnerResult {
 /**
  * Creates the store owner: a verified user with a credential login and the `owner` staff role.
  * Safe to run again with the same email. The owner still has to enrol two-factor authentication
- * on first sign-in, like every other staff member.
+ * on first sign-in, like every other staff member, and must replace this bootstrap password.
  *
  * Used by `pnpm owner:create` for first-time setup and by the development seed.
  */
@@ -51,6 +51,8 @@ export async function ensureOwnerAccount(input: OwnerInput): Promise<OwnerResult
       name: input.name,
       email,
       emailVerified: true,
+      // The password came from the command line or .env: the owner must replace it at first sign-in.
+      mustChangePassword: true,
       staffMember: { create: { role: 'owner' } },
       accounts: {
         create: { accountId: userId, providerId: 'credential', password: passwordHash },

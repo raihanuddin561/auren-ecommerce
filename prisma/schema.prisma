@@ -46,21 +46,23 @@ model IdempotencyKey {
 // ---------------------------------------------------------------------------------------------
 
 model User {
-  id               String   @id @default(uuid(7)) @db.Uuid
-  name             String
-  email            String   @unique @db.Citext
-  emailVerified    Boolean  @default(false) @map("email_verified")
-  image            String?
-  phone            String?  @unique
-  phoneVerified    Boolean  @default(false) @map("phone_verified")
-  banned           Boolean  @default(false)
+  id                 String   @id @default(uuid(7)) @db.Uuid
+  name               String
+  email              String   @unique @db.Citext
+  emailVerified      Boolean  @default(false) @map("email_verified")
+  image              String?
+  phone              String?  @unique
+  phoneVerified      Boolean  @default(false) @map("phone_verified")
+  banned             Boolean  @default(false)
   /// Source of truth for staff two-factor enforcement (managed by the Better Auth plugin).
-  twoFactorEnabled Boolean  @default(false) @map("two_factor_enabled")
-  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt        DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  twoFactorEnabled   Boolean  @default(false) @map("two_factor_enabled")
+  /// Bootstrap password in use (first owner): staff must choose their own before anything else.
+  mustChangePassword Boolean  @default(false) @map("must_change_password")
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  sessions   Session[]
-  accounts   Account[]
+  sessions    Session[]
+  accounts    Account[]
   twoFactors  TwoFactor[]
   staffMember StaffMember?
 
@@ -166,7 +168,7 @@ model StaffMember {
   @@map("staff_members")
 }
 
-/// Which permissions each role holds. Seeded by migration, editable by the owner.
+/// Which permissions each role holds. Seeded by migration; the application role can only read it (ADR-021).
 model RolePermission {
   role       StaffRole
   permission String
@@ -426,8 +428,14 @@ model ProductMedia {
   /// Ties an image to one colour.
   optionValueId    String?   @map("option_value_id") @db.Uuid
   type             MediaType @default(image)
-  providerPublicId String?   @map("provider_public_id")
+  /// static (file shipped with the app, development placeholders), local (development uploads) or vercel-blob.
+  provider         String    @default("static")
+  /// Random storage key from lib/media; null only for static files.
+  storageKey       String?   @map("storage_key")
   url              String
+  /// jpeg, png, webp or avif only (CHECK); never SVG.
+  contentType      String?   @map("content_type")
+  sizeBytes        Int?      @map("size_bytes")
   /// Required: descriptive alt text is part of the content standard.
   alt              String
   width            Int?
@@ -498,4 +506,38 @@ model StockMovement {
   @@index([variantId, createdAt(sort: Desc)])
   @@index([locationId])
   @@map("stock_movements")
+}
+
+// ---------------------------------------------------------------------------------------------
+// Insider-risk controls: maker-checker approvals
+// ---------------------------------------------------------------------------------------------
+
+enum ApprovalStatus {
+  pending
+  approved
+  rejected
+
+  @@map("approval_status")
+}
+
+/// A high-value action (refund, stock adjustment) waiting for a second, different staff member.
+/// The database refuses decider = requester, edits to a decided request and deletes.
+model ApprovalRequest {
+  id           String         @id @default(uuid(7)) @db.Uuid
+  kind         String
+  subjectType  String         @map("subject_type")
+  subjectId    String         @map("subject_id")
+  amountMinor  BigInt         @map("amount_minor")
+  currency     String         @db.Char(3)
+  status       ApprovalStatus @default(pending)
+  requestedBy  String         @map("requested_by") @db.Uuid
+  decidedBy    String?        @map("decided_by") @db.Uuid
+  reason       String?
+  decisionNote String?        @map("decision_note")
+  requestedAt  DateTime       @default(now()) @map("requested_at") @db.Timestamptz(6)
+  decidedAt    DateTime?      @map("decided_at") @db.Timestamptz(6)
+  consumedAt   DateTime?      @map("consumed_at") @db.Timestamptz(6)
+
+  @@index([status, requestedAt])
+  @@map("approval_requests")
 }

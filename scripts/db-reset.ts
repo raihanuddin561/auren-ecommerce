@@ -34,4 +34,5 @@ const run = (command: string, args: string[]) => {
 };
 
 run('pnpm', ['exec', 'prisma', 'migrate', 'reset', '--force']);
+run('pnpm', ['exec', 'tsx', 'scripts/db-roles.ts']);
 run('pnpm', ['exec', 'tsx', '--import', './scripts/stub-server-only.mjs', 'prisma/seed.ts']);

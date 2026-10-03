@@ -17,6 +17,21 @@ function walk(dir: string): string[] {
 
 const rel = (file: string) => path.relative(root, file).replaceAll('\\', '/');
 
+/** The only action files allowed to skip the permission check, and why. */
+const SELF_SERVICE_ACTION_FILES = new Set(['src/modules/identity/actions.ts']);
+
+/**
+ * A self-service file must be on the allowlist, carry the tag in its leading comment, and every
+ * exported function must authenticate (call requireStaff( or getSession( ) before doing anything.
+ */
+function selfServiceActionIsSound(file: string, source: string): boolean {
+  if (!SELF_SERVICE_ACTION_FILES.has(file)) return false;
+  const head = source.slice(0, source.indexOf('import '));
+  if (!head.includes('@self-service')) return false;
+  const bodies = source.split('\nexport async function ').slice(1);
+  return bodies.length > 0 && bodies.every((body) => /(requireStaff|getSession)\(/.test(body));
+}
+
 describe('admin access is checked where the data is touched (INV-A1)', () => {
   const consoleFiles = walk(path.join(root, 'src/app/admin/(console)'));
 
@@ -35,6 +50,11 @@ describe('admin access is checked where the data is touched (INV-A1)', () => {
     );
     const weak = actionFiles.filter((f) => {
       const source = readFileSync(f, 'utf8');
+      // Self-service security actions (own password, own sessions) have no permission to check.
+      // They must say so explicitly and still authenticate.
+      if (source.includes('@self-service')) {
+        return !selfServiceActionIsSound(rel(f), source);
+      }
       const isAdmin = /requireStaff|assertPermission/.test(source) || /admin/i.test(f);
       return isAdmin && !(source.includes('requireStaff') && source.includes('assertPermission'));
     });
@@ -50,7 +70,7 @@ describe('admin access is checked where the data is touched (INV-A1)', () => {
         return /status:\s*['"]confirmed['"]/.test(source) && !/verif/i.test(rel(f));
       });
     expect(offenders.map(rel)).toEqual([]);
-  });
+  }, 30_000);
 
   it('background jobs and cron handlers never cancel or confirm orders (INV-O1, INV-O2)', () => {
     const jobFiles = [

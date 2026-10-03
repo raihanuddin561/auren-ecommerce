@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
 import { authClient } from '@/lib/auth-client';
 import { Field, FormError, SubmitButton } from './field';
+import { TurnstileWidget, turnstileConfigured } from './turnstile-widget';
 
 type Step = 'credentials' | 'code';
 
@@ -27,6 +28,8 @@ export function SignInForm({ next }: { next?: string }) {
   const [step, setStep] = useState<Step>('credentials');
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [botToken, setBotToken] = useState<string | null>(null);
+  const [botResets, setBotResets] = useState(0);
 
   const finish = () => {
     router.replace(safeNext(next));
@@ -38,11 +41,18 @@ export function SignInForm({ next }: { next?: string }) {
     const form = new FormData(event.currentTarget);
     setPending(true);
     setError(null);
+    if (turnstileConfigured && !botToken) {
+      setPending(false);
+      return setError('Please wait for the security check to finish.');
+    }
     const { data, error: failure } = await authClient.signIn.email({
       email: String(form.get('email') ?? ''),
       password: String(form.get('password') ?? ''),
+      ...(botToken ? { fetchOptions: { headers: { 'x-turnstile-token': botToken } } } : {}),
     });
     setPending(false);
+    // Tokens are single use: ask for a fresh check before the next try.
+    if (turnstileConfigured) setBotResets((n) => n + 1);
     if (failure) return setError(failure.message ?? 'We could not sign you in.');
     if (data && 'twoFactorRedirect' in data && data.twoFactorRedirect) return setStep('code');
     finish();
@@ -88,6 +98,7 @@ export function SignInForm({ next }: { next?: string }) {
         autoComplete="current-password"
         required
       />
+      {turnstileConfigured ? <TurnstileWidget onToken={setBotToken} resetKey={botResets} /> : null}
       <FormError message={error} />
       <SubmitButton pending={pending}>Sign in</SubmitButton>
     </form>

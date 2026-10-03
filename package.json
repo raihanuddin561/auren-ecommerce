@@ -19,6 +19,7 @@
     "db:reset": "tsx scripts/db-reset.ts",
     "db:migrate": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
+    "db:roles": "tsx scripts/db-roles.ts",
     "db:generate": "prisma generate",
     "db:seed": "tsx --import ./scripts/stub-server-only.mjs prisma/seed.ts",
     "db:studio": "prisma studio",
@@ -40,6 +41,7 @@
     "@sentry/nextjs": "^11.1.0",
     "@upstash/ratelimit": "^2.2.0",
     "@upstash/redis": "^1.39.0",
+    "@vercel/blob": "^2.8.0",
     "better-auth": "1.7.6",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -56,6 +58,7 @@
     "react-dom": "19.2.8",
     "resend": "^6.31.0",
     "server-only": "^0.0.1",
+    "sharp": "^0.35.5",
     "sonner": "^2.0.8",
     "tailwind-merge": "^3.7.0",
     "zod": "^4.6.5"

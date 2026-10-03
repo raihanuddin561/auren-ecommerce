@@ -8,3 +8,7 @@ allowBuilds:
   sharp: true
   ssh2: false
   unrs-resolver: true
+
+# Supply chain: refuse versions published less than 2 days ago (minutes). Gives the registry and
+# the community time to pull a malicious release before it can reach this repository.
+minimumReleaseAge: 2880

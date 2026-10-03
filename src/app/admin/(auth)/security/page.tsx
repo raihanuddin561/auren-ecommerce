@@ -1,15 +1,28 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
-import { redirect } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
+import { DomainError } from '@/lib/errors';
+import { PasswordChangeForm } from '@/components/admin/password-change-form';
 import { TwoFactorSetup } from '@/components/admin/two-factor-setup';
-import { getStaff, requireStaffPendingTwoFactor } from '@/lib/staff';
+import { getStaff, requireStaffPendingSecurity } from '@/lib/staff';
 
 export const metadata: Metadata = { title: 'Secure your account' };
 
 async function SecurityGate() {
-  await requireStaffPendingTwoFactor();
+  try {
+    await requireStaffPendingSecurity();
+  } catch (error) {
+    // A signed-in customer gets the same 404 as for any other console page.
+    if (error instanceof DomainError && error.code === 'FORBIDDEN') notFound();
+    throw error;
+  }
   const resolution = await getStaff();
   if (resolution.status === 'ok') redirect('/admin');
+  if (resolution.status === 'password_change_required') {
+    return (
+      <PasswordChangeForm lead="You signed in with a temporary password. Choose your own to continue." />
+    );
+  }
   return <TwoFactorSetup />;
 }
 

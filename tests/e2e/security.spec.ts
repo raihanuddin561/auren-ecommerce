@@ -11,8 +11,13 @@ test.describe('security headers', () => {
       expect(headers['cross-origin-opener-policy']).toBe('same-origin');
       const csp = headers['content-security-policy'] ?? '';
       expect(csp).toContain("frame-ancestors 'none'");
-      expect(csp).toContain("object-src 'none'");
-      expect(csp).toContain("default-src 'self'");
+      if (path.startsWith('/api/')) {
+        // data, not a document: nothing may load or frame it
+        expect(csp).toContain("default-src 'none'");
+      } else {
+        expect(csp).toContain("object-src 'none'");
+        expect(csp).toContain("default-src 'self'");
+      }
       expect(csp).not.toContain("'unsafe-eval'");
     });
   }

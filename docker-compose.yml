@@ -6,7 +6,8 @@ name: auren
 
 services:
   postgres:
-    image: postgres:16-alpine
+    # Pinned by digest; Dependabot (docker-compose ecosystem) proposes updates.
+    image: postgres:16-alpine@sha256:721873c34ceb9f8d8fc265984940dc982404c105f19ad51be9fdc5970a6080ea
     restart: unless-stopped
     environment:
       POSTGRES_USER: auren
@@ -23,7 +24,7 @@ services:
       retries: 20
 
   mailpit:
-    image: axllent/mailpit:v1.31
+    image: axllent/mailpit:v1.31@sha256:ed9b00c609e77e99c79b93f1178255ebc271868920f2c69a8d166bd5634ed10d
     restart: unless-stopped
     ports:
       - '127.0.0.1:${MAILPIT_SMTP_PORT:-1025}:1025'

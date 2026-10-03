@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { db } from '../db';
 import { runOnce } from '../inbox';
 import { logger } from '../logger';
-import { dispatchPendingEvents } from '../outbox';
+import { dispatchPendingEvents, purgeFinishedEvents } from '../outbox';
 import { eventSchemas } from '../events';
 import { inngest, outboxEventEnvelope } from './client';
 
@@ -15,6 +15,16 @@ export const outboxDispatcher = inngest.createFunction(
       await inngest.send(events.map((event) => outboxEventEnvelope(event)));
     });
     if (summary.leased > 0) logger.info(summary, 'outbox dispatched');
+    return summary;
+  },
+);
+
+/** Cron: daily retention of dispatched outbox rows and consumer claims (failed rows are kept). */
+export const eventRetention = inngest.createFunction(
+  { id: 'event-retention', triggers: [{ cron: '17 3 * * *' }] },
+  async () => {
+    const summary = await purgeFinishedEvents(db);
+    logger.info(summary, 'finished events purged');
     return summary;
   },
 );
@@ -42,4 +52,4 @@ export const sampleHandler = inngest.createFunction(
   async ({ event }) => handleSampleEvent(event.data),
 );
 
-export const functions = [outboxDispatcher, sampleHandler];
+export const functions = [outboxDispatcher, eventRetention, sampleHandler];

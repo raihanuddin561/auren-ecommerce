@@ -18,6 +18,69 @@
 
 ---
 
+### 2026-10-03 — 18.12 Hosting and media infrastructure (Supabase, Vercel Blob, local database) — Done
+- Type: enhancement
+- Changed: step 0 verified the interrupted tree (typecheck, lint, unit 644/644 green; format fixed). Docs: ARCHITECTURE, DECISIONS (ADR-025 Supabase supersedes the Neon choice and updates OD-5; ADR-026 Vercel Blob/local supersedes ADR-012), DATA-MODEL, CLAUDE.md, README, .env.example, auren-testing and auren-db-change skills (new tables must call auren_secure_table / ENABLE ROW LEVEL SECURITY), runbooks (database-roles Supabase section, local-database, production-environment). Code: src/lib/media/* (MediaProvider local + Vercel Blob, random keys, HMAC signed private links, magic-byte validation with no SVG, sharp re-encode stripping EXIF/GPS, Blob host check), media route handlers, CSP img-src for *.public.blob.vercel-storage.com, migration media_storage_columns (product_media provider, storage_key, content_type, size_bytes with CHECKs), global-setup TEST_APP_DATABASE_URL, secret-scan skips .local-media, ignores for git/prettier/eslint, Cloudinary removed from env. package.json: @vercel/blob, sharp. feature-list rows 2.3, 14.8, 18.1, 18.9 updated and 18.12 added
+- Tests: unit 714/714 (media upload, traversal and signed links, Blob provider and host check; CSP; config) · integration 162 passed, 3 skipped (real-login block) on an in-process PGlite server with TZ=UTC (the local PostgreSQL rejected the .env.local logins), including public-schema-security (RLS on every table, API roles empty) and media-storage constraints · typecheck, lint, format:check, secret scan clean
+- Review: code-reviewer 3 medium and 7 low; fixed: future-function default privileges (global REVOKE per creator role, test), DB CHECKs on storage_key and URL per provider, scope private and public pdf keys refused, NaN size cap, anchored test-host guard. Accepted: PUBLIC USAGE on schema public kept (Supabase internals), CSP uses the store wildcard, receipts are stored as received
+- Decisions: ADR-025, ADR-026
+- Next: 18.7 (and the owner's one-time local database setup, which clears the Blocked state of 18.2)
+- Blockers/risks: local PostgreSQL logins fail (28P01), so 18.2 stays Blocked; PGlite reports local time as UTC unless TZ=UTC, which broke one alert test until the server ran with TZ=UTC; public/seed SVG placeholders still ship in public/ (documented, replaced when catalog media goes live)
+
+### 2026-10-03 — 18.3 Session hardening — Done
+- Type: enhancement
+- Changed: src/lib/{auth,staff,session-policy,step-up,step-up-token,owner,errors,action-result}.ts, src/modules/identity/*, src/components/admin/{password-change-form,sign-out-everywhere-button,field}.tsx, src/app/admin/(auth)/security, src/app/admin/(console)/account, prisma migration add_forced_password_change, env BETTER_AUTH_SECRETS, docs/runbooks/key-rotation.md
+- Tests: unit and integration cover revocation on reset and change, no sliding, staff cap, bootstrap flag, step-up (password, real TOTP, purpose, expiry, other session, delays, audit), sign out everywhere · e2e account page with axe
+- Review: code-reviewer 6 medium and security-auditor 4 medium fixed (step-up uses the rotated secret and a purpose, audit before grant, trusted-device shortcut disabled, unchanged password refused server side, reset clears the bootstrap flag, self-service lint allowlist, a11y of the form); the hooks.before body mutation did not take effect until it returned the new context (found by the integration tests)
+- Decisions: none (ADR-021 covers roles)
+- Next: 18.4
+- Blockers/risks: Better Auth 1.7.6 cannot hash session tokens; TOTP codes can be replayed within one 30 s step
+
+### 2026-10-03 — 18.4 Fail-closed auth rate limits — Done
+- Type: enhancement
+- Changed: src/lib/{rate-limit,attempts,trusted-proxy,request-meta,request-body,turnstile}.ts, src/app/api/auth/[...all]/route.ts, src/components/admin/{sign-in-form,turnstile-widget}.tsx, env schema (TRUSTED_PROXY hops, Turnstile keys)
+- Tests: unit (attempts, fail-closed limiters, route behaviour, hops and IPv4-mapped addresses, Turnstile) · integration (no enumeration for sign-in, reset and sign-up, per-account delay for known and unknown emails, real TOTP lockout, trusted-device refusal) · e2e per-account limit
+- Review: security-auditor 1 high (requests that could not be tied to an account skipped the delay: now JSON with an email is required and the body is byte-capped), 6 medium (atomic reservation instead of check then record, IPv4-mapped bucket collapse, Turnstile hostname, unknown-address and lockout trade-offs documented) fixed
+- Decisions: none
+- Next: 18.5
+- Blockers/risks: an attacker can delay a victim account (max 15 min, password reset still works); origin must only be reachable through the proxy when using hops:N
+
+### 2026-10-03 — 18.5 CI/CD supply-chain hardening — Done
+- Type: enhancement
+- Changed: .github/workflows/{ci,e2e-preview,codeql,dependency-review,dependency-audit}.yml, .github/{CODEOWNERS,dependabot.yml}, docker-compose.yml, pnpm-workspace.yaml, tests/integration/global-setup.ts, tests/unit/ci-config.test.ts, docs/runbooks/ci-and-branch-protection.md
+- Tests: 6 configuration tests (SHA pins, persist-credentials, no PR code next to secrets, identical image digests, release age and Dependabot, required workflows)
+- Review: security-auditor 2 high and medium findings fixed (preview workflow trust: vercel[bot] creator, Environment-scoped secret, host allowlist; scheduled blocking audit; CodeQL concurrency; CODEOWNERS gaps; Dependabot cooldown)
+- Decisions: none
+- Next: 18.6
+- Blockers/risks: workflows cannot run locally; action SHAs resolved from the GitHub API today and must be re-verified by the owner; minimumReleaseAge 4320 was rejected by pnpm because the lockfile holds packages younger than 3 days (2880 used)
+
+### 2026-10-03 — 18.6 Nonce CSP for dynamic sections — Done
+- Type: enhancement
+- Changed: src/lib/security/headers.ts, src/proxy.ts, next.config.ts, src/app/admin/layout.tsx, docs/architecture/DECISIONS.md (ADR-022, OD-12 closed), tests (unit, lint, e2e), playwright.config.ts (readiness probe on a console page)
+- Tests: unit (sections, header rules against Next path-to-regexp, nonce freshness, cache headers, maintenance) · lint (sections must be per-request) · e2e console hydrates under the nonce policy, injected inline handlers are blocked, storefront keeps the static policy, API locked down
+- Review: security-auditor 4 medium fixed (matcher skipped file-like paths in sections, maintenance rewrite without CSP, no explicit no-store for nonce responses, weak lint test); low: decoded and case-insensitive section matching, script-src-attr none, autoplay=(self)
+- Decisions: ADR-022 (supersedes ADR-016 for dynamic sections, closes OD-12)
+- Next: 18.7
+- Blockers/risks: first request to a console page loads the whole server bundle (about 40 s on this machine), so the browser-test readiness probe now waits on a console page; a corrupted .next cache made Turbopack panic until it was deleted
+
+### 2026-10-02 — 18.2 Database least privilege — Blocked (real-login proof waiting for Docker (WSL))
+- Type: new
+- Changed: prisma/migrations/20261002100000_add_database_roles, scripts/db-roles.ts, scripts/db-reset.ts, tests/integration/{database-roles.int.test.ts,global-setup.ts}, docs/runbooks/database-roles.md, docs/architecture/DECISIONS.md (ADR-021), .env.example (DATABASE_URL = auren_app, DIRECT_URL = owner), .claude/skills/auren-db-change (ledger REVOKE rule), package.json (db:roles)
+- Tests: integration 87 passed, 3 skipped by design (real-login block, runs when the harness owns a server) on PGlite with DB_POOL_MAX=1 · unit 412/412 · typecheck, lint, format green
+- Review: security-auditor + code-reviewer: 2 high (migrator never became owner in the documented flow: runbook rewritten with explicit ownership handover and ROLES_ADMIN_URL; tests never ran dispatcher/runOnce/runIdempotent as auren_app: added), 6 medium fixed (outbox replay via status: dispatched is now terminal; migration verifies its own effect and fails the deploy; default privileges FOR ROLE auren_migrator; column-level privilege assertions and exact six-column grant; processed_events insert-only; loose regexes, SET ROLE guard in beforeAll, CI must provide real-login proof), lows fixed (TEMP revoke, search_path, timeouts, script error handling without echoing URLs)
+- Decisions: ADR-021
+- Next: 18.3
+- Blockers/risks: waiting for Docker (WSL) for the real-login proof and a multi-connection run; password travels in ALTER ROLE (runbook warns about statement logging); inventory_levels and staff_members remain app-writable (covered by inventory constraints and 18.11 alerts)
+
+### 2026-10-02 — 18.1 Production boot guards — Done
+- Type: enhancement
+- Changed: src/lib/env/{production,schema}.ts, src/lib/env.ts, next.config.ts (phase function), src/instrumentation.ts, src/lib/jobs/client.ts, src/app/api/inngest/route.ts, playwright.config.ts (LOCAL_PRODUCTION), .env.example, docs/runbooks/database-roles.md (started)
+- Tests: unit 412/412 (39 new: one per refusal, local-run opt-in, build phase, SKIP flag, Inngest client mode and keys) · integration 61/61 (PGlite, DB_POOL_MAX=1) · e2e 110 pass, 14 skipped by design (production build served with LOCAL_PRODUCTION=1) · typecheck, lint, format green
+- Review: code-reviewer 1 high (localhost APP_URL switched all guards off: now needs explicit LOCAL_PRODUCTION=1, never on Vercel), 5 medium (boot-time validation on serverless via register(), NEXT_PUBLIC_APP_URL must equal APP_URL, wider local-host SMTP check, hops:N message, redundant VERCEL_ENV check) all fixed; security-auditor: H1 H2 M1 closed, M2 closed once 18.4 adds hop-count mode; unsigned Inngest PUT sync disabled, serveOrigin pinned, INNGEST_BASE_URL refused
+- Decisions: none (behaviour change documented in .env.example and ARCHITECTURE section 11 at 18.9)
+- Next: 18.2
+- Blockers/risks: Inngest cloud signature verification confirmed from the installed library source (mode cloud + signing key, fails closed), not exercised against Inngest Cloud
+
 ### 2026-10-02 — Module 1 Design System and Brand UI — run summary
 - Type: 1.1 enhancement, 1.2–1.8 new
 - Changed: tokens/fonts/base styles, src/components/{ui,motion,storefront,admin,style-guide}, storefront and admin shells, system pages, proxy (maintenance mode, matcher), test-only staff bypass, ADR-019 and ADR-020

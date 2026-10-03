@@ -1,0 +1,31 @@
+# Every change needs the owner's review (enforced with branch protection: "Require review from
+# Code Owners"). Security-relevant paths are listed explicitly so they stay owned when more
+# maintainers are added.
+*                                   @raihanuddin561
+
+/.github/                           @raihanuddin561
+/prisma/migrations/                 @raihanuddin561
+/prisma/schema.prisma               @raihanuddin561
+/scripts/secret-scan.mjs            @raihanuddin561
+/pnpm-workspace.yaml                @raihanuddin561
+/pnpm-lock.yaml                     @raihanuddin561
+/docker-compose.yml                 @raihanuddin561
+/next.config.ts                     @raihanuddin561
+/src/proxy.ts                       @raihanuddin561
+/src/lib/auth.ts                    @raihanuddin561
+/src/lib/env/                       @raihanuddin561
+/src/lib/security/                  @raihanuddin561
+/src/lib/permissions.ts             @raihanuddin561
+/src/modules/identity/              @raihanuddin561
+/src/modules/audit/                 @raihanuddin561
+/package.json                        @raihanuddin561
+/scripts/                           @raihanuddin561
+/tests/integration/global-setup.ts  @raihanuddin561
+/src/app/api/auth/                  @raihanuddin561
+/src/lib/rate-limit.ts              @raihanuddin561
+/src/lib/attempts.ts                @raihanuddin561
+/src/lib/turnstile.ts               @raihanuddin561
+/src/lib/trusted-proxy.ts           @raihanuddin561
+/src/lib/request-meta.ts            @raihanuddin561
+/docs/runbooks/                     @raihanuddin561
+/SECURITY.md                        @raihanuddin561

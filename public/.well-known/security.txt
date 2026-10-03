@@ -1,0 +1,5 @@
+# Report security problems privately. Please do not open a public issue.
+Contact: https://github.com/raihanuddin561/auren-ecommerce/security/advisories/new
+Expires: 2027-04-01T00:00:00.000Z
+Preferred-Languages: en
+Policy: https://github.com/raihanuddin561/auren-ecommerce/blob/main/SECURITY.md

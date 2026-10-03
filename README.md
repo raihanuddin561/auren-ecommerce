@@ -6,12 +6,13 @@ Planning and conventions live in `CLAUDE.md`, `docs/architecture/` and `context/
 
 ## First run
 
-Requirements: Node 24+ (26 works), pnpm 12, Docker Desktop.
+Requirements: Node 24+ (26 works), pnpm 12, a local PostgreSQL 16+ (your own installation; one-time setup in `docs/runbooks/local-database.md`). Docker Desktop is optional (`pnpm db:up` for Postgres + Mailpit, and Testcontainers for integration tests).
 
 ```bash
 pnpm install
 cp .env.example .env        # development defaults; nothing here is a real secret
-pnpm db:up                  # PostgreSQL 16 + Mailpit (http://localhost:8025)
+# one time: psql -h localhost -U postgres -f scripts/local-db-setup.sql   (see docs/runbooks/local-database.md)
+# optional: pnpm db:up      # Docker: PostgreSQL 16 + Mailpit (http://localhost:8025)
 pnpm db:migrate:deploy      # apply migrations
 pnpm db:seed                # owner account, 6 categories, 40 products, stock
 pnpm dev                    # http://localhost:3000
@@ -28,7 +29,7 @@ Email goes to Mailpit locally (`SMTP_URL`), to Resend in production (`RESEND_API
 | `pnpm dev` / `pnpm build` / `pnpm start`                          | Next.js                                                                                                             |
 | `pnpm typecheck` / `pnpm lint` / `pnpm format`                    | Quality gates (also run by Husky and CI)                                                                            |
 | `pnpm test` / `pnpm test:coverage`                                | Unit tests (money utilities require 100 % coverage)                                                                 |
-| `pnpm test:integration`                                           | Real PostgreSQL via Testcontainers, or `TEST_DATABASE_URL` (name must contain `test`)                               |
+| `pnpm test:integration`                                           | Real PostgreSQL: `TEST_DATABASE_URL` (name must contain `test`), else Testcontainers (needs Docker)                 |
 | `pnpm test:e2e`                                                   | Build, then Playwright (desktop + mobile, axe). `E2E_WITH_DB=1` adds the database specs                             |
 | `pnpm test:e2e:visual`                                            | Style guide visual snapshots (per platform baselines; add `-- --update-snapshots` after a deliberate design change) |
 | `pnpm db:up` / `db:down` / `db:reset`                             | Local infrastructure; `db:reset` wipes the local database, migrates and seeds                                       |

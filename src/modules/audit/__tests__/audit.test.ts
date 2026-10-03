@@ -32,7 +32,46 @@ describe('toSnapshot', () => {
     for (const secret of ['hunter2', '"k"', 'Bearer x', '"t"', '4111']) {
       expect(text).not.toContain(secret);
     }
-    expect(snapshot).toMatchObject({ email: 'a@b.com', nested: { list: [{ ok: 1 }] } });
+    // personal data is redacted as well: the trail keeps ids and changed keys, not people
+    expect(snapshot).toMatchObject({
+      email: expect.stringMatching(/^\[personal:[0-9a-f]{8}\]$/),
+      nested: { list: [{ ok: 1 }] },
+    });
+    expect(text).not.toContain('a@b.com');
+  });
+
+  it('still shows THAT a personal field changed, through its fingerprint', () => {
+    const before = toSnapshot({ id: 'c-1', phone: '+8801712345678', email: 'a@b.test' });
+    const after = toSnapshot({ id: 'c-1', phone: '+8801798765432', email: 'a@b.test' });
+    expect(changedKeys(before, after)).toEqual(['phone']);
+    expect(JSON.stringify([before, after])).not.toContain('8801712345678');
+  });
+
+  it('does not treat references and flags as personal data', () => {
+    expect(
+      toSnapshot({ addressId: 'a-1', emailVerified: true, phoneHash: 'abc', name: 'Oxford shirt' }),
+    ).toEqual({ addressId: 'a-1', emailVerified: true, phoneHash: 'abc', name: 'Oxford shirt' });
+  });
+
+  it('keeps ids but never names, phones, addresses or IPs (INV-A9)', () => {
+    const snapshot = toSnapshot({
+      customerId: 'c-1',
+      customerName: 'Rahim Uddin',
+      phone: '+8801712345678',
+      shippingAddress: { line1: '12 Road 5', city: 'Dhaka' },
+      ipAddress: '203.0.113.5',
+      sku: 'OX-SHIRT-M',
+      templateName: 'order-confirmed',
+    });
+    const text = JSON.stringify(snapshot);
+    for (const personal of ['Rahim', '8801712345678', 'Road 5', '203.0.113.5']) {
+      expect(text).not.toContain(personal);
+    }
+    expect(snapshot).toMatchObject({
+      customerId: 'c-1',
+      sku: 'OX-SHIRT-M',
+      templateName: 'order-confirmed',
+    });
   });
 
   it('redacts by whole word, so ordinary fields are not mangled', () => {
@@ -54,11 +93,11 @@ describe('toSnapshot', () => {
   });
 
   it('survives awkward input: undefined, functions, NaN, cycles, deep nesting', () => {
-    const cyclic: Record<string, unknown> = { name: 'loop' };
+    const cyclic: Record<string, unknown> = { label: 'loop' };
     cyclic.self = cyclic;
     expect(toSnapshot({ a: undefined, fn: () => 1, n: Number.NaN, cyclic })).toEqual({
       n: 'NaN',
-      cyclic: { name: 'loop', self: '[circular]' },
+      cyclic: { label: 'loop', self: '[circular]' },
     });
     let deep: unknown = 'leaf';
     for (let i = 0; i < 12; i++) deep = { child: deep };

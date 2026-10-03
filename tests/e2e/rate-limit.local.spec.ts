@@ -38,14 +38,15 @@ test.describe('per-account rate limiting', () => {
   test('stops guessing one account from many addresses', async ({ request }) => {
     const email = uniqueEmail();
     const statuses: number[] = [];
-    for (let i = 0; i < 12; i++) {
+    for (let i = 0; i < 8; i++) {
       const response = await request.post('/api/auth/sign-in/email', {
         data: { email, password: 'Wrong-password-1' },
         headers: { 'x-forwarded-for': `192.0.2.${(i % 250) + 1}` },
       });
       statuses.push(response.status());
     }
-    expect(statuses.slice(0, 10).every((status) => status !== 429)).toBe(true);
-    expect(statuses.slice(10)).toEqual([429, 429]);
+    // three wrong passwords are free, then the account must wait whatever the address
+    expect(statuses.slice(0, 3).every((status) => status !== 429)).toBe(true);
+    expect(statuses.slice(3).every((status) => status === 429)).toBe(true);
   });
 });

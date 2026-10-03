@@ -1,5 +1,5 @@
+import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
-import { AccessDenied } from '@/components/admin/access-denied';
 import { AdminShell } from '@/components/admin/shell/admin-shell';
 import { AdminShellSkeleton } from '@/components/admin/shell/shell-skeleton';
 import { DomainError } from '@/lib/errors';
@@ -10,8 +10,8 @@ async function AdminShellWithStaff({ children }: { children: React.ReactNode }) 
   try {
     staff = await requireStaff();
   } catch (error) {
-    // Not staff: say so here, because an error boundary in this segment cannot catch the layout.
-    if (error instanceof DomainError && error.code === 'FORBIDDEN') return <AccessDenied />;
+    // Not staff: the console does not exist for you (404), so it cannot be probed by customers.
+    if (error instanceof DomainError && error.code === 'FORBIDDEN') notFound();
     throw error;
   }
   return (

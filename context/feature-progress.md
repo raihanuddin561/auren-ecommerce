@@ -46,7 +46,7 @@
 |---|---|---|---|---|---|---|---|---|---|---|
 | 2.1 | Categories admin | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
 | 2.2 | Product + variants admin | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 2.3 | Media management | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
+| 2.3 | Media management | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | Upload foundation done early under 18.12: lib/media MediaProvider (local, Vercel Blob), validateUpload/processImage, product_media storage columns. Catalog UI, action and audit still to do |
 | 2.4 | Size charts | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
 | 2.5 | Collections admin | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
 | 2.6 | Product relations | P1 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
@@ -221,7 +221,7 @@
 | 14.5 | Product feeds | P1 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
 | 14.6 | OG images | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
 | 14.7 | Performance budgets | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 14.8 | Image pipeline audit | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
+| 14.8 | Image pipeline audit | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | Images now come from Vercel Blob (ADR-026, CSP img-src updated); public/seed SVG placeholders are development only |
 
 ## Module 15: Admin Dashboard, Analytics and Settings
 
@@ -256,6 +256,23 @@
 | 17.3 | Loyalty program | P2 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
 | 17.4 | Pre-orders and limited drops | P2 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
 | 17.5 | PWA enhancements | P2 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
+
+### Module 18: Security Hardening
+
+| ID | Sub-feature | Pri | BE | API | UT | FE | E2E | CR | Overall | Notes |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 18.1 | Production boot guards | P0 | Done | Done | Done | N/A | Done | Done | Done | enhancement. src/lib/env/production.ts guards (explicit https APP_URL = NEXT_PUBLIC_APP_URL, denylist+entropy+sequence secret check, Upstash, Inngest keys, INNGEST_DEV/BASE_URL off, real email provider/sender, TRUSTED_PROXY not none), next.config is a phase function (guards skipped only in the build phase), SKIP_ENV_VALIDATION ignored by a production server, register() validates env at boot, /api/inngest explicit signingKey (+fallback), enableUnauthedSync false, serveOrigin pinned. Local production runs need LOCAL_PRODUCTION=1 + localhost APP_URL. 39 new unit tests. Verified: next start refuses with the full issue list. Closes H1 H2(part) M1 M2(part: needs 18.4 hop mode) |
+| 18.2 | Database least privilege | P0 | Done | Done | Blocked | N/A | N/A | Done | Blocked | new. Migration add_database_roles (auren_migrator, auren_app NOLOGIN; DML-only baseline, default privileges incl. FOR ROLE auren_migrator, REVOKE UPDATE/DELETE on audit_logs, stock_movements, processed_events, column-level UPDATE on 6 outbox delivery columns, dispatched outbox rows immutable, role_permissions read-only, TEMPORARY revoked, search_path/timeouts, self-verifying DO block), pnpm db:roles (ROLES_ADMIN_URL/DIRECT_URL), ADR-021, runbook with ownership handover. 42 integration tests (role attributes, owns nothing, exact privilege matrix, column grants, DDL/trigger/replication-role refusals, dispatcher, runOnce, runIdempotent as auren_app) pass on PGlite via SET ROLE. Blocked (unchanged): the real-login block (it.runIf appDatabaseUrl, enforced in CI) needs a real PostgreSQL login. 2026-10-03: the local server on localhost:5432 answers but rejects the auren_app and auren logins from .env.local (28P01), so the owner must run scripts/local-db-setup.sql once (docs/runbooks/local-database.md) and set TEST_DATABASE_URL and TEST_APP_DATABASE_URL; then `pnpm test:integration` proves this row and the Blocked marker can go |
+| 18.3 | Session hardening | P0 | Done | Done | Done | Done | Done | Done | Done | enhancement. Sessions: revokeSessionsOnPasswordReset, change-password forces revokeOtherSessions and rejects an unchanged password (hooks.before returns the new body), sessions do not slide (disableSessionRefresh), staff cap 10 h at creation and in getStaff (fail closed), freshAge 15 min, verification tokens hashed, OAuth tokens encrypted, trust-device off, TOTP account lockout 5/15 min, step-up (HMAC cookie bound to session, user and purpose, 5 min, audited before grant, failures-only delay), sign out everywhere (audit first), users.must_change_password for the bootstrap owner (migration, /admin/security forced step, cleared on change or reset), BETTER_AUTH_SECRETS rotation + runbook. Account page at /admin/account. Not available in Better Auth 1.7.6: hashing of session tokens (compensated by 18.2 privileges). TOTP replay inside one 30 s step is not prevented by the library |
+| 18.4 | Fail-closed auth rate limits | P0 | Done | Done | Done | Done | Done | Done | Done | enhancement. Credential limiters fail closed when Redis is configured but down, hops:N right-counted client address (production refuses none and forwarded), unknown address shares one smaller bucket, IPv4-mapped IPv6 handled, atomic progressive per-account delay (Lua script on Upstash, memory otherwise; successes clear it; 3 free tries, 15 s doubling to 15 min), JSON-only sign-in with a byte-capped body (413), Turnstile optional (server verify incl. hostname, widget in the admin sign-in form, CSP allowance), no-enumeration and TOTP lockout integration tests. Residual: an attacker can delay a victim account (documented in the incident runbook) |
+| 18.5 | CI/CD supply-chain hardening | P0 | N/A | N/A | Done | N/A | Done | Done | Done | enhancement. Actions pinned to SHAs, persist-credentials false, e2e-preview checks out trusted code only (default branch), requires vercel[bot] creator and a *.vercel.app target, secret in the preview-smoke Environment, CodeQL, dependency-review, daily blocking audit workflow, digest-pinned images (config test keeps the three copies identical), minimumReleaseAge 2880, CODEOWNERS, Dependabot for npm, actions and docker-compose with cooldown. Owner steps (branch ruleset, code scanning, environment) in the CI runbook. Workflows themselves cannot be executed locally |
+| 18.6 | Nonce CSP for dynamic sections | P0 | Done | Done | Done | Done | Done | Done | Done | enhancement. ADR-022 supersedes ADR-016 for the dynamic sections and closes OD-12: proxy nonce (128 bit, fresh per request) + strict-dynamic for /admin /checkout /account, API_CSP for /api, static CSP only for the storefront (non-overlapping header rules verified with Next path-to-regexp), CORP same-origin on dynamic sections, no-referrer on token pages, extended Permissions-Policy, admin root layout is a blocking per-request route with a nonced theme script, no-store on nonce responses, matcher never skips files inside sections, maintenance page gets a policy. Hydration E2E for the console under the policy; /checkout and /account do not exist yet so they are covered by unit and lint tests. Style is still unsafe-inline (accepted) |
+| 18.7 | Telemetry hygiene | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
+| 18.8 | Secret-scan follow-up | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
+| 18.9 | Commerce abuse-control specs | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
+| 18.10 | Security operations | P1 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
+| 18.11 | Insider-risk controls | P1 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
+| 18.12 | Hosting and media infrastructure | P0 | Done | Done | Done | N/A | N/A | Done | Done | enhancement. ADR-025 Supabase (pooler/direct URL guards in production.ts, runbook section Supabase, RLS + revoke migration secure_public_schema with auren_secure_table helper, integration test) and ADR-026 Vercel Blob/local media (src/lib/media: provider, keys, signing, upload validation, route handlers, CSP img-src, product_media columns migration, Cloudinary removed). Local PostgreSQL runbook and setup script, TEST_APP_DATABASE_URL for real-login checks, Docker optional. Unit 714/714; integration 162 passed, 3 skipped (real-login) on PGlite with TZ=UTC |
 
 ---
 

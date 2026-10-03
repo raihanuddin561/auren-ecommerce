@@ -57,6 +57,22 @@ describe('secret scanner', () => {
     for (const line of safe) expect(hits(line), line).toEqual([]);
   });
 
+  it('applies the placeholder allowance to the matched value only, not the whole line', () => {
+    // a documented placeholder on the line must not excuse a real-looking secret beside it
+    expect(
+      hits(`const note = 'see changeme'; const apiSecret = "${rand(32)}"; // your-team`).map(
+        (h) => h.rule,
+      ),
+    ).toContain('hardcoded-credential');
+    expect(
+      hits(`# DATABASE_URL=postgresql://auren:auren@localhost:5432/auren ${fakes.github}`).map(
+        (h) => h.rule,
+      ),
+    ).toContain('github-token');
+    // and the placeholder itself is still fine
+    expect(hits('BETTER_AUTH_SECRET=dev-only-secret-change-me-0123456789abcdef')).toEqual([]);
+  });
+
   it('honours the inline allow marker', () => {
     expect(hits(`const apiSecret = "${rand(32)}"; // secret-scan:allow`)).toEqual([]);
   });

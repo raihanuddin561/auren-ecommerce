@@ -43,7 +43,7 @@ AUREN is a premium menswear D2C (direct-to-consumer) commerce platform. It has t
 | Motion | **Motion** (`motion/react`) + CSS View Transitions | Restrained, premium micro-interactions |
 | Forms | React Hook Form + Zod resolver | |
 | Tables / charts (admin) | TanStack Table · Recharts | |
-| Media | **Cloudinary** (behind `MediaProvider` adapter) | On-the-fly AVIF/WebP, art direction, quality fashion imagery |
+| Media | **Vercel Blob** in production, **local filesystem** in development (behind `MediaProvider`, ADR-026) | Variants generated at upload; `next/image` serves them; private storage for receipts and invoices |
 | Background jobs | **Inngest** (fed by a transactional outbox) | Durable retries on serverless; cron |
 | Email | **Resend** + React Email templates | |
 | SMS / OTP | Local SMS gateway behind `SmsProvider` adapter | Order confirmation and OTP for the primary market |
@@ -51,7 +51,7 @@ AUREN is a premium menswear D2C (direct-to-consumer) commerce platform. It has t
 | Shipping | `CourierProvider` adapters: **Pathao**, **Steadfast** (+ manual) | See ADR-008 |
 | Rate limiting / cache | **Upstash Redis** | Rate limiting login/OTP/checkout; hot counters |
 | Search | Postgres FTS (`tsvector`) + `pg_trgm` → Meilisearch later if needed | No extra infra at launch |
-| Hosting | **Vercel** (app) + **Neon Postgres** (Singapore region) | Preview DB branch per PR; nearest region to primary market |
+| Hosting | **Vercel** (app) + **Supabase Postgres** (ADR-025) | Transaction pooler for the app, direct connection for migrations; local development uses a local PostgreSQL |
 | Observability | **Sentry** (errors + tracing), Vercel Analytics/Speed Insights, structured logs (pino) | |
 | Analytics | GA4 + Meta Pixel **and** Meta Conversions API (server-side) | Accurate ad attribution |
 | Testing | **Vitest** (unit), **Vitest + Testcontainers** (integration on real Postgres), **Playwright** (E2E + visual), axe-core | |
@@ -79,10 +79,10 @@ flowchart LR
     MOD["Domain modules<br/>catalog · inventory · cart · checkout · orders<br/>payments · shipping · customers · promotions<br/>finance · content · reviews · notifications · search"]
   end
 
-  PG[(PostgreSQL — Neon)]
+  PG[(PostgreSQL — Supabase)]
   RD[(Upstash Redis)]
   ING[[Inngest jobs]]
-  EXT{{"Cloudinary · Resend · SMS<br/>SSLCommerz · Stripe<br/>Pathao · Steadfast<br/>Meta CAPI · GA4"}}
+  EXT{{"Resend · SMS<br/>SSLCommerz · Stripe<br/>Pathao · Steadfast<br/>Meta CAPI · GA4"}}
 
   C --> SF --> MOD
   A --> AD --> MOD
@@ -200,7 +200,7 @@ auren-ecommerce/
 │  ├─ integrations/
 │  │  ├─ payments/{cod,sslcommerz,stripe}/
 │  │  ├─ couriers/{pathao,steadfast,manual}/
-│  │  ├─ media/cloudinary/ · email/resend/ · sms/<provider>/
+│  │  ├─ media/{local,vercel-blob}/ · email/resend/ · sms/<provider>/
 │  │  └─ analytics/{meta-capi,ga4}/
 │  ├─ components/
 │  │  ├─ ui/                     # primitives (Button, Input, Sheet, Dialog…)
@@ -402,17 +402,18 @@ CI runs Lighthouse CI on Home, PLP, PDP and Checkout, and fails the build if a b
 
 | Concern | Control |
 |---|---|
-| AuthN | Better Auth DB sessions, httpOnly + Secure + SameSite=Lax cookies; argon2/scrypt hashing; email verification; optional 2FA (TOTP) **required for staff** |
-| AuthZ | RBAC roles: `owner`, `admin`, `manager`, `order_verifier`, `fulfillment`, `finance`, `content_editor`, `support`; permission checks in every admin action via `assertPermission()` |
-| Input | Zod on every action/handler; Prisma parameterization; markdown/HTML sanitized (rehype-sanitize) |
+| AuthN | Better Auth DB sessions, httpOnly + Secure + SameSite=Lax cookies; scrypt hashing; email verification; TOTP **required for staff**; staff sessions end 10 h after sign-in (customers 30 days, none slide); sessions revoked on password reset or change; reset tokens hashed, OAuth tokens encrypted; the first owner must replace the bootstrap password and enrol TOTP; "sign out everywhere"; secret rotation via `BETTER_AUTH_SECRETS` |
+| AuthZ | RBAC roles: `owner`, `admin`, `manager`, `order_verifier`, `fulfillment`, `finance`, `content_editor`, `support`; permission checks in every admin action via `assertPermission()`; **step-up** (`requireStepUp(staff, purpose)`) for refunds, exports, role changes and write-offs (INV-A6); customers get a 404 for `/admin`; the order `confirmed` status is guarded in the database (INV-O9) |
+| Input | Zod `.strict()` on every action/handler (unknown fields rejected); Prisma parameterization; markdown/HTML sanitized (rehype-sanitize); auth request bodies size-capped by bytes read; uploads signed server-side with format and size allowlists |
 | CSRF | Server Actions origin check + SameSite cookies; webhooks verify provider signatures/IPN validation |
-| Abuse | Upstash rate limits on login, OTP, register, checkout submit, coupon apply, review submit |
-| Payments | Never trust client totals; server recomputes. Verify payment with provider API (not only redirect params). Idempotency keys. No card data touches our servers (hosted pages), so PCI scope is SAQ-A |
-| Headers | CSP as a static header without nonces (ADR-016: nonces are incompatible with the prerendered shell), HSTS, X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Permissions-Policy, COOP, frame-ancestors none |
-| Secrets | Zod-validated `env.ts`; Vercel encrypted env; no secrets in client bundles (`server-only`) |
-| Data | Least PII; addresses/phones only where needed; audit log for staff actions; GDPR-style export/delete for customers |
-| Supply chain | Dependabot/Renovate, `pnpm audit` in CI, lockfile enforced |
-| Backups | Neon PITR (point-in-time restore) + nightly logical dump to object storage; restore drill before launch |
+| Abuse | Upstash rate limits on login, OTP, register, checkout submit, coupon apply, review submit; credential limiters **fail closed** when Redis is down; per-account progressive delay for wrong passwords and step-up codes; client address from `vercel` or `hops:N` (never the client-controlled left-most entry); optional Cloudflare Turnstile on sign-in (and OTP/COD checkout when built); order velocity and reservation caps; coupon usage limits enforced atomically |
+| Payments | Never trust client totals; server recomputes from the database (INV-O8). **Webhook verify-then-requery**: signature or IPN check, then the provider API, then compare amount, currency and order reference with the stored order (INV-P5). Idempotency keys. No card data touches our servers (hosted pages), so PCI scope is SAQ-A. Refunds: permission + step-up + maker-checker above a threshold |
+| Headers | Two CSP regimes (ADR-022): static header for the prerendered storefront; per-request nonce + `strict-dynamic` for `/admin`, `/checkout`, `/account` (rendered per request) and a `default-src none` policy for `/api`. HSTS, X-Content-Type-Options, X-Frame-Options, COOP, CORP `same-origin` on dynamic sections, `Referrer-Policy: no-referrer` on token pages, a deny-by-default Permissions-Policy, frame-ancestors none |
+| Secrets | Zod-validated `env.ts` with **production boot guards** (https `APP_URL`, strong secrets, Upstash, Inngest keys, email provider, trusted proxy); Vercel encrypted env; no secrets in client bundles (`server-only`); pre-commit and CI secret scanning (placeholder allowance applies to the matched value only); documented rotation (`docs/runbooks/key-rotation.md`) |
+| Data | Least PII; addresses/phones only where needed; **two DB roles**: `auren_migrator` owns the schema, `auren_app` is DML-only and cannot rewrite ledgers or disable triggers (ADR-021); audit log for staff actions; outbox and audit payloads carry ids, not personal data (INV-A9); telemetry scrubbed (Sentry messages, pino error serializer keep no query text or PII); `/api/health` public answer is status only; GDPR-style export/delete for customers |
+| Supply chain | Actions pinned to commit SHAs, `persist-credentials: false`, no PR code next to secrets, CodeQL, dependency review, blocking daily `pnpm audit`, digest-pinned images, `minimumReleaseAge`, CODEOWNERS, Dependabot (npm, Actions, docker-compose), lockfile enforced |
+| Insider risk | Maker-checker approvals above a threshold (DB-enforced: decider is never the requester), audit-log alerts to the owner (refunds, exports, role and permission changes, settings, repeated wrong step-up answers, unusual verification volume), DB triggers that audit `role_permissions` and `staff_members` changes, optional IP allowlist for owner and finance (ADR-023); finished outbox and inbox rows are purged by a migrator-owned function (ADR-024) |
+| Backups | Supabase PITR (point-in-time restore) + nightly logical dump to object storage; restore drill before launch |
 
 ---
 
@@ -421,9 +422,9 @@ CI runs Lighthouse CI on Home, PLP, PDP and Checkout, and fails the build if a b
 | Env | Purpose | DB |
 |---|---|---|
 | Local | `docker compose up` (Postgres + Mailpit), seed data with realistic menswear catalog | local container |
-| Preview | Every PR → Vercel preview | Neon branch per PR |
-| Staging | `main` auto-deploy; sandbox payment/courier keys | Neon staging |
-| Production | Tagged release / promote | Neon prod (PITR) |
+| Preview | Every PR → Vercel preview | Supabase preview branch or shared staging database (never production) |
+| Staging | `main` auto-deploy; sandbox payment/courier keys | Supabase staging project |
+| Production | Tagged release / promote | Supabase prod (PITR) |
 
 **CI pipeline (every PR)**: install → typecheck → lint → unit tests → integration tests (Testcontainers) → build → Playwright E2E on preview → Lighthouse CI → axe accessibility. Merge needs green CI + review.
 

@@ -3,6 +3,8 @@ import type { PrismaClient } from '@/generated/prisma/client';
 import type { Tx } from './db';
 import { eventSchemas, type EventPayload, type EventType } from './events';
 import { logger } from './logger';
+import { scrubMessage } from './observability/scrub';
+import { findPiiKeys } from './pii';
 
 export interface EnqueueInput<T extends EventType> {
   type: T;
@@ -22,6 +24,11 @@ export async function enqueueEvent<T extends EventType>(
   input: EnqueueInput<T>,
 ): Promise<string> {
   const payload = eventSchemas[input.type].parse(input.payload);
+  // Events carry identifiers, not personal data (INV-A9): consumers load what they need by id.
+  const pii = findPiiKeys(payload);
+  if (pii.length > 0) {
+    throw new Error(`event ${input.type} must not carry personal data (${pii.join(', ')})`);
+  }
   const row = await tx.outboxEvent.create({
     data: {
       type: input.type,
@@ -184,7 +191,7 @@ export async function dispatchPendingEvents(
       UPDATE outbox_events
          SET status = ${exhausted ? 'failed' : 'pending'}::outbox_status,
              locked_until = NULL,
-             last_error = ${message.slice(0, 500)}
+             last_error = ${scrubMessage(message).slice(0, 500)}
        WHERE id = ${event.id}::uuid AND status = 'pending'`;
   }
 
@@ -193,3 +200,29 @@ export async function dispatchPendingEvents(
 
 const errorMessage = (error: unknown): string =>
   error instanceof Error ? error.message : String(error);
+
+/** How long finished events are kept before the retention job removes them. */
+export const EVENT_RETENTION_DAYS = 30;
+
+export interface PurgeSummary {
+  outboxDeleted: number;
+  inboxDeleted: number;
+}
+
+/**
+ * Removes dispatched outbox rows and consumer claims older than `retainDays` (at least 7). The
+ * application role cannot delete these rows itself (ADR-021); it may only call this migrator-owned
+ * function, which never touches pending or failed events.
+ */
+export async function purgeFinishedEvents(
+  client: PrismaClient,
+  retainDays: number = EVENT_RETENTION_DAYS,
+): Promise<PurgeSummary> {
+  const rows = await client.$queryRaw<Array<{ outbox_deleted: bigint; inbox_deleted: bigint }>>`
+    SELECT outbox_deleted, inbox_deleted FROM purge_finished_events(${retainDays}::integer)`;
+  const row = rows[0];
+  return {
+    outboxDeleted: Number(row?.outbox_deleted ?? 0),
+    inboxDeleted: Number(row?.inbox_deleted ?? 0),
+  };
+}

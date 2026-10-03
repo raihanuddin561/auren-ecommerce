@@ -59,10 +59,13 @@ describe('server env', () => {
     const secret = `dev-${'x'.repeat(40)}`;
     const production = { ...base, BETTER_AUTH_SECRET: secret, NODE_ENV: 'production' };
     expect(() => parseServerEnv({ ...production, APP_URL: 'https://auren.com.bd' })).toThrow(
-      /placeholder/,
+      /development or example value/,
     );
-    // a local production build (next build && next start) may keep the placeholder
-    expect(parseServerEnv(production).BETTER_AUTH_SECRET).toBe(secret);
+    // a local production run (explicit localhost APP_URL) may keep the placeholder
+    expect(
+      parseServerEnv({ ...production, APP_URL: 'http://localhost:3210', LOCAL_PRODUCTION: '1' })
+        .BETTER_AUTH_SECRET,
+    ).toBe(secret);
     expect(parseServerEnv({ ...base, BETTER_AUTH_SECRET: secret }).BETTER_AUTH_SECRET).toBe(secret);
   });
 

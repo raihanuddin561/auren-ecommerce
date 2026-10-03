@@ -28,6 +28,7 @@ export const FORBIDDEN_FILES = [
 const SKIP_PATHS = [
   /(^|\/)pnpm-lock\.yaml$/,
   /(^|\/)node_modules\//,
+  /(^|\/)\.local-media\//,
   /\.(png|jpe?g|webp|avif|gif|ico|pdf|woff2?|ttf|mp4)$/i,
 ];
 
@@ -42,6 +43,7 @@ const PLACEHOLDERS = [
   'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY',
   'your-',
   'changeme',
+  'CHANGE-ME',
 ];
 
 const RULES = [
@@ -65,6 +67,7 @@ const RULES = [
   { id: 'sentry-dsn', re: /https:\/\/[0-9a-f]{32}@[a-z0-9.-]+\.ingest\.[a-z.]*sentry\.io\/\d+/ },
   { id: 'sendgrid-key', re: /\bSG\.[A-Za-z0-9_-]{16,}\.[A-Za-z0-9_-]{16,}\b/ },
   { id: 'twilio-key', re: /\bSK[0-9a-f]{32}\b/ },
+  { id: 'vercel-blob-token', re: /vercel_blob_rw_[A-Za-z0-9_]{20,}/ },
   { id: 'cloudinary-url', re: /cloudinary:\/\/\d+:[A-Za-z0-9_-]{10,}@/ },
   { id: 'jwt', re: /\beyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b/ },
   { id: 'npm-token', re: /\bnpm_[A-Za-z0-9]{36}\b/ },
@@ -115,7 +118,12 @@ export function scanText(path, text) {
       if (rule.relaxedInTests && TEST_PATH.test(path)) continue;
       const value = m[1] ?? m[0];
       if (isCodeReference(value)) continue;
-      if (isPlaceholder(line) || /process\.env|\$\{\{|\$\{?[A-Z_]+\}?|<[^>]+>/.test(value))
+      // A placeholder excuses only the value that was matched, never the rest of the line: a real
+      // secret next to a documented placeholder is still a finding.
+      if (
+        isPlaceholder(rule.id === 'hardcoded-credential' ? value : m[0]) ||
+        /process\.env|\$\{\{|\$\{?[A-Z_]+\}?|<[^>]+>/.test(value)
+      )
         continue;
       if (rule.entropy && shannonEntropy(value) < rule.entropy) continue;
       findings.push({ path, line: i + 1, rule: rule.id, length: value.length });

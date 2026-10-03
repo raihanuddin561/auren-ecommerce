@@ -6,12 +6,13 @@ import { Input } from '@/components/ui/input';
 interface FieldProps extends InputHTMLAttributes<HTMLInputElement> {
   label: string;
   hint?: string;
+  error?: string | null;
 }
 
 /** Labelled text input used by the staff sign-in and security screens. */
-export function Field({ label, hint, required, disabled, ...props }: FieldProps) {
+export function Field({ label, hint, error, required, disabled, ...props }: FieldProps) {
   return (
-    <FormField label={label} hint={hint} required={required} disabled={disabled}>
+    <FormField label={label} hint={hint} error={error} required={required} disabled={disabled}>
       {(control) => (
         <Input
           required={required}

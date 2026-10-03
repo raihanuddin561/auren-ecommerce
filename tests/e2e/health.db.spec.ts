@@ -7,7 +7,7 @@ test.describe('health endpoint', () => {
     expect(response.headers()['cache-control']).toBe('no-store');
     const body = await response.json();
     expect(body.status).toMatch(/ok|degraded/);
-    expect(body.checks.database.status).toBe('ok');
+    expect(body).toEqual({ status: body.status });
     expect(JSON.stringify(body)).not.toMatch(/postgres(ql)?:\/\//);
   });
 });

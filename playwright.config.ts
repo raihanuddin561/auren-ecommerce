@@ -43,6 +43,8 @@ const sharedEnv = {
   BETTER_AUTH_SECRET:
     process.env.BETTER_AUTH_SECRET ?? 'e2e-secret-0123456789abcdef0123456789abcdef',
   INNGEST_DEV: '1',
+  // Production build served from localhost: the explicit opt-out of the production boot guards.
+  LOCAL_PRODUCTION: '1',
   // The test client sets x-forwarded-for itself to get its own rate-limit bucket.
   TRUSTED_PROXY: 'forwarded',
   LOG_LEVEL: 'warn',
@@ -60,9 +62,12 @@ export default defineConfig({
   use: {
     baseURL,
     // Vercel Deployment Protection bypass for preview runs (secret set in the workflow).
-    extraHTTPHeaders: process.env.VERCEL_AUTOMATION_BYPASS_SECRET
-      ? { 'x-vercel-protection-bypass': process.env.VERCEL_AUTOMATION_BYPASS_SECRET }
-      : {},
+    // The bypass secret is only ever sent to Vercel preview hosts.
+    extraHTTPHeaders:
+      process.env.VERCEL_AUTOMATION_BYPASS_SECRET &&
+      /^https:\/\/[a-z0-9-]+\.vercel\.app\/?$/.test(process.env.E2E_BASE_URL ?? '')
+        ? { 'x-vercel-protection-bypass': process.env.VERCEL_AUTOMATION_BYPASS_SECRET }
+        : {},
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },
@@ -97,7 +102,9 @@ export default defineConfig({
         },
         {
           command: `pnpm exec next start -p ${BYPASS_PORT}`,
-          url: bypassURL,
+          // Readiness probe on a console page: the first request of a per-request-rendered route
+          // loads the whole server bundle, which can take a while on a cold machine.
+          url: `${bypassURL}/admin/style-guide`,
           reuseExistingServer: !process.env.CI,
           timeout: 120_000,
           env: {

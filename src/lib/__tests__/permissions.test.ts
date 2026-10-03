@@ -91,12 +91,18 @@ describe('default role grants', () => {
   });
 });
 
+/** Every migration that seeds role_permissions. */
+const seedSql = () => {
+  const dir = path.join(process.cwd(), 'prisma/migrations');
+  return readdirSync(dir)
+    .filter((name) => /add_staff_access|add_insider_risk_controls/.test(name))
+    .map((name) => readFileSync(path.join(dir, name, 'migration.sql'), 'utf8'))
+    .join('\n');
+};
+
 describe('role_permissions seed migration', () => {
   it('grants every permission to the owner in the seed', () => {
-    const sql = readFileSync(
-      path.join(process.cwd(), 'prisma/migrations/20261001233000_add_staff_access/migration.sql'),
-      'utf8',
-    );
+    const sql = seedSql();
     for (const permission of PERMISSIONS) {
       expect(sql).toContain(`('owner', '${permission}')`);
     }
@@ -105,7 +111,7 @@ describe('role_permissions seed migration', () => {
   it('matches the in-code defaults exactly (drift guard)', () => {
     const dir = path.join(process.cwd(), 'prisma/migrations');
     const sql = readdirSync(dir)
-      .filter((name) => /add_staff_access/.test(name))
+      .filter((name) => /add_staff_access|add_insider_risk_controls/.test(name))
       .map((name) => readFileSync(path.join(dir, name, 'migration.sql'), 'utf8'))
       .join('\n');
     const seeded = [...sql.matchAll(/\('([a-z_]+)', '([a-z_.]+)'\)/g)].map(

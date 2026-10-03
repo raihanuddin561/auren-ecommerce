@@ -22,9 +22,10 @@ test.describe('staff access with a real session', () => {
     await expectNoAxeViolations(page);
   });
 
-  test('shows customers an access message instead of the console', async ({ customerPage }) => {
-    await customerPage.goto('/admin');
-    await expect(customerPage.getByRole('heading', { name: /do not have access/i })).toBeVisible();
+  test('shows customers a 404 instead of the console', async ({ customerPage }) => {
+    const response = await customerPage.goto('/admin');
+    expect(response?.status()).toBe(404);
+    await expect(customerPage.getByRole('heading', { name: /do not have access/i })).toHaveCount(0);
     await expect(customerPage.getByRole('heading', { name: 'Dashboard' })).toHaveCount(0);
   });
 

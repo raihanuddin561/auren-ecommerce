@@ -39,6 +39,7 @@ const PUBLIC_MESSAGES: Partial<Record<DomainErrorCode, string>> = {
   FORBIDDEN: 'You do not have permission to do that.',
   NOT_FOUND: 'We could not find that.',
   RATE_LIMITED: 'Too many attempts. Please wait a moment and try again.',
+  STEP_UP_REQUIRED: 'Please confirm your password or authentication code to continue.',
   INTERNAL: 'Something went wrong on our side. Please try again.',
 };
 

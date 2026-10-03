@@ -10,6 +10,11 @@ export const inngest = new Inngest({
   id: 'auren',
   isDev: env.INNGEST_DEV ? env.INNGEST_DEV === '1' : !isProduction,
   ...(env.INNGEST_EVENT_KEY ? { eventKey: env.INNGEST_EVENT_KEY } : {}),
+  // Passed explicitly so request signatures are always verified by /api/inngest outside dev mode.
+  ...(env.INNGEST_SIGNING_KEY ? { signingKey: env.INNGEST_SIGNING_KEY } : {}),
+  ...(env.INNGEST_SIGNING_KEY_FALLBACK
+    ? { signingKeyFallback: env.INNGEST_SIGNING_KEY_FALLBACK }
+    : {}),
   ...(env.INNGEST_BASE_URL ? { baseUrl: env.INNGEST_BASE_URL } : {}),
 });
 

@@ -94,6 +94,11 @@ describe('proxy matcher', () => {
       '/admin/orders',
       '/admin/exports/orders.csv',
       '/shop/x-1.5',
+      // file-like paths inside the dynamic sections are never skipped
+      '/admin/x.png',
+      '/api/export.svg',
+      '/checkout/receipt.ico',
+      '/account/avatar.webp',
     ]) {
       expect(matches(path), path).toBe(true);
     }

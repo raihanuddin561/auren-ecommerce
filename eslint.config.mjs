@@ -20,6 +20,7 @@ export default defineConfig([
     'src/generated/**',
     'prisma/migrations/**',
     '.claude/**',
+    '.local-media/**',
     '.agents/**',
     'docs/**',
     'context/**',

@@ -47,7 +47,8 @@ test.describe('style guide access', () => {
   });
 
   test('is not available to customers', async ({ customerPage }) => {
-    await customerPage.goto('/admin/style-guide');
-    await expect(customerPage.getByRole('heading', { name: /do not have access/i })).toBeVisible();
+    const response = await customerPage.goto('/admin/style-guide');
+    expect(response?.status()).toBe(404);
+    await expect(customerPage.getByRole('heading', { name: 'Style guide' })).toHaveCount(0);
   });
 });

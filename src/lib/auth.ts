@@ -3,6 +3,7 @@ import { cache } from 'react';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { betterAuth } from 'better-auth';
+import { APIError, createAuthMiddleware } from 'better-auth/api';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { nextCookies } from 'better-auth/next-js';
 import { twoFactor } from 'better-auth/plugins';
@@ -12,9 +13,12 @@ import { db } from './db';
 import { sendEmailInBackground } from './email';
 import { env, isProduction, services } from './env';
 import { newId } from './ids';
-
-const THIRTY_DAYS = 60 * 60 * 24 * 30;
-const ONE_DAY = 60 * 60 * 24;
+import { logger } from './logger';
+import {
+  CUSTOMER_SESSION_SECONDS,
+  FRESH_SESSION_SECONDS,
+  staffSessionExpiresAt,
+} from './session-policy';
 
 async function isStaffUser(userId: string): Promise<boolean> {
   const member = await db.staffMember.findUnique({ where: { userId }, select: { id: true } });
@@ -40,6 +44,12 @@ export const auth = betterAuth({
     maxPasswordLength: 128,
     requireEmailVerification: true,
     resetPasswordTokenExpiresIn: 60 * 60,
+    // A reset means the old password may be known to someone else: end every existing session.
+    revokeSessionsOnPasswordReset: true,
+    // Choosing a new password through the reset link also ends the bootstrap-password state.
+    onPasswordReset: async ({ user }) => {
+      await db.user.update({ where: { id: user.id }, data: { mustChangePassword: false } });
+    },
     sendResetPassword: async ({ user, url }) => {
       sendEmailInBackground({ to: user.email, ...resetPasswordMessage({ name: user.name, url }) });
     },
@@ -64,7 +74,12 @@ export const auth = betterAuth({
   // account takeover and would let staff bypass TOTP. Revisit with the customer accounts work.
   account: {
     accountLinking: { enabled: false },
+    // Provider access and refresh tokens are encrypted at rest.
+    encryptOAuthTokens: true,
   },
+
+  // Reset and verification tokens are stored as hashes, so a read of the table cannot be replayed.
+  verification: { storeIdentifier: 'hashed' },
 
   rateLimit: {
     enabled: true,
@@ -81,13 +96,16 @@ export const auth = betterAuth({
   },
 
   session: {
-    expiresIn: THIRTY_DAYS,
-    updateAge: ONE_DAY,
+    // Absolute lifetime: sessions do not slide. Staff sessions are capped much lower on creation.
+    expiresIn: CUSTOMER_SESSION_SECONDS,
+    disableSessionRefresh: true,
+    freshAge: FRESH_SESSION_SECONDS,
   },
 
   user: {
     additionalFields: {
       banned: { type: 'boolean', required: false, defaultValue: false, input: false },
+      mustChangePassword: { type: 'boolean', required: false, defaultValue: false, input: false },
     },
   },
 
@@ -109,14 +127,61 @@ export const auth = betterAuth({
             where: { id: session.userId },
             select: { banned: true },
           });
-          return user?.banned ? false : { data: session };
+          if (user?.banned) return false;
+          // Staff sessions end a fixed time after sign-in, whatever the activity.
+          if (await isStaffUser(session.userId)) {
+            return {
+              data: { ...session, expiresAt: staffSessionExpiresAt(new Date(), session.expiresAt) },
+            };
+          }
+          return { data: session };
         },
       },
     },
   },
 
+  hooks: {
+    // Changing a password always signs out every other device, whatever the client asked for.
+    before: createAuthMiddleware(async (ctx) => {
+      if (ctx.path === '/change-password') {
+        const body = (ctx.body ?? {}) as { currentPassword?: unknown; newPassword?: unknown };
+        // The bootstrap password cannot be changed to itself.
+        if (body.newPassword !== undefined && body.newPassword === body.currentPassword) {
+          throw APIError.from('BAD_REQUEST', {
+            code: 'PASSWORD_UNCHANGED',
+            message: 'Choose a password different from your current one.',
+          });
+        }
+        return { context: { body: { ...body, revokeOtherSessions: true } } };
+      }
+      // Staff always pass password and authenticator code: no trust-this-device shortcut.
+      if (ctx.path?.startsWith('/two-factor/verify-')) {
+        return { context: { body: { ...(ctx.body ?? {}), trustDevice: false } } };
+      }
+    }),
+    // Choosing a new password ends the "bootstrap password" state of a first owner.
+    after: createAuthMiddleware(async (ctx) => {
+      if (ctx.path !== '/change-password') return;
+      const userId = ctx.context.newSession?.user.id;
+      if (!userId) return;
+      try {
+        await db.user.update({ where: { id: userId }, data: { mustChangePassword: false } });
+      } catch (error) {
+        // The flag staying set is the safe direction; the user is simply asked once more.
+        logger.error({ err: error, userId }, 'could not clear the forced password change flag');
+      }
+      logger.info({ userId }, 'password changed; other sessions revoked');
+    }),
+  },
+
   plugins: [
-    twoFactor({ issuer: env.TOTP_ISSUER }),
+    twoFactor({
+      issuer: env.TOTP_ISSUER,
+      // Belt and braces next to the hook above: a trusted-device record is worthless after a second.
+      trustDeviceMaxAge: 1,
+      // Wrong codes lock the account's second factor for a while, across all challenges.
+      accountLockout: { enabled: true, maxFailedAttempts: 5, durationSeconds: 15 * 60 },
+    }),
     nextCookies(), // must stay last
   ],
 });

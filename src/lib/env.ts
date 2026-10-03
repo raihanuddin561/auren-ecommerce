@@ -1,14 +1,13 @@
 import 'server-only';
-import { describeServices, parseServerEnv, type ServerEnv } from './env/schema';
+import { describeServices, parseServerEnv, skipsEnvValidation, type ServerEnv } from './env/schema';
 
 /**
  * Validated server environment. Importing this module fails fast with a readable list of problems.
- * Set SKIP_ENV_VALIDATION=1 only for tooling that never touches the app (for example `prisma generate` in CI).
+ * SKIP_ENV_VALIDATION=1 is honoured for tooling and `next build` only; a production server ignores it.
  */
-export const env: ServerEnv =
-  process.env.SKIP_ENV_VALIDATION === '1'
-    ? (process.env as unknown as ServerEnv)
-    : parseServerEnv(process.env);
+export const env: ServerEnv = skipsEnvValidation(process.env)
+  ? (process.env as unknown as ServerEnv)
+  : parseServerEnv(process.env);
 
 export const services = describeServices(env);
 

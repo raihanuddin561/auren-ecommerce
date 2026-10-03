@@ -52,3 +52,13 @@ run once.
 - Vercel project linked to the repository so previews deploy; the `e2e-preview` workflow reacts to its `deployment_status` events.
 - Vercel environment variables mirror `.env.example` (production values are never stored in the repository).
 - Dependabot opens grouped weekly updates; pnpm's `minimumReleaseAge` policy rejects packages newer than one day, so a fresh release may be skipped until it ages.
+
+## Supply-chain controls (owner actions)
+
+The workflows are hardened in code (actions pinned to commit SHAs with the version in a comment, `persist-credentials: false`, least-privilege `permissions`, digest-pinned images, `minimumReleaseAge: 2880` in `pnpm-workspace.yaml`, CODEOWNERS, Dependabot for npm, Actions and docker-compose with a 3-day cooldown). These settings live in GitHub and cannot be committed:
+
+1. **Ruleset or branch protection on `main`:** require pull requests, **Require review from Code Owners**, and the status checks `typecheck, lint, unit`, `integration (PostgreSQL)`, `production build`, `end-to-end and accessibility`, `conventional commits`, `analyze` (CodeQL), `dependency review` and `audit` (workflow `dependency-audit`, which also runs daily). With a single owner GitHub does not let an author approve their own pull request: either add a second reviewer, or allow the owner to bypass the review requirement while keeping the status checks mandatory.
+2. **Repository settings, Code security:** enable the dependency graph, Dependabot alerts and security updates, **secret scanning and push protection**, and CodeQL default setup off (the workflow is used instead).
+3. **Environment `preview-smoke`:** create it under Settings, Environments, restrict deployment branches to `main`, and put `VERCEL_AUTOMATION_BYPASS_SECRET` there (if Vercel Deployment Protection is on for previews). Previews of other branches then run the smoke test without the secret.
+4. **Actions settings:** default workflow permissions "Read repository contents", and "Require approval for all outside collaborators".
+5. When Dependabot proposes an Action update, check that the new SHA belongs to the tagged release in the upstream repository before merging.

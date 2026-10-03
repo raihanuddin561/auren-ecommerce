@@ -38,3 +38,64 @@ export async function listForEntity(tx: Tx, entityType: string, entityId: string
     take: limit,
   });
 }
+
+// ---------------------------------------------------------------------------------------------
+// Reading for the alert scan (still no updates or deletes of audit rows)
+// ---------------------------------------------------------------------------------------------
+
+export interface AlertRow {
+  id: string;
+  actorId: string | null;
+  action: string;
+  createdAt: Date;
+}
+
+const alertSelect = { id: true, actorId: true, action: true, createdAt: true } as const;
+
+/** Audit rows created in (since, until], oldest first. */
+export const listForAlerts = (
+  tx: Tx,
+  since: Date,
+  until: Date,
+  limit: number,
+): Promise<AlertRow[]> =>
+  tx.auditLog.findMany({
+    where: { createdAt: { gt: since, lte: until } },
+    orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+    take: limit,
+    select: alertSelect,
+  });
+
+/** Rows of the given actions since a time, for the rules that count events over a window. */
+export const listByActionsSince = (
+  tx: Tx,
+  actions: readonly string[],
+  since: Date,
+): Promise<AlertRow[]> =>
+  tx.auditLog.findMany({
+    where: { action: { in: [...actions] }, createdAt: { gt: since } },
+    orderBy: { createdAt: 'asc' },
+    take: 10_000,
+    select: alertSelect,
+  });
+
+/** The scan keeps its own small state (cursor, recently seen ids, cooldowns) in store_settings. */
+export async function readScanState(tx: Tx, key: string): Promise<unknown> {
+  const row = await tx.storeSetting.findUnique({ where: { key } });
+  return row?.value ?? null;
+}
+
+export async function writeScanState(
+  tx: Tx,
+  key: string,
+  value: Prisma.InputJsonValue,
+): Promise<void> {
+  await tx.storeSetting.upsert({ where: { key }, create: { key, value }, update: { value } });
+}
+
+/** Only one scan at a time: returns false if another transaction holds the lock. */
+export async function tryScanLock(tx: Tx, lockId: number): Promise<boolean> {
+  const rows = await tx.$queryRaw<Array<{ locked: boolean }>>`
+    SELECT pg_try_advisory_xact_lock(${lockId}::bigint) AS locked`;
+  return rows[0]?.locked === true;
+}

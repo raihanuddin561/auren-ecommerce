@@ -14,8 +14,9 @@ description: "AUREN's test strategy and conventions: Vitest unit tests, integrat
 | Performance | Lighthouse CI | `lighthouserc.json` | `pnpm lhci` (CI) |
 
 ## Integration database
-- Preferred: **Testcontainers** Postgres (needs Docker); `pnpm test:integration` starts `postgres:16-alpine`, runs `prisma migrate deploy` and shares it across files.
-- Fallback when Docker isn't available: `TEST_DATABASE_URL` pointing to a throwaway PostgreSQL or a Neon test branch (set `DB_POOL_MAX=1` for single-connection servers). Global setup runs `prisma migrate deploy` against it.
+- Local development: the owner's own PostgreSQL (no Docker). `TEST_DATABASE_URL` points at the `auren_test` database created by `scripts/local-db-setup.sql` (see `docs/runbooks/local-database.md`); global setup runs `prisma migrate deploy` against it. This is the real-login path that proves the role tests.
+- Without `TEST_DATABASE_URL`: **Testcontainers** Postgres (needs Docker); `pnpm test:integration` starts `postgres:16-alpine`, runs `prisma migrate deploy` and shares it across files. CI uses a Postgres service container.
+- Any other throwaway PostgreSQL works through `TEST_DATABASE_URL` (set `DB_POOL_MAX=1` for single-connection servers). Never point it at Supabase.
 - Tests never touch the dev or prod database. Global setup refuses a URL whose database name or host does not contain `test`.
 - Files call `resetDatabase()` (tests/integration/helpers.ts) in `beforeEach`; it truncates everything except migration-seeded data with triggers disabled for that transaction only. Ledger-trigger tests need separate `it` blocks, because the database error may drop the connection on some servers.
 

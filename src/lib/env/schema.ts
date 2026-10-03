@@ -1,5 +1,9 @@
 import { z } from 'zod';
 import { staffBypassConfigurationError } from '../test-bypass';
+import { productionIssues, requiresProductionGuards } from './production';
+import { isTrustedProxy } from './proxy-mode';
+
+export { skipsEnvValidation } from './production';
 
 /** Treat blank values (common in .env files and CI) as "not set". */
 const blankToUndefined = (value: unknown) =>
@@ -22,9 +26,27 @@ const serverSchema = z.object({
     .refine((v) => /^postgres(ql)?:\/\//.test(v), 'DATABASE_URL must start with postgresql://'),
   DIRECT_URL: optionalUrl,
   BETTER_AUTH_SECRET: z.string().min(32, 'BETTER_AUTH_SECRET must be at least 32 characters'),
+  // Versioned secrets for rotation, newest first: `2:<new>,1:<old>`. Read by Better Auth itself;
+  // validated here so a typo cannot silently invalidate every session. See docs/runbooks/key-rotation.md.
+  BETTER_AUTH_SECRETS: z.preprocess(
+    blankToUndefined,
+    z
+      .string()
+      .regex(
+        /^\d+:[^,\s]{32,}(,\d+:[^,\s]{32,})*$/,
+        'BETTER_AUTH_SECRETS must look like 2:<secret>,1:<older secret> (each secret 32+ characters)',
+      )
+      .optional(),
+  ),
   // Which proxy headers identify the client address (rate limits, audit). Default: `vercel` on
   // Vercel, `forwarded` outside production, `none` on any other production host.
-  TRUSTED_PROXY: z.preprocess(blankToUndefined, z.enum(['vercel', 'forwarded', 'none']).optional()),
+  TRUSTED_PROXY: z.preprocess(
+    blankToUndefined,
+    z
+      .string()
+      .refine(isTrustedProxy, 'TRUSTED_PROXY must be vercel, hops:<1-99>, forwarded or none')
+      .optional(),
+  ),
 
   // Auth: Google OAuth (optional; the button is hidden when unset)
   GOOGLE_CLIENT_ID: optionalString,
@@ -43,8 +65,17 @@ const serverSchema = z.object({
   // Background jobs (optional: Inngest dev server locally)
   INNGEST_EVENT_KEY: optionalString,
   INNGEST_SIGNING_KEY: optionalString,
+  // Previous signing key, accepted during a rotation window (see docs/runbooks/key-rotation.md).
+  INNGEST_SIGNING_KEY_FALLBACK: optionalString,
   INNGEST_BASE_URL: optionalUrl,
   INNGEST_DEV: z.preprocess(blankToUndefined, z.enum(['0', '1']).optional()),
+
+  // Optional network restriction for the owner and finance roles: comma separated IPv4 addresses,
+  // IPv4 CIDR ranges and IPv6 addresses (matched at /64). Unset = no restriction.
+  PRIVILEGED_IP_ALLOWLIST: optionalString,
+
+  // Optional bearer token that unlocks the detailed /api/health report (monitoring dashboards).
+  HEALTH_DETAIL_TOKEN: z.preprocess(blankToUndefined, z.string().min(24).optional()),
 
   // Observability (optional: disabled when unset)
   SENTRY_DSN: optionalUrl,
@@ -52,10 +83,15 @@ const serverSchema = z.object({
   SENTRY_ORG: optionalString,
   SENTRY_PROJECT: optionalString,
 
-  // Media (used from the catalog work onward; optional now)
-  CLOUDINARY_CLOUD_NAME: optionalString,
-  CLOUDINARY_API_KEY: optionalString,
-  CLOUDINARY_API_SECRET: optionalString,
+  // Bot check on sign-in (optional; both keys or neither). Free Cloudflare Turnstile keys.
+  TURNSTILE_SECRET_KEY: optionalString,
+  NEXT_PUBLIC_TURNSTILE_SITE_KEY: optionalString,
+
+  // Media storage (ADR-026): Vercel Blob in production (token required there), the local
+  // filesystem in development and tests.
+  BLOB_READ_WRITE_TOKEN: optionalString,
+  // Folder for locally stored media (git-ignored). Default: .local-media
+  MEDIA_LOCAL_DIR: optionalString,
 
   // Local seed and tests
   SEED_OWNER_EMAIL: z.preprocess(blankToUndefined, z.email().default('owner@auren.local')),
@@ -67,6 +103,7 @@ const serverSchema = z.object({
 const clientSchema = z.object({
   NEXT_PUBLIC_APP_URL: z.preprocess(blankToUndefined, z.url().default('http://localhost:3000')),
   NEXT_PUBLIC_SENTRY_DSN: optionalUrl,
+  NEXT_PUBLIC_TURNSTILE_SITE_KEY: optionalString,
   // Concierge button: WhatsApp number in international format (digits, optional +). Optional.
   NEXT_PUBLIC_WHATSAPP_NUMBER: z.preprocess(
     blankToUndefined,
@@ -80,15 +117,9 @@ const clientSchema = z.object({
 /** Variables that only make sense as a complete group. */
 const groups: ReadonlyArray<{ name: string; keys: readonly string[] }> = [
   { name: 'Google OAuth', keys: ['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET'] },
+  { name: 'Turnstile', keys: ['TURNSTILE_SECRET_KEY', 'NEXT_PUBLIC_TURNSTILE_SITE_KEY'] },
   { name: 'Upstash Redis', keys: ['UPSTASH_REDIS_REST_URL', 'UPSTASH_REDIS_REST_TOKEN'] },
-  {
-    name: 'Cloudinary',
-    keys: ['CLOUDINARY_CLOUD_NAME', 'CLOUDINARY_API_KEY', 'CLOUDINARY_API_SECRET'],
-  },
 ];
-
-const isLocalUrl = (url: string) =>
-  ['localhost', '127.0.0.1', '[::1]'].includes(new URL(url).hostname);
 
 const fullServerSchema = serverSchema.superRefine((value, ctx) => {
   const record = value as Record<string, unknown>;
@@ -102,17 +133,6 @@ const fullServerSchema = serverSchema.superRefine((value, ctx) => {
           message: `${key} is required when ${present.join(', ')} is set (${group.name})`,
         });
       }
-    }
-  }
-  // A placeholder secret is fine for a local production build (`next build && next start`),
-  // but never for a deployment that serves a real domain.
-  if (value.NODE_ENV === 'production' && !isLocalUrl(value.APP_URL)) {
-    if (value.BETTER_AUTH_SECRET.startsWith('dev-')) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['BETTER_AUTH_SECRET'],
-        message: 'BETTER_AUTH_SECRET must not be a development placeholder in production',
-      });
     }
   }
 });
@@ -134,11 +154,6 @@ const formatIssues = (error: z.ZodError) =>
   });
 
 export function parseServerEnv(source: Record<string, string | undefined>): ServerEnv {
-  // The public URL feeds HSTS, canonical URLs and auth callbacks: never fall back to localhost
-  // on a real production deployment.
-  if (source.VERCEL_ENV === 'production' && !source.APP_URL?.trim()) {
-    throw new EnvValidationError(['APP_URL: is required on a production deployment']);
-  }
   // Test-only admin bypass: refuse to boot anywhere that is not a local test run.
   const bypassIssue = staffBypassConfigurationError(source);
   if (bypassIssue) throw new EnvValidationError([bypassIssue]);
@@ -149,6 +164,12 @@ export function parseServerEnv(source: Record<string, string | undefined>): Serv
   }
   const result = fullServerSchema.safeParse(source);
   if (!result.success) throw new EnvValidationError(formatIssues(result.error));
+  if (requiresProductionGuards(source)) {
+    const issues = productionIssues(result.data, source);
+    if (issues.length > 0) {
+      throw new EnvValidationError(issues.map((issue) => `${issue.path}: ${issue.message}`));
+    }
+  }
   return result.data;
 }
 
@@ -167,8 +188,6 @@ export function describeServices(env: ServerEnv) {
     redis: Boolean(env.UPSTASH_REDIS_REST_URL && env.UPSTASH_REDIS_REST_TOKEN),
     inngestCloud: Boolean(env.INNGEST_EVENT_KEY && env.INNGEST_SIGNING_KEY),
     sentry: Boolean(env.SENTRY_DSN),
-    cloudinary: Boolean(
-      env.CLOUDINARY_CLOUD_NAME && env.CLOUDINARY_API_KEY && env.CLOUDINARY_API_SECRET,
-    ),
+    vercelBlob: Boolean(env.BLOB_READ_WRITE_TOKEN),
   } as const;
 }

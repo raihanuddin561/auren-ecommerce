@@ -1,4 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { resetAttemptMemory } from '../attempts';
 import {
   RATE_LIMITS,
   UNKNOWN_ADDRESS_FACTOR,
@@ -55,7 +56,9 @@ describe('Content-Security-Policy', () => {
   it('lets the browser reach only the Sentry host from the DSN, and Cloudinary for images', () => {
     const csp = buildCsp({ ...base, sentryDsn: 'https://key@o1.ingest.de.sentry.io/42' });
     expect(directive(csp, 'connect-src')).toBe("'self' https://o1.ingest.de.sentry.io");
-    expect(directive(csp, 'img-src')).toContain('https://res.cloudinary.com');
+    expect(directive(csp, 'img-src')).toContain('https://*.public.blob.vercel-storage.com');
+    expect(csp).not.toContain('cloudinary');
+    expect(directive(csp, 'connect-src')).not.toContain('blob.vercel-storage.com');
     expect(buildCsp({ ...base, sentryDsn: 'not a url' })).not.toContain('sentry');
   });
 });
@@ -106,12 +109,48 @@ describe('client address', () => {
     );
   });
 
+  it('counts addresses from the right when a number of own proxies is configured', () => {
+    // The client sent 6.6.6.6 itself; our single proxy appended the address it actually saw.
+    const chain = headersOf({ 'x-forwarded-for': '6.6.6.6, 203.0.113.5' });
+    expect(clientIp(chain, 'hops:1')).toBe('203.0.113.5');
+    // Two proxies of ours: the right-most is the inner proxy, the one before it is the client.
+    const twoProxies = headersOf({ 'x-forwarded-for': '6.6.6.6, 198.51.100.4, 10.0.0.9' });
+    expect(clientIp(twoProxies, 'hops:2')).toBe('198.51.100.4');
+    // A shorter chain than configured, or garbage, is an unknown address (never the first entry).
+    expect(clientIp(headersOf({ 'x-forwarded-for': '203.0.113.5' }), 'hops:2')).toBeNull();
+    expect(clientIp(headersOf({ 'x-forwarded-for': 'junk, not-an-ip' }), 'hops:1')).toBeNull();
+    expect(clientIp(headersOf({}), 'hops:1')).toBeNull();
+    // Platform headers are ignored in hop mode: only our own proxies speak for the client.
+    expect(
+      clientIp(headersOf({ 'x-real-ip': '9.9.9.9', 'x-forwarded-for': '203.0.113.5' }), 'hops:1'),
+    ).toBe('203.0.113.5');
+  });
+
+  it('on Vercel uses only the platform header', () => {
+    expect(
+      clientIp(headersOf({ 'x-real-ip': '9.9.9.9', 'x-forwarded-for': '6.6.6.6' }), 'vercel'),
+    ).toBeNull();
+  });
+
   it('only trusts x-forwarded-for when the deployment says a proxy rewrites it', () => {
     const forged = headersOf({ 'x-forwarded-for': '203.0.113.5, 10.0.0.1' });
     expect(clientIp(forged, 'forwarded')).toBe('203.0.113.5');
     expect(clientIp(forged, 'vercel')).toBeNull();
     expect(clientIp(forged, 'none')).toBeNull();
     expect(clientIp(headersOf({}), 'forwarded')).toBeNull();
+  });
+
+  it('treats an IPv4-mapped IPv6 address as the IPv4 client and rejects zone ids', () => {
+    expect(normalizeIp('::ffff:203.0.113.5')).toBe('203.0.113.5');
+    expect(normalizeIp('::FFFF:198.51.100.7')).toBe('198.51.100.7');
+    expect(normalizeIp('::ffff:999.1.1.1')).toBeNull();
+    // the hex spelling of the same mapped address, and leading zeros in groups
+    expect(normalizeIp('::ffff:cb00:7105')).toBe('203.0.113.5');
+    expect(normalizeIp('0:0:0:0:0:ffff:cb00:7105')).toBe('203.0.113.5');
+    expect(normalizeIp('2001:0db8:abcd:0012::1')).toBe('2001:db8:abcd:12::/64');
+    expect(normalizeIp('::1')).toBe('0:0:0:0::/64');
+    expect(normalizeIp('1::2::3')).toBeNull();
+    expect(normalizeIp('fe80::1%eth0')).toBeNull();
   });
 
   it('rejects values that are not IP addresses and collapses IPv6 to its /64', () => {
@@ -170,12 +209,16 @@ describe('memory rate limiter', () => {
     expect((await rateLimit('login', '8.8.8.8')).success).toBe(true);
   });
 
-  it('gives callers with an unknown address one shared, more generous bucket', async () => {
+  it('gives callers with an unknown address one shared bucket that is smaller than a located caller', async () => {
     const { limit } = RATE_LIMITS.login;
-    for (let i = 0; i < limit * UNKNOWN_ADDRESS_FACTOR; i++) {
+    const shared = Math.ceil(limit * UNKNOWN_ADDRESS_FACTOR);
+    expect(shared).toBeLessThan(limit);
+    for (let i = 0; i < shared; i++) {
       expect((await rateLimit('login', null)).success).toBe(true);
     }
     expect((await rateLimit('login', null)).success).toBe(false);
+    // a located caller is unaffected by the shared bucket
+    expect((await rateLimit('login', '203.0.113.77')).success).toBe(true);
   });
 
   it('hashes account identifiers so emails never become cache keys', () => {
@@ -232,44 +275,160 @@ describe('auth endpoint to limiter mapping', () => {
 });
 
 describe('auth route handler', () => {
-  it('blocks the sixth sign-in attempt from one address before Better Auth runs', async () => {
+  const load = async (respond: (request: Request) => Response | Promise<Response>) => {
     resetMemoryLimits();
-    const handler = vi.fn(async () => Response.json({ ok: true }));
+    resetAttemptMemory();
+    const handler = vi.fn(async (request: Request) => respond(request));
     vi.doMock('@/lib/auth', () => ({ auth: {} }));
     vi.doMock('better-auth/next-js', () => ({
       toNextJsHandler: () => ({ GET: handler, POST: handler }),
     }));
     vi.resetModules();
     const { POST } = await import('../../app/api/auth/[...all]/route');
-    const attempt = (ip: string) =>
-      POST(
-        new Request('http://localhost:3000/api/auth/sign-in/email', {
-          method: 'POST',
-          headers: { 'x-forwarded-for': ip },
-        }),
-      );
+    return { POST, handler };
+  };
+  const signIn = (ip: string, body?: unknown, extra: Record<string, string> = {}) =>
+    new Request('http://localhost:3000/api/auth/sign-in/email', {
+      method: 'POST',
+      headers: { 'x-forwarded-for': ip, 'content-type': 'application/json', ...extra },
+      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+    });
 
-    const statuses: number[] = [];
-    for (let i = 0; i < 6; i++) statuses.push((await attempt('203.0.113.50')).status);
-    expect(statuses).toEqual([200, 200, 200, 200, 200, 429]);
-    expect(handler).toHaveBeenCalledTimes(5);
-    expect((await attempt('203.0.113.51')).status).toBe(200);
-
-    // many addresses guessing one account run into the per-account limit
-    resetMemoryLimits();
-    const guess = (ip: string) =>
-      POST(
-        new Request('http://localhost:3000/api/auth/sign-in/email', {
-          method: 'POST',
-          headers: { 'x-forwarded-for': ip, 'content-type': 'application/json' },
-          body: JSON.stringify({ email: 'Victim@Auren.test', password: 'x' }),
-        }),
-      );
-    const results: number[] = [];
-    for (let i = 0; i < 12; i++) results.push((await guess(`198.51.100.${i + 1}`)).status);
-    expect(results.slice(0, 10).every((status) => status === 200)).toBe(true);
-    expect(results.slice(10)).toEqual([429, 429]);
+  afterEach(() => {
     vi.doUnmock('better-auth/next-js');
     vi.doUnmock('@/lib/auth');
+  });
+
+  it('blocks the sixth sign-in attempt from one address before Better Auth runs', async () => {
+    const { POST, handler } = await load(() => Response.json({ ok: true }));
+    const statuses: number[] = [];
+    for (let i = 0; i < 6; i++) {
+      statuses.push(
+        (await POST(signIn('203.0.113.50', { email: `user${i}@auren.test`, password: 'x' })))
+          .status,
+      );
+    }
+    expect(statuses).toEqual([200, 200, 200, 200, 200, 429]);
+    expect(handler).toHaveBeenCalledTimes(5);
+    expect(
+      (await POST(signIn('203.0.113.51', { email: 'user9@auren.test', password: 'x' }))).status,
+    ).toBe(200);
+  }, 60_000);
+
+  it('delays an account after repeated wrong passwords, from any address, and counts failures only', async () => {
+    const { POST, handler } = await load(() => Response.json({ error: 'bad' }, { status: 401 }));
+    const guess = (n: number) =>
+      POST(signIn(`198.51.100.${n}`, { email: 'Victim@Auren.test', password: 'x' }));
+
+    // three wrong passwords from three different addresses are free, the fourth is delayed
+    expect([(await guess(1)).status, (await guess(2)).status, (await guess(3)).status]).toEqual([
+      401, 401, 401,
+    ]);
+    const delayed = await guess(4);
+    expect(delayed.status).toBe(429);
+    expect(Number(delayed.headers.get('retry-after'))).toBeGreaterThan(0);
+    expect(handler).toHaveBeenCalledTimes(3);
+
+    // a different account is not affected
+    const other = await POST(signIn('198.51.100.9', { email: 'other@auren.test', password: 'x' }));
+    expect(other.status).toBe(401);
+  }, 60_000);
+
+  it('never slows down a user who signs in correctly, and a success clears earlier mistakes', async () => {
+    let wrong = true;
+    const { POST } = await load(() =>
+      wrong ? Response.json({}, { status: 401 }) : Response.json({ ok: true }),
+    );
+    const attempt = (n: number) =>
+      POST(signIn(`192.0.2.${n}`, { email: 'rahim@auren.test', password: 'x' }));
+    expect((await attempt(1)).status).toBe(401);
+    expect((await attempt(2)).status).toBe(401);
+    wrong = false;
+    for (let i = 3; i < 13; i++) expect((await attempt(i)).status).toBe(200);
+    // the counter was cleared by the success: two more mistakes are still free
+    wrong = true;
+    expect((await attempt(20)).status).toBe(401);
+    expect((await attempt(21)).status).toBe(401);
+    expect((await attempt(22)).status).toBe(401);
+  }, 60_000);
+
+  it('refuses sign-in requests that cannot be tied to an account, so none escapes the delay', async () => {
+    const { POST, handler } = await load(() => Response.json({ ok: true }));
+    const form = new Request('http://localhost:3000/api/auth/sign-in/email', {
+      method: 'POST',
+      headers: {
+        'x-forwarded-for': '203.0.113.90',
+        'content-type': 'application/x-www-form-urlencoded',
+      },
+      body: 'email=a@b.test&password=x',
+    });
+    expect((await POST(form)).status).toBe(400);
+    expect((await POST(signIn('203.0.113.91', {}))).status).toBe(400);
+    expect(handler).not.toHaveBeenCalled();
+  }, 60_000);
+
+  it('caps the body by bytes received, not by the content-length header', async () => {
+    const { POST, handler } = await load(() => Response.json({ ok: true }));
+    const huge = { email: 'big@auren.test', password: 'x', padding: 'p'.repeat(20_000) };
+    const response = await POST(signIn('203.0.113.92', huge));
+    expect(response.status).toBe(413);
+    // a body whose content-length lies is cut off the same way
+    const stream = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode('{"email":"a@b.test","pad":"'));
+        controller.enqueue(new Uint8Array(20_000).fill(120));
+        controller.close();
+      },
+    });
+    const lying = new Request('http://localhost:3000/api/auth/sign-out', {
+      method: 'POST',
+      headers: { 'x-forwarded-for': '203.0.113.93', 'content-length': '10' },
+      body: stream,
+      duplex: 'half',
+    } as RequestInit);
+    expect((await POST(lying)).status).toBe(413);
+    expect(handler).not.toHaveBeenCalled();
+  }, 60_000);
+
+  it('treats the unverified-email response as a correct password, not a guess', async () => {
+    const { POST } = await load(() => Response.json({}, { status: 403 }));
+    for (let i = 1; i <= 5; i++) {
+      const response = await POST(
+        signIn(`192.0.2.${i}`, { email: 'new@auren.test', password: 'x' }),
+      );
+      expect(response.status).toBe(403);
+    }
+  }, 60_000);
+
+  it('applies the same refusals to unknown and known accounts', async () => {
+    const { POST } = await load(() => Response.json({}, { status: 401 }));
+    for (const email of ['exists@auren.test', 'does-not-exist@auren.test']) {
+      const codes: number[] = [];
+      for (let i = 0; i < 4; i++) {
+        codes.push((await POST(signIn(`203.0.113.${i + 100}`, { email, password: 'x' }))).status);
+      }
+      expect(codes).toEqual([401, 401, 401, 429]);
+    }
+  }, 60_000);
+
+  it('requires a Turnstile token for sign-in only when Turnstile is configured', async () => {
+    vi.doMock('@/lib/turnstile', () => ({
+      TURNSTILE_HEADER: 'x-turnstile-token',
+      turnstileEnabled: () => true,
+      verifyTurnstile: async (token: string | null) => token === 'good',
+    }));
+    try {
+      const { POST, handler } = await load(() => Response.json({ ok: true }));
+      const body = { email: 'rahim@auren.test', password: 'x' };
+      const missing = await POST(signIn('203.0.113.60', body));
+      expect(missing.status).toBe(400);
+      expect(await missing.json()).toMatchObject({ error: { code: 'BOT_CHECK_FAILED' } });
+      expect(handler).not.toHaveBeenCalled();
+      expect(
+        (await POST(signIn('203.0.113.60', body, { 'x-turnstile-token': 'good' }))).status,
+      ).toBe(200);
+    } finally {
+      vi.doUnmock('@/lib/turnstile');
+    }
   }, 60_000);
 });

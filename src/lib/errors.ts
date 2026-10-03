@@ -9,6 +9,8 @@ export type DomainErrorCode =
   | 'INVALID_TRANSITION'
   | 'IDEMPOTENCY_KEY_REUSED'
   | 'TWO_FACTOR_REQUIRED'
+  | 'STEP_UP_REQUIRED'
+  | 'APPROVAL_REQUIRED'
   | 'INTERNAL';
 
 export type FieldErrors = Record<string, string[]>;

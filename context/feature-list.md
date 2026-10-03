@@ -58,7 +58,7 @@
 |---|---|---|---|
 | 2.1 | Categories admin | P0 | CRUD tree with reorder, image, SEO fields; slug rules; cache invalidation |
 | 2.2 | Product + variants admin | P0 | Create/edit product, options (Size/Color/Fit), auto-generate variant matrix, per-variant SKU/price/compare-at/barcode/weight; draft/active/archived; autosave draft |
-| 2.3 | Media management | P0 | Cloudinary upload (drag-drop, multi), reorder, alt text required, link images to color, dominant color/blur stored |
+| 2.3 | Media management | P0 | Upload through the `MediaProvider` (Vercel Blob in production, local files in development; ADR-026): drag-drop, multi, reorder, alt text required, link images to color, dominant color/blur stored (`product_media`: provider, storage key, url, content type, size, width, height, alt, dominant colour). Security (18.9, 18.12): the upload helper `validateUpload`/`processImage` (`src/lib/media`) is the only path: jpeg, png, webp, avif allowlist (never SVG), type decided by magic bytes, size cap, EXIF and GPS stripped by re-encoding, random keys never derived from client filenames, returned URLs checked against the Blob store host; upload needs `catalog.write` and is audited |
 | 2.4 | Size charts | P0 | CRUD size charts, assign to products, model info |
 | 2.5 | Collections admin | P0 | Manual (drag order) and automatic (rules) collections, hero media, SEO, schedule publish |
 | 2.6 | Product relations | P1 | Curate "Complete the look", similar, upsell |
@@ -90,24 +90,24 @@
 
 | ID | Sub-feature | Pri | Acceptance criteria |
 |---|---|---|---|
-| 4.1 | Cart service | P0 | Guest cookie cart + user cart; add/update/remove; merge on login; stock-aware quantity limits; server-recomputed totals |
+| 4.1 | Cart service | P0 | Guest cookie cart + user cart; add/update/remove; merge on login; stock-aware quantity limits; server-recomputed totals. Security (18.9): the client sends only variant id and quantity (Zod `.strict()`, unknown fields rejected); prices, discounts, shipping and totals are always recomputed from database rows, never taken from the request; opaque HttpOnly cart cookie; caps on lines and quantity per line |
 | 4.2 | Cart drawer and page | P0 | Per DESIGN §4.5 with free-shipping progress, undo remove, save for later |
 | 4.3 | Address model (BD hierarchy) | P0 | `geo_areas` seeded (divisions, districts, thanas); cascading pickers; saved addresses |
 | 4.4 | Shipping zones and rates | P0 | Admin config of zones/rates/free-over threshold/ETA; quote at checkout |
 | 4.5 | Checkout page | P0 | One-page, guest-first, phone-first, distraction-free layout per DESIGN §4.6; inline validation; state persists on refresh |
-| 4.6 | Order placement transaction | P0 | Idempotent submit; single DB transaction: order + items (price & cost snapshot) + stock commit/reserve + discount redemption + outbox event; integration-tested |
+| 4.6 | Order placement transaction | P0 | Idempotent submit; single DB transaction: order + items (price & cost snapshot) + stock commit/reserve + discount redemption + outbox event; integration-tested. Security (18.9): server-side repricing from catalog and promotion rows with `.strict()` input (INV-O8); reservation caps (INV-O11) per phone, session and address (maximum open reservations and units per variant) so stock cannot be hoarded; idempotency key namespaced per actor |
 | 4.7 | Order confirmation page | P0 | Per DESIGN §4.7 with "we will personally confirm your order" message and Placed → Verified → Shipped → Delivered timeline; account creation prompt; browser `OrderPlaced` event |
-| 4.8 | Checkout abuse protection | P0 | Rate limit submit; per-phone order velocity limit; phone blocklist |
+| 4.8 | Checkout abuse protection | P0 | Rate limit submit; per-phone order velocity limit; phone blocklist. Security (18.9): first-time and COD orders need phone OTP (`otp` limiter, 3 per 5 min) and Turnstile before placement; velocity limits per phone, address and IP; blocklist; guest orders cannot be enumerated by order number (see 7.3) |
 
 ## Module 5: Payments
 
 | ID | Sub-feature | Pri | Acceptance criteria |
 |---|---|---|---|
 | 5.1 | Payment provider interface | P0 | `PaymentProvider` contract + registry; config per provider in settings |
-| 5.2 | Cash on Delivery | P0 | COD method with zone eligibility and max-amount rule |
-| 5.3 | SSLCommerz (cards, bKash, Nagad) | P0 | Hosted session, success/fail/cancel return, IPN webhook, server-side validation API check, amount match, idempotent processing; sandbox E2E |
+| 5.2 | Cash on Delivery | P0 | COD method with zone eligibility and max-amount rule. Security (18.9): COD above the risk threshold or from a first-time phone requires OTP verification (4.8); the maximum COD amount is enforced on the server |
+| 5.3 | SSLCommerz (cards, bKash, Nagad) | P0 | Hosted session, success/fail/cancel return, IPN webhook, server-side validation API check, amount match, idempotent processing; sandbox E2E. Security (18.9): webhook verify-then-requery: verify the signature or IPN source, then call the provider validation API with the transaction id and compare amount, currency and order reference with the stored order (`total_minor`); the webhook payload alone never marks an order paid; event ids are unique so replays are harmless (INV-P2, INV-P5) |
 | 5.4 | Payment fees capture | P0 | Fee computed/recorded on success → `order_cost_lines(gateway_fee)` |
-| 5.5 | Refunds | P0 | Full/partial refund from admin (provider API or manual record), updates order payment status, finance |
+| 5.5 | Refunds | P0 | Full/partial refund from admin (provider API or manual record), updates order payment status, finance. Security (18.9): needs `orders.refund` plus step-up (`requireStepUp(staff, 'orders.refund')`, INV-A6), maker-checker above the threshold (18.11) and an audit entry with before and after; a refund can never exceed the captured amount (DB CHECK) |
 | 5.6 | Failed/expired payment recovery | P0 | Reservation release after TTL; "retry payment" link; switch to COD option |
 | 5.7 | Stripe (international) | P2 | Stripe Checkout adapter, multi-currency settlement to base |
 | 5.8 | bKash direct (tokenized) | P2 | Optional direct integration if fees justify |
@@ -116,10 +116,10 @@
 
 | ID | Sub-feature | Pri | Acceptance criteria |
 |---|---|---|---|
-| 6.1 | Order state machine | P0 | Statuses per ARCHITECTURE §6 incl. `under_verification` / `on_hold`; **no transition to `confirmed` except through staff verification**; transitions validated in service; every transition writes `order_events` + outbox |
-| 6.2 | Admin order list | P0 | Filter by status/payment/date/channel/phone/assignee, saved views, bulk print/book courier **for confirmed orders only** (no bulk confirm), CSV export |
+| 6.1 | Order state machine | P0 | Statuses per ARCHITECTURE §6 incl. `under_verification` / `on_hold`; **no transition to `confirmed` except through staff verification**; transitions validated in service; every transition writes `order_events` + outbox. Security (18.9): database-level guard (INV-O9): a CHECK and trigger make any status from `confirmed` onward require `confirmed_by` and `confirmed_at`, and `confirmed_by` must be an active staff member holding `orders.verify`, so a bug or injected SQL in the application cannot confirm an order; no code path other than the verification service writes the status |
+| 6.2 | Admin order list | P0 | Filter by status/payment/date/channel/phone/assignee, saved views, bulk print/book courier **for confirmed orders only** (no bulk confirm), CSV export. Security (18.9): CSV export needs step-up (`customers.export` or `orders.export` purpose) and writes an audit entry (who, filter, row count); no public export links; formula-injection guard |
 | 6.3 | Admin order detail | P0 | Items, customer, timeline, notes, payments, shipments, verification history, cost & **profit breakdown** panel, actions |
-| 6.4 | Order verification queue | P0 | Every order (all channels, all payment methods) lands in `/admin/orders/verification` per ARCHITECTURE §6.1 and DESIGN §4.11; oldest-first with age timer, risk score and flags; claim with 15-min lock; manager assign/reassign; only `orders.verify` holders can act (authz tests) |
+| 6.4 | Order verification queue | P0 | Every order (all channels, all payment methods) lands in `/admin/orders/verification` per ARCHITECTURE §6.1 and DESIGN §4.11; oldest-first with age timer, risk score and flags; claim with 15-min lock; manager assign/reassign; only `orders.verify` holders can act (authz tests). Security (18.9): unusual verification volume per staff member raises an alert (18.11); claim locks are server-side |
 | 6.5 | Manual order entry | P0 | Staff creates order for FB/Instagram/WhatsApp/phone customers with `channel`; same pricing/stock rules; enters verification queue (self-verify only if setting enabled) |
 | 6.6 | Invoices and packing slips | P0 | Branded PDF invoice + packing slip; batch print |
 | 6.7 | Courier interface + Pathao | P0 | `CourierProvider`; book consignment, store tracking & **courier cost**; status webhook/polling → shipment events |
@@ -128,23 +128,23 @@
 | 6.10 | COD remittance reconciliation | P1 | Import/enter courier remittance; match against delivered COD shipments; flag mismatches; record COD fees |
 | 6.11 | RTO handling | P0 | Delivery-failed → returned to origin: restock, record RTO loss cost, flag phone |
 | 6.12 | Returns and exchanges | P0 | Customer self-service request (window rules), admin approve/receive/inspect, restock or write-off, refund / store credit / exchange-for-size flow |
-| 6.13 | Verification checklist and outcomes | P0 | Required checklist (genuine, items/size, address, payment, stock) gates **Confirm**; outcomes confirm / call back later / cancel with required reason; every attempt logged in `order_verification_attempts`; click-to-call + SMS/WhatsApp templates; `confirmed_by` recorded; cancel releases stock, auto-refunds paid orders, `fake_order` adds risk flag |
-| 6.14 | Edit order during verification | P0 | Change size/colour/qty, add/remove items, fix address before confirming; server-side re-price and stock adjust; audit + timeline entry; customer notified of changed total |
+| 6.13 | Verification checklist and outcomes | P0 | Required checklist (genuine, items/size, address, payment, stock) gates **Confirm**; outcomes confirm / call back later / cancel with required reason; every attempt logged in `order_verification_attempts`; click-to-call + SMS/WhatsApp templates; `confirmed_by` recorded; cancel releases stock, creates a refund request for paid orders that goes through the normal refund controls (permission, step-up, maker-checker above the threshold; staff-initiated, nothing is cancelled or refunded automatically), `fake_order` adds risk flag. Security (18.9): the checklist result is stored and `confirmed_by` is set from the session, never from input (INV-O9) |
+| 6.14 | Edit order during verification | P0 | Change size/colour/qty, add/remove items, fix address before confirming; server-side re-price and stock adjust; audit + timeline entry; customer notified of changed total. Security (18.9): edit-then-confirm re-prices on the server with the same rules as 4.6 and records an audit entry |
 | 6.15 | Verification SLA and escalation | P0 | Configurable working hours, SLA and attempt threshold (OD-11); overdue highlight + manager alert; "needs manager review" flag after N failed attempts; callback reminders at `next_attempt_at`; **no automatic cancellation**: system must never cancel an order (test asserts this) |
 
 ## Module 7: Customer Accounts
 
 | ID | Sub-feature | Pri | Acceptance criteria |
 |---|---|---|---|
-| 7.1 | Auth pages | P0 | Login, register, forgot/reset, verify; phone OTP login; premium styling; rate limited |
+| 7.1 | Auth pages | P0 | Login, register, forgot/reset, verify; phone OTP login; premium styling; rate limited. Security (18.9): uses the controls from 18.3 and 18.4 (fail-closed limits, Turnstile, no enumeration, sessions revoked on reset); phone OTP login limited per phone and per address |
 | 7.2 | Account dashboard | P0 | Overview, profile, preferences (sizes, marketing consent) |
-| 7.3 | Order history and tracking | P0 | List + detail with timeline and courier tracking link; reorder |
+| 7.3 | Order history and tracking | P0 | List + detail with timeline and courier tracking link; reorder. Security (18.9): guest tracking needs a second factor (order number plus the phone or email on the order) and a tracking token with 128 bits of entropy of which only the SHA-256 hash is stored, compared in constant time, rate limited and never enumerable (INV-O10); token pages send `Referrer-Policy: no-referrer`; signed-in customers see only their own orders (ownership check in every query) |
 | 7.4 | Address book | P0 | CRUD with default address |
 | 7.5 | Wishlist | P0 | Guest (local) + account wishlist, merge on login, move to bag |
 | 7.6 | Returns self-service | P0 | Start return/exchange from order detail (uses 6.12) |
 | 7.7 | Store credit and gift card balance | P1 | View balance & history |
 | 7.8 | Admin customer management | P0 | Customer list/search, detail (orders, LTV, notes, segment), block/unblock |
-| 7.9 | Data export / account deletion | P1 | Customer can request export/deletion; admin workflow |
+| 7.9 | Data export / account deletion | P1 | Customer can request export/deletion; admin workflow. Security (18.9): export and deletion requests are audited, delivered through expiring signed links, contain only that customer's data, and staff handling them need step-up |
 
 ## Module 8: Content and Landing Experience
 
@@ -174,13 +174,13 @@
 
 | ID | Sub-feature | Pri | Acceptance criteria |
 |---|---|---|---|
-| 10.1 | Discount engine | P0 | Percentage, fixed, free-shipping; scope (order/product/collection/category); min subtotal/qty; dates; usage limits per code/customer; stacking rules; fully unit-tested allocation |
-| 10.2 | Discount codes at checkout | P0 | Apply/remove, clear error messages, redemption recorded in-transaction |
+| 10.1 | Discount engine | P0 | Percentage, fixed, free-shipping; scope (order/product/collection/category); min subtotal/qty; dates; usage limits per code/customer; stacking rules; fully unit-tested allocation. Security (18.9): usage limits per code and per customer are enforced inside the order transaction with a conditional UPDATE (no check-then-write race), so concurrent checkouts cannot exceed them (INV-D1) |
+| 10.2 | Discount codes at checkout | P0 | Apply/remove, clear error messages, redemption recorded in-transaction. Security (18.9): code attempts are rate limited (`couponApply`) and failures use one generic message, so codes cannot be enumerated |
 | 10.3 | Automatic promotions | P1 | Auto-applied promos, free shipping threshold banner sync |
 | 10.4 | Buy X Get Y | P2 | BXGY rules |
 | 10.5 | Compare-at / sale display | P0 | Sale price display rules, "Sale" collection automation |
-| 10.6 | Gift cards | P2 | Sell/issue gift cards, hashed codes, redeem at checkout |
-| 10.7 | Store credit | P1 | Ledger; issue from returns/goodwill; redeem at checkout |
+| 10.6 | Gift cards | P2 | Sell/issue gift cards, hashed codes, redeem at checkout. Security (18.9): gift card codes are high-entropy, stored hashed and redeemed atomically |
+| 10.7 | Store credit | P1 | Ledger; issue from returns/goodwill; redeem at checkout. Security (18.9): the store credit ledger is append-only: `REVOKE UPDATE, DELETE` for `auren_app` plus the ledger triggers (ADR-021) |
 
 ## Module 11: Finance and Cost Tracking
 
@@ -204,8 +204,8 @@
 
 | ID | Sub-feature | Pri | Acceptance criteria |
 |---|---|---|---|
-| 12.1 | Review submission | P1 | Rating, title, body, fit feedback, size purchased, photos; verified purchase from delivered orders |
-| 12.2 | Moderation | P1 | Admin approve/reject/respond; spam rate limits |
+| 12.1 | Review submission | P1 | Rating, title, body, fit feedback, size purchased, photos; verified purchase from delivered orders. Security (18.9): review text is sanitised (no HTML, length caps, links stripped or `rel="nofollow ugc"`), photo uploads are signed and re-encoded, one review per verified purchase, `reviewSubmit` rate limit |
+| 12.2 | Moderation | P1 | Admin approve/reject/respond; spam rate limits. Security (18.9): moderation actions are audited and only sanitised content is ever rendered |
 | 12.3 | PDP review display | P1 | Summary, fit meter, photo-first list, filters; AggregateRating JSON-LD |
 | 12.4 | Review request email | P1 | Sent N days after delivery |
 | 12.5 | UGC / Instagram grid | P2 | Curated UGC section |
@@ -233,7 +233,7 @@
 | 14.5 | Product feeds | P1 | Google Merchant + Meta catalog feeds, cached, validated |
 | 14.6 | OG images | P0 | `next/og` templates for product, collection, article, default |
 | 14.7 | Performance budgets | P0 | Lighthouse CI budgets (ARCHITECTURE §10) on Home/PLP/PDP/Checkout; pass on mobile |
-| 14.8 | Image pipeline audit | P0 | All images sized, `sizes` correct, priority on LCP, placeholders, AVIF |
+| 14.8 | Image pipeline audit | P0 | All images sized, `sizes` correct, priority on LCP, placeholders, AVIF; product images come from the Vercel Blob store host (CSP `img-src`), variants are generated at upload (no on-the-fly transformation service); the `public/seed` SVG placeholders are development only and are gone from the storefront by this point |
 
 ## Module 15: Admin Dashboard, Analytics and Settings
 
@@ -268,3 +268,22 @@
 | 17.3 | Loyalty program | P2 | Points earn/redeem, tiers |
 | 17.4 | Pre-orders and limited drops | P2 | Drop countdown, waitlist, pre-order inventory |
 | 17.5 | PWA enhancements | P2 | Installable, offline fallback page |
+
+## Module 18: Security Hardening
+
+> Source: security audit 2026-10-02 (finding IDs in brackets). Runs before the commerce modules (4-6) so they inherit the controls. Items that need a live Postgres role setup are verified on Docker once WSL is installed.
+
+| ID | Sub-feature | Pri | Acceptance criteria |
+|---|---|---|---|
+| 18.1 | Production boot guards | P0 | [H1, H2, M1, M2] In production the app refuses to start without: explicit https `APP_URL`; non-placeholder `BETTER_AUTH_SECRET` (denylist + minimum entropy); Upstash; `INNGEST_SIGNING_KEY` + `INNGEST_EVENT_KEY` with `INNGEST_DEV` off; an email provider; trusted-proxy mode other than `none`; (18.12) distinct `DATABASE_URL` (Supabase transaction pooler) and `DIRECT_URL` (direct/session) both with TLS, and `BLOB_READ_WRITE_TOKEN`. `SKIP_ENV_VALIDATION` honoured only during build. `/api/inngest` gets the signing key explicitly. A unit test per refusal |
+| 18.2 | Database least privilege | P0 | [H3] Roles `auren_migrator` (owner, DDL, used via `DIRECT_URL`) and `auren_app` (runtime, DML only, no DDL/TRUNCATE, not the owner); REVOKE UPDATE/DELETE/TRUNCATE on ledgers; column-level UPDATE on outbox delivery columns; default privileges for future tables; integration test connecting as `auren_app` proves it cannot alter or delete audit rows or disable triggers |
+| 18.3 | Session hardening | P0 | [H4, L1, L2] Sessions revoked on password reset/change; staff session absolute lifetime 8-12 h; step-up (fresh password/TOTP) helper for sensitive staff actions; "sign out everywhere"; owner forced to enrol TOTP and change the generated password at first sign-in; token hashing/encryption where supported; documented secret-rotation procedure |
+| 18.4 | Fail-closed auth rate limits | P0 | [H2, M2, M3] Auth limiters fail closed when Redis is down; hop-count client-IP mode (Nth address from the right); unknown IP gets a stricter bucket; progressive per-account delay counting failures only; per-user TOTP attempt limiter; Turnstile (optional env) on admin sign-in and customer sign-in; no-enumeration integration test for sign-up/reset/sign-in |
+| 18.5 | CI/CD supply-chain hardening | P0 | [M6, L10] Actions pinned to commit SHAs; `e2e-preview` no longer runs PR code with secrets; `persist-credentials: false`; dependency-review + CodeQL; blocking `pnpm audit --prod --audit-level high` on main; digest-pinned images; explicit `minimumReleaseAge`; CODEOWNERS; Dependabot for actions and docker-compose |
+| 18.6 | Nonce CSP for dynamic sections | P0 | [M4] ADR superseding ADR-016 for `/admin`, `/checkout`, `/account`, `/api` (closes OD-12): per-request nonce set in `proxy.ts`, static header scoped to the storefront; hydration E2E per section; add `Cross-Origin-Resource-Policy`, `Referrer-Policy: no-referrer` on token pages, extended Permissions-Policy |
+| 18.7 | Telemetry hygiene | P0 | [M5, L3, L4, L6] Sentry exception-message scrubbing; pino error serializer keeps only Prisma `code`/`meta.target`; source maps deleted after upload; `/api/health` public response status-only; customers hitting `/admin` get 404; streaming size cap on auth body; test that service errors never leak internals |
+| 18.8 | Secret-scan follow-up | P0 | [L8] Placeholder match applies to the matched value only; `pnpm secrets:history` clean; GitHub secret scanning + push protection enabled (runbook step) |
+| 18.9 | Commerce abuse-control specs | P0 | [threat model 1-13] Acceptance criteria added to 4.x, 5.x, 6.x, 7.x, 10.x, 12.x, 2.3 for: server-side repricing + `.strict()` Zod, webhook verify-then-requery, coupon atomic limits, reservation caps, COD OTP + Turnstile + velocity limits, DB-level guard that `confirmed` requires `confirmed_by`, guest tracking token (hashed, 128-bit), upload validation (magic bytes, allowlist, re-encode; see 18.12), review sanitising, export step-up + audit |
+| 18.10 | Security operations | P1 | [L9, M7] `SECURITY.md` and `/.well-known/security.txt`; incident-response and key-rotation runbooks; no PII in outbox/audit payloads (ids only); retention job for dispatched outbox rows |
+| 18.11 | Insider-risk controls | P1 | Maker-checker above a refund/adjustment threshold; audit-log alerts (refunds, exports, role changes, `role_permissions` edits, unusual verification volume); optional IP allowlist for owner/finance |
+| 18.12 | Hosting and media infrastructure | P0 | ADR-025/026. Supabase Postgres in production: pooler and direct URLs validated, RLS with one `auren_app` policy on every public table, `anon`/`authenticated`/`service_role` revoked (only when those roles exist), Data API documented as off, integration test. Local development on the owner's own PostgreSQL (setup script and runbook, `TEST_DATABASE_URL`). Media: `MediaProvider` with local and Vercel Blob adapters, private signed delivery for receipts and invoices, upload validation helper (magic bytes, no SVG, EXIF stripped, random keys, host check), media route handlers safe against path traversal, CSP `img-src` for the Blob host; Cloudinary removed |

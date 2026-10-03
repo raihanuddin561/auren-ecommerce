@@ -111,7 +111,7 @@ describe('staff access control', () => {
     twoFactorEnabled?: boolean;
   }) =>
     vi.spyOn(auth.api, 'getSession').mockResolvedValue({
-      session: { id: 's1' },
+      session: { id: 's1', createdAt: new Date() },
       user: { banned: false, twoFactorEnabled: false, ...user },
     } as never);
 
@@ -177,8 +177,16 @@ describe('owner bootstrap', () => {
       body: { email: 'owner@auren.test', password: TEST_PASSWORD },
     });
     vi.spyOn(auth.api, 'getSession').mockResolvedValue({
-      session: { id: 's1' },
+      session: { id: 's1', createdAt: new Date() },
       user: { ...session.user, banned: false, twoFactorEnabled: false },
+    } as never);
+    // The bootstrap password must be replaced before anything else, including two-factor setup.
+    expect(session.user.mustChangePassword).toBe(true);
+    expect((await getStaff()).status).toBe('password_change_required');
+
+    vi.spyOn(auth.api, 'getSession').mockResolvedValue({
+      session: { id: 's1', createdAt: new Date() },
+      user: { ...session.user, banned: false, twoFactorEnabled: false, mustChangePassword: false },
     } as never);
     const resolution = await getStaff();
     expect(resolution.status).toBe('two_factor_required');

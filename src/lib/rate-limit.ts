@@ -7,8 +7,6 @@ import { getRedis } from './redis';
 /** Limits from ARCHITECTURE section 11. Window in seconds. */
 export const RATE_LIMITS = {
   login: { limit: 5, windowSeconds: 60 },
-  /** Per account, across every address: stops distributed password guessing. */
-  loginAccount: { limit: 10, windowSeconds: 900 },
   register: { limit: 5, windowSeconds: 300 },
   passwordReset: { limit: 3, windowSeconds: 300 },
   verificationEmail: { limit: 3, windowSeconds: 300 },
@@ -25,6 +23,25 @@ export const RATE_LIMITS = {
 
 export type LimiterName = keyof typeof RATE_LIMITS;
 
+/**
+ * Limiters that protect credentials and account recovery. When Redis is configured but cannot be
+ * reached they REFUSE the request instead of falling back to a per-instance counter, so an outage
+ * cannot be used to guess passwords or flood reset emails. Read-only and commerce limiters
+ * degrade to memory (INV-A4) because blocking them would take the site down with Redis.
+ */
+export const FAIL_CLOSED: ReadonlySet<LimiterName> = new Set<LimiterName>([
+  'login',
+  'register',
+  'passwordReset',
+  'verificationEmail',
+  'twoFactor',
+  'otp',
+  'authMutation',
+]);
+
+/** How long a caller is told to wait when a fail-closed limiter cannot be consulted. */
+export const UNAVAILABLE_RETRY_SECONDS = 30;
+
 export interface RateLimitResult {
   success: boolean;
   limit: number;
@@ -33,8 +50,14 @@ export interface RateLimitResult {
   retryAfterSeconds: number;
 }
 
-/** Callers whose address cannot be determined share one bucket with this many times the limit. */
-export const UNKNOWN_ADDRESS_FACTOR = 10;
+/**
+ * Callers whose address cannot be determined (no trusted proxy header, or a chain shorter than the
+ * configured hop count) all share ONE bucket with this fraction of the normal limit. Anyone who
+ * dodges the proxy therefore gets less room than a located caller, not more.
+ */
+export const UNKNOWN_ADDRESS_FACTOR = 0.5;
+
+const scaled = (limit: number, factor: number) => Math.max(1, Math.ceil(limit * factor));
 
 // ---------------------------------------------------------------------------------------------
 // In-memory fallback (sliding window log). Per server instance: fine for local work, tests and as
@@ -90,7 +113,7 @@ function upstashFor(name: LimiterName, factor: number): Ratelimit | null {
     const { limit, windowSeconds } = RATE_LIMITS[name];
     limiter = new Ratelimit({
       redis,
-      limiter: Ratelimit.slidingWindow(limit * factor, `${windowSeconds} s`),
+      limiter: Ratelimit.slidingWindow(scaled(limit, factor), `${windowSeconds} s`),
       prefix: `auren:rl:${name}`,
       analytics: false,
       timeout: UPSTASH_TIMEOUT_MS,
@@ -107,8 +130,9 @@ export const hashIdentifier = (value: string): string =>
 /**
  * Counts one attempt for `identifier` (an IP address, a hashed email, or a user id once signed in)
  * against the named limit. Pass null when the address is unknown. Uses Upstash Redis when
- * configured, otherwise memory. If Redis errors or times out, memory takes over, so a Redis outage
- * degrades to per-instance limiting instead of locking customers out (INV-A4).
+ * configured, otherwise memory. If Redis errors or times out, credential limiters (FAIL_CLOSED)
+ * refuse the request; the others fall back to memory, so a Redis outage degrades to per-instance
+ * limiting instead of taking the storefront down (INV-A4).
  */
 export async function rateLimit(
   name: LimiterName,
@@ -133,12 +157,20 @@ export async function rateLimit(
             : Math.max(1, Math.ceil((result.reset - Date.now()) / 1000)),
         };
       }
-      logger.warn({ limiter: name }, 'rate limiter timed out; using memory');
+      logger.warn({ limiter: name }, 'rate limiter timed out');
     } catch (error) {
-      logger.error({ err: error, limiter: name }, 'rate limiter unavailable; using memory');
+      logger.error({ err: error, limiter: name }, 'rate limiter unavailable');
+    }
+    if (FAIL_CLOSED.has(name)) {
+      return {
+        success: false,
+        limit: scaled(limit, factor),
+        remaining: 0,
+        retryAfterSeconds: UNAVAILABLE_RETRY_SECONDS,
+      };
     }
   }
-  return memoryLimit(`${name}:${id}`, limit * factor, windowSeconds);
+  return memoryLimit(`${name}:${id}`, scaled(limit, factor), windowSeconds);
 }
 
 /**

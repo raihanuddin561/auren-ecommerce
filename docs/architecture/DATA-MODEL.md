@@ -54,10 +54,10 @@ erDiagram
 
 | Table | Key columns | Notes |
 |---|---|---|
-| `users` | email (unique, citext), phone (unique, E.164), name, email_verified, phone_verified, image, banned, two_factor_enabled | Better Auth core. There is no `role` column: a user is staff if and only if an active `staff_members` row exists (ADR-017). Credential accounts use `accounts.account_id = users.id` |
+| `users` | email (unique, citext), phone (unique, E.164), name, email_verified, phone_verified, image, banned, two_factor_enabled, must_change_password | Better Auth core. There is no `role` column: a user is staff if and only if an active `staff_members` row exists (ADR-017). Credential accounts use `accounts.account_id = users.id`. `must_change_password` is set for the first owner (bootstrap password) and cleared when the password is changed; staff with it set are held at `/admin/security` |
 | `sessions`, `accounts`, `verifications`, `two_factors` | Better Auth managed | OAuth, email verification, TOTP secrets and backup codes |
 | `staff_members` | user_id (unique), role (`owner`,`admin`,`manager`,`order_verifier`,`fulfillment`,`finance`,`content_editor`,`support`), active, invited_by | 2FA state lives on `users.two_factor_enabled` (single source of truth) |
-| `role_permissions` | role, permission (e.g. `orders.verify`, `orders.update`, `finance.read`), created_at | PK(role, permission). Default grants are inserted by migration `add_staff_access` and guarded by a drift test against `lib/permissions.ts`; editable by owner; the owner role always holds every permission in code |
+| `role_permissions` | role, permission (e.g. `orders.verify`, `orders.update`, `finance.read`), created_at | PK(role, permission). Default grants are inserted by migration `add_staff_access` and guarded by a drift test against `lib/permissions.ts` (also for later migrations that add permissions); read-only for the application role (ADR-021), changed only by migrations; every insert, update or delete writes an `audit_logs` row through a trigger (`role_permissions_audit_trg`, ADR-023); the owner role always holds every permission in code |
 | `customer_profiles` | user_id, birthday, preferred_size_top/bottom, marketing_opt_in_email/sms, total_spent_minor, orders_count, first_order_at, segment, notes, deleted_at | Denormalized stats updated by events |
 | `addresses` | user_id, label, full_name, phone, line1, line2, area, city/thana, district, division, postal_code, country (ISO-2), is_default | BD address hierarchy (division → district → thana/area) |
 | `geo_areas` | id, parent_id, level (`division`,`district`,`thana`,`area`), name, name_bn, courier_codes (jsonb) | Drives address pickers + courier zone mapping |
@@ -72,7 +72,7 @@ erDiagram
 | `product_option_values` | option_id, value, label, swatch_hex, swatch_image, position | |
 | `product_variants` | product_id, sku (unique), barcode, price_minor, compare_at_minor, avg_cost_minor, currency, weight_g, status, position, is_default | Price lives on the variant |
 | `variant_option_values` | variant_id, option_value_id | PK (variant_id, option_value_id) |
-| `product_media` | product_id, option_value_id (nullable, ties images to a color), type (`image`,`video`), provider_public_id, url, alt (required), width, height, dominant_color, blur_data, position | |
+| `product_media` | product_id, option_value_id (nullable, ties images to a color), type (`image`,`video`), provider (`static`,`local`,`vercel-blob`), storage_key (random, never a client filename), url, content_type (jpeg/png/webp/avif, never SVG), size_bytes, alt (required), width, height, dominant_color, blur_data, position | Uploads re-encoded and metadata-stripped by `lib/media` (ADR-026); CHECKs: uploads need key, type and size; `static` rows are development placeholders |
 | `size_charts` | name, unit (`cm`,`in`), table jsonb (rows × measurements), how_to_measure (markdown), model_info | |
 | `collections` | slug, title, description, hero_media, type (`manual`,`automatic`), rules jsonb (e.g. tag in, price <, category =), sort_order (`manual`,`best_selling`,`newest`,`price_asc`…), seo_*, published_at, is_featured | |
 | `collection_products` | collection_id, product_id, position | Materialized for automatic collections via job |
@@ -159,7 +159,7 @@ erDiagram
 | Table | Key columns | Notes |
 |---|---|---|
 | `expense_categories` | name, type (`marketing`,`payroll`,`rent`,`utilities`,`software`,`photography`,`packaging_stock`,`logistics`,`professional_fees`,`bank_charges`,`misc`), is_cogs bool | Seeded; editable |
-| `expenses` | expense_date, category_id, campaign_id (nullable), vendor, description, amount_minor, currency, payment_method, reference, attachment_url, recurring_expense_id, created_by | Receipts stored in Cloudinary/private bucket |
+| `expenses` | expense_date, category_id, campaign_id (nullable), vendor, description, amount_minor, currency, payment_method, reference, attachment_url, recurring_expense_id, created_by | Receipts stored in private media storage (ADR-026): no public URL, short-lived signed links only |
 | `recurring_expenses` | category_id, vendor, amount_minor, cadence (`monthly`,`weekly`,`yearly`), day_of_period, starts_on, ends_on, is_active | Job generates `expenses` |
 | `marketing_campaigns` | name, channel (`meta`,`google`,`tiktok`,`influencer`,`email`,`offline`), utm_campaign, starts_on, ends_on, budget_minor | Attribution via `orders.utm` |
 | `packaging_profiles` | name, cost_minor, is_default | Applied to `order_cost_lines` at fulfillment |
@@ -169,10 +169,11 @@ erDiagram
 
 | Table | Key columns | Notes |
 |---|---|---|
-| `outbox_events` | type, aggregate_type, aggregate_id, payload jsonb, status (`pending`,`dispatched`,`failed`), attempts, available_at (backoff), locked_until (dispatcher lease), last_error, created_at, dispatched_at | Written in business transactions. Immutable content: a trigger blocks edits to type/payload/aggregate, deletes and truncation (ADR-018) |
+| `outbox_events` | type, aggregate_type, aggregate_id, payload jsonb, status (`pending`,`dispatched`,`failed`), attempts, available_at (backoff), locked_until (dispatcher lease), last_error, created_at, dispatched_at | Written in business transactions. Immutable content: a trigger blocks edits to type/payload/aggregate and truncation (ADR-018); a dispatched event can never change (ADR-021); a dispatched row is deleted only by the migrator-owned `purge_finished_events(retain_days >= 7)` (ADR-024), never a pending or failed one |
 | `processed_events` | consumer, event_id, processed_at | PK(consumer, event_id). Consumer inbox that makes event handlers idempotent |
 | `idempotency_keys` | key (PK, stored as `<actor>:<client key>`), scope, request_hash, response jsonb, expires_at, created_at | Checkout & payment submits. Claimed in the same transaction as the work; a different scope or request hash is rejected |
 | `audit_logs` | actor_id (no FK, so the trail outlives accounts), action (`entity.verb`), entity_type, entity_id, before jsonb, after jsonb, ip, user_agent, created_at | Append-only (update, delete and truncate blocked by trigger). Secrets are redacted and money stored as exact text before writing |
+| `approval_requests` | kind (`refund`, `stock_adjustment`), subject_type, subject_id, amount_minor, currency, status (`pending`,`approved`,`rejected`), requested_by, decided_by, reason, decision_note, requested_at, decided_at, consumed_at | Maker-checker. CHECKs: decider is never the requester, a decision has a decider and a time, only an approved request can be consumed; unique open request per subject; trigger makes decisions final and an approval single-use; no deletes (ADR-023). Thresholds live in `store_settings` key `approvals.thresholds` |
 | `notification_logs` | channel (`email`,`sms`), template, to, status, provider_ref, error, related_type, related_id | |
 | `store_settings` | key (PK), value jsonb | Store info, currency, tax, policies, flags |
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { Menu, Search } from 'lucide-react';
+import Link from 'next/link';
 import { useRef, useState } from 'react';
 import { IconButton } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
@@ -107,7 +108,10 @@ export function Topbar({ staff }: { staff: ShellStaff }) {
             <p className="mt-1 type-small text-fg-muted capitalize">
               {staff.role.replaceAll('_', ' ')}
             </p>
-            <div className="mt-3 border-t border-line pt-2">
+            <div className="mt-3 flex flex-col items-start gap-1 border-t border-line pt-2">
+              <Link href="/admin/account" className="type-small underline underline-offset-4">
+                Account security
+              </Link>
               <SignOutButton />
             </div>
           </PopoverContent>
