@@ -59,6 +59,11 @@ describe('maintenance mode', () => {
     expect(isUnderMaintenance('/administrator', '1')).toBe(true);
   });
 
+  it('keeps the security contact reachable during maintenance', () => {
+    expect(isUnderMaintenance('/.well-known/security.txt', '1')).toBe(false);
+    expect(isUnderMaintenance('/.well-known-x', '1')).toBe(true);
+  });
+
   it('answers with a 503, Retry-After and no caching', () => {
     process.env.MAINTENANCE_MODE = '1';
     try {

@@ -196,6 +196,14 @@ describe('message scrubbing keeps debugging information', () => {
     expect(scrubMessage(text)).not.toContain(secret);
   });
 
+  it('removes JWT-shaped values and E.164 numbers, quoted or bare', () => {
+    const jwt = 'eyJhbGciOiJub25lIn0.eyJzdWIiOiJ1In0.sig';
+    const out = scrubMessage(`bad token ${jwt} for +14155550123 and "+8801712345678"`);
+    expect(out).not.toContain('eyJ');
+    expect(out).not.toContain('14155550123');
+    expect(out).not.toContain('8801712345678');
+  });
+
   it('removes values quoted by driver errors, wherever the message starts', () => {
     expect(scrubMessage('Transaction failed: Invalid `prisma.user.create()` invocation')).toBe(
       'Database error (details removed)',

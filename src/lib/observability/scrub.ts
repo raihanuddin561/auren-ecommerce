@@ -49,6 +49,8 @@ export function scrubMessage(text: string): string {
       .replace(/([a-z][a-z0-9+.-]*:\/\/)[^\s:@/]+:[^\s@/]+@/gi, '$1[redacted]@')
       // Authorization: Bearer x / Basic x (the scheme and the credential)
       .replace(/\b(Bearer|Basic)\s+[A-Za-z0-9._~+/=-]+/gi, '$1 [redacted]')
+      // JWT-shaped values (header.payload[.signature]) even when each segment is short
+      .replace(/\beyJ[\w-]{4,}\.[\w-]{4,}(?:\.[\w-]*)?/g, '[jwt]')
       // "password":"x", password=x, access_token: x, cookie: a=1; b=2 (to the end of the value)
       .replace(
         new RegExp(`(["']?${SECRET_NAME}["']?\\s*[:=]\\s*)("[^"]*"|'[^']*'|[^\\s,;&}]+)`, 'gi'),

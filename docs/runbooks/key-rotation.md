@@ -10,7 +10,9 @@ Rotate on a schedule (at least yearly), when a person with access leaves, and im
 | Database passwords (`auren_app`, `auren_migrator`) | runtime and migrations | Connections drop and reconnect |
 | `UPSTASH_REDIS_REST_TOKEN` | rate limits | Briefly fails closed for auth limits |
 | `RESEND_API_KEY` | transactional email | None |
-| `CLOUDINARY_API_SECRET` | signed uploads | None |
+| `BLOB_READ_WRITE_TOKEN` | media uploads to Vercel Blob (ADR-026) | None; create the new token in the Vercel dashboard, deploy, delete the old one |
+| `TURNSTILE_SECRET_KEY` | bot check on sign-in and checkout | Rotate in the Cloudflare dashboard; forms fail closed until deployed, so swap in one deploy |
+| `HEALTH_DETAIL_TOKEN` | detailed `/api/health` for the monitor | Update the monitor header at the same time |
 | `SENTRY_AUTH_TOKEN` | source map upload in CI | None |
 | `GOOGLE_CLIENT_SECRET` | customer social sign-in | None |
 

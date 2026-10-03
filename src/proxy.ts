@@ -25,6 +25,8 @@ export function isUnderMaintenance(pathname: string, maintenanceMode: string | u
   if (maintenanceMode !== '1') return false;
   if (pathname === MAINTENANCE_PATH) return false;
   if (pathname === '/admin' || pathname.startsWith('/admin/')) return false;
+  // The security contact (RFC 9116) must stay reachable, especially during an incident.
+  if (pathname.startsWith('/.well-known/')) return false;
   if (
     MAINTENANCE_OPEN_API.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))
   ) {

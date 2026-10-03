@@ -18,6 +18,15 @@
 
 ---
 
+### 2026-10-03 — 18.7 to 18.11 Telemetry, secret scan, abuse specs, security operations, insider risk — Done
+- Type: enhancement (18.9 new, specs only)
+- Changed: audit of the work already in a6a2e9d per row (see feature-progress Notes for the evidence). Added: JWT rule in src/lib/observability/scrub.ts, console gate extracted to src/components/admin/shell/staff-gate.tsx, /.well-known/ open during maintenance (src/proxy.ts), runbook step for GitHub secret scanning and push protection (ci-and-branch-protection.md), key-rotation runbook refreshed (no Cloudinary, adds Blob, Turnstile, health token), new tests: telemetry (JWT, E.164), staff-gate 404, sourcemaps-config, abuse-control-specs, security-operations, proxy well-known
+- Tests: unit 746/746 (was 714) · integration 162 passed, 3 skipped (real-login block) on PGlite with TZ=UTC and DB_POOL_MAX=1, no integration code changed · typecheck, lint, format:check, secret-scan --all and --history clean
+- Review: code-reviewer 1 high (a progress-file edit script corrupted context/feature-progress.md; restored from git and re-applied) and 4 medium (tests coupled to the element tree, source-text regexes on next.config.ts, weak keyword needles, section lookup) fixed
+- Decisions: none (ADR-015, INV-O1 and INV-O2 untouched; ADR-021..026 cover the controls)
+- Next: Module 18 remaining rows (18.2 stays Blocked until the owner's local PostgreSQL logins work), then Module 4
+- Blockers/risks: Playwright checks need a working local database (not run here); GitHub secret scanning and push protection are owner settings, not verifiable from code; owner alert email delivery not exercised against a real provider
+
 ### 2026-10-03 — 18.12 Hosting and media infrastructure (Supabase, Vercel Blob, local database) — Done
 - Type: enhancement
 - Changed: step 0 verified the interrupted tree (typecheck, lint, unit 644/644 green; format fixed). Docs: ARCHITECTURE, DECISIONS (ADR-025 Supabase supersedes the Neon choice and updates OD-5; ADR-026 Vercel Blob/local supersedes ADR-012), DATA-MODEL, CLAUDE.md, README, .env.example, auren-testing and auren-db-change skills (new tables must call auren_secure_table / ENABLE ROW LEVEL SECURITY), runbooks (database-roles Supabase section, local-database, production-environment). Code: src/lib/media/* (MediaProvider local + Vercel Blob, random keys, HMAC signed private links, magic-byte validation with no SVG, sharp re-encode stripping EXIF/GPS, Blob host check), media route handlers, CSP img-src for *.public.blob.vercel-storage.com, migration media_storage_columns (product_media provider, storage_key, content_type, size_bytes with CHECKs), global-setup TEST_APP_DATABASE_URL, secret-scan skips .local-media, ignores for git/prettier/eslint, Cloudinary removed from env. package.json: @vercel/blob, sharp. feature-list rows 2.3, 14.8, 18.1, 18.9 updated and 18.12 added

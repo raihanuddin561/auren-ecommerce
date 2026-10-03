@@ -61,4 +61,10 @@ The workflows are hardened in code (actions pinned to commit SHAs with the versi
 2. **Repository settings, Code security:** enable the dependency graph, Dependabot alerts and security updates, **secret scanning and push protection**, and CodeQL default setup off (the workflow is used instead).
 3. **Environment `preview-smoke`:** create it under Settings, Environments, restrict deployment branches to `main`, and put `VERCEL_AUTOMATION_BYPASS_SECRET` there (if Vercel Deployment Protection is on for previews). Previews of other branches then run the smoke test without the secret.
 4. **Actions settings:** default workflow permissions "Read repository contents", and "Require approval for all outside collaborators".
-5. When Dependabot proposes an Action update, check that the new SHA belongs to the tagged release in the upstream repository before merging.
+5. **Secret scanning with push protection (owner steps, 18.8):**
+   1. Settings, Code security, enable **Secret scanning** and **Push protection** (and "Scan for generic passwords" if offered). Also enable it at account level (Settings, Code security, Push protection for yourself) so it applies to private repositories you push to.
+   2. Verify it is on: Settings, Code security shows both as Enabled, and `gh api repos/<owner>/<repo> --jq .security_and_analysis` lists `secret_scanning` and `secret_scanning_push_protection` as `enabled`.
+   3. Open Security, Secret scanning once a week; every alert is a leak even when the repository is private. Treat an alert as an incident: rotate the credential first (`key-rotation.md`), then close the alert as "revoked".
+   4. Local backstop (works without GitHub): the pre-commit hook and CI run `node scripts/secret-scan.mjs`; before first making the repository visible to anyone else, and after any history rewrite, run `pnpm secrets:history` (scans every added line of every commit and must print "no secrets found"). Its findings never print the value, only the rule, file, line and commit.
+   5. Never bypass push protection with "it is a false positive" for a real credential; for a documented placeholder add `secret-scan:allow` on that line instead.
+6. When Dependabot proposes an Action update, check that the new SHA belongs to the tagged release in the upstream repository before merging.
