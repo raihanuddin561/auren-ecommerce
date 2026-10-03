@@ -17,8 +17,10 @@ const menswearNames = [
   'Nafis Chowdhury',
 ];
 let counter = 0;
-const nextEmail = (prefix: string) =>
-  `${prefix}.${++counter}.${faker.string.alphanumeric(6).toLowerCase()}@auren.test`;
+// Unique across parallel workers and repeated runs against the same database: the faker seed above
+// is fixed, so uniqueness comes from the process id, the clock and a counter.
+const runTag = `${process.pid.toString(36)}${Date.now().toString(36)}`;
+const nextEmail = (prefix: string) => `${prefix}.${++counter}.${runTag}@auren.test`;
 
 export interface MakeUserOptions {
   email?: string;

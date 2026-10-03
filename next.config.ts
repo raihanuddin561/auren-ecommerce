@@ -24,10 +24,29 @@ function validateEnvironment(phase: string): void {
   }
 }
 
+/**
+ * The public host of this project's Vercel Blob store, from the read-write token
+ * (vercel_blob_rw_<storeId>_<secret>). A wildcard would let anyone use the image optimiser on
+ * their own store; without a token (development) there is no remote host at all.
+ */
+function blobHostname(): string | null {
+  const storeId = /^vercel_blob_rw_([a-z0-9]+)_/i.exec(
+    process.env.BLOB_READ_WRITE_TOKEN ?? '',
+  )?.[1];
+  return storeId ? `${storeId.toLowerCase()}.public.blob.vercel-storage.com` : null;
+}
+
 const buildConfig = (): NextConfig => ({
   cacheComponents: true,
   poweredByHeader: false,
   reactStrictMode: true,
+  // Product, category and collection image uploads travel through Server Actions (10 MB image cap
+  // in lib/media/upload.ts); the default body limit of 1 MB would refuse them.
+  experimental: { serverActions: { bodySizeLimit: '11mb' } },
+  images: {
+    // Public uploads in production are served from the Vercel Blob store (ADR-026).
+    remotePatterns: blobHostname() ? [{ protocol: 'https', hostname: blobHostname()! }] : [],
+  },
   async headers() {
     return headerRules({
       isDev: process.env.NODE_ENV === 'development',

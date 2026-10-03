@@ -23,15 +23,18 @@ test.describe('staff access with a real session', () => {
   });
 
   test('shows customers a 404 instead of the console', async ({ customerPage }) => {
-    const response = await customerPage.goto('/admin');
-    expect(response?.status()).toBe(404);
-    await expect(customerPage.getByRole('heading', { name: /do not have access/i })).toHaveCount(0);
+    await customerPage.goto('/admin');
+    // The staff check streams (Cache Components), so the status line may already be 200; what a
+    // customer sees is the ordinary not-found page and none of the console.
+    await expect(customerPage.getByRole('heading', { name: /stepped out/i })).toBeVisible();
     await expect(customerPage.getByRole('heading', { name: 'Dashboard' })).toHaveCount(0);
+    await expect(customerPage.getByRole('navigation', { name: /admin/i })).toHaveCount(0);
   });
 
   test('signs out and returns to staff sign-in', async ({ staffPage }) => {
     const page = await staffPage();
     await page.goto('/admin');
+    await page.getByRole('button', { name: 'Account menu' }).click();
     await page.getByRole('button', { name: 'Sign out' }).click();
     await expect(page).toHaveURL(/\/admin\/sign-in$/);
     await page.goto('/admin');
@@ -44,7 +47,9 @@ test.describe('staff access with a real session', () => {
     await page.getByLabel('Email').fill('nobody@auren.test');
     await page.getByLabel('Password').fill('Not-the-password-1');
     await page.getByRole('button', { name: 'Sign in' }).click();
-    await expect(page.getByRole('alert')).not.toBeEmpty();
+    await expect(
+      page.getByRole('alert').filter({ hasText: /invalid|could not|try again/i }),
+    ).toBeVisible();
     await expect(page).toHaveURL(/\/admin\/sign-in/);
   });
 

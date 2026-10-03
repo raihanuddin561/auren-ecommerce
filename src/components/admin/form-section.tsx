@@ -24,7 +24,7 @@ export function FormSection({ title, description, children, className }: FormSec
         </h2>
         {description ? <p className="mt-1 type-admin text-fg-muted">{description}</p> : null}
       </div>
-      <div className="flex flex-col gap-5 md:col-span-2">{children}</div>
+      <div className="flex min-w-0 flex-col gap-5 md:col-span-2">{children}</div>
     </section>
   );
 }

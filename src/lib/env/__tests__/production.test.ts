@@ -290,3 +290,19 @@ describe('secret rotation list', () => {
     ).toMatch(/BETTER_AUTH_SECRETS: contains a secret/);
   });
 });
+
+describe('local-only bootstrap values in production', () => {
+  it('rejects SEED_DEMO_ADMIN', () => {
+    expect(issuesOf({ ...production, SEED_DEMO_ADMIN: '1' })).toMatch(/SEED_DEMO_ADMIN/);
+  });
+
+  it('rejects SEED_OWNER_PASSWORD', () => {
+    expect(issuesOf({ ...production, SEED_OWNER_PASSWORD: 'anything-at-all' })).toMatch(
+      /SEED_OWNER_PASSWORD: must not be set in production/,
+    );
+  });
+
+  it('ignores blank values', () => {
+    expect(issuesOf({ ...production, SEED_DEMO_ADMIN: '', SEED_OWNER_PASSWORD: ' ' })).toBe('');
+  });
+});

@@ -15,7 +15,7 @@
 import { config } from 'dotenv';
 import pg from 'pg';
 
-config({ quiet: true });
+config({ path: ['.env.local', '.env'], quiet: true });
 
 const APP_ROLE = 'auren_app';
 const MIGRATOR_ROLE = 'auren_migrator';

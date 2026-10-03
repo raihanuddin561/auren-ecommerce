@@ -5,7 +5,7 @@
 import { spawnSync } from 'node:child_process';
 import { config } from 'dotenv';
 
-config({ quiet: true });
+config({ path: ['.env.local', '.env'], quiet: true });
 
 const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '::1', '[::1]']);
 

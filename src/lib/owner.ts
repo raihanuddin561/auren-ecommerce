@@ -7,6 +7,11 @@ export interface OwnerInput {
   email: string;
   name: string;
   password: string;
+  /**
+   * Skip the forced first-login password change. Only the local demo seed sets this
+   * (lib/demo-admin.ts); it never skips two-factor enrolment.
+   */
+  keepPassword?: boolean;
 }
 
 export interface OwnerResult {
@@ -29,7 +34,12 @@ export async function ensureOwnerAccount(input: OwnerInput): Promise<OwnerResult
   });
 
   if (existing) {
-    if (existing.staffMember?.role === 'owner') return { userId: existing.id, created: false };
+    if (existing.staffMember?.role === 'owner') {
+      if (input.keepPassword) {
+        await db.user.update({ where: { id: existing.id }, data: { mustChangePassword: false } });
+      }
+      return { userId: existing.id, created: false };
+    }
     await db.$transaction([
       db.user.update({ where: { id: existing.id }, data: { emailVerified: true } }),
       db.staffMember.upsert({
@@ -52,7 +62,7 @@ export async function ensureOwnerAccount(input: OwnerInput): Promise<OwnerResult
       email,
       emailVerified: true,
       // The password came from the command line or .env: the owner must replace it at first sign-in.
-      mustChangePassword: true,
+      mustChangePassword: !input.keepPassword,
       staffMember: { create: { role: 'owner' } },
       accounts: {
         create: { accountId: userId, providerId: 'credential', password: passwordHash },

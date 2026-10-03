@@ -49,6 +49,15 @@ describe('Row Level Security on the public schema', () => {
     await expect(
       db.$transaction(async (tx) => {
         await tx.$executeRawUnsafe(`CREATE ROLE zz_rls_probe NOLOGIN`);
+        // PostgreSQL 16+: the creator of a role may not SET ROLE to it unless it grants itself that.
+        const [who] = await tx.$queryRaw<
+          Array<{ me: string; version: number }>
+        >`SELECT current_user::text AS me, current_setting('server_version_num')::int AS version`;
+        if (who && who.version >= 160000) {
+          await tx.$executeRawUnsafe(
+            `GRANT zz_rls_probe TO "${who.me.replaceAll('"', '')}" WITH SET TRUE`,
+          );
+        }
         await tx.$executeRawUnsafe(`GRANT SELECT ON users TO zz_rls_probe`);
         await tx.$executeRawUnsafe(
           `INSERT INTO users (id, name, email, email_verified, created_at, updated_at)

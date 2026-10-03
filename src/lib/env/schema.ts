@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { demoAdminConfigurationError } from '../demo-admin';
 import { staffBypassConfigurationError } from '../test-bypass';
 import { productionIssues, requiresProductionGuards } from './production';
 import { isTrustedProxy } from './proxy-mode';
@@ -96,6 +97,8 @@ const serverSchema = z.object({
   // Local seed and tests
   SEED_OWNER_EMAIL: z.preprocess(blankToUndefined, z.email().default('owner@auren.local')),
   SEED_OWNER_PASSWORD: optionalString,
+  // Local demo only: skips the forced first-login password change for the seeded owner.
+  SEED_DEMO_ADMIN: z.preprocess(blankToUndefined, z.enum(['1']).optional()),
   TEST_DATABASE_URL: optionalUrl,
   DB_POOL_MAX: z.preprocess(blankToUndefined, z.coerce.number().int().min(1).max(100).default(10)),
 });
@@ -162,6 +165,9 @@ export function parseServerEnv(source: Record<string, string | undefined>): Serv
       '[auren] E2E_STAFF_BYPASS is active: admin screens accept a permissionless test identity.',
     );
   }
+  // Local demo admin: refuse to boot anywhere that is not a local, non-production run.
+  const demoIssue = demoAdminConfigurationError(source);
+  if (demoIssue) throw new EnvValidationError([demoIssue]);
   const result = fullServerSchema.safeParse(source);
   if (!result.success) throw new EnvValidationError(formatIssues(result.error));
   if (requiresProductionGuards(source)) {

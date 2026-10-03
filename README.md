@@ -4,21 +4,45 @@ Premium menswear e-commerce platform. Next.js (App Router, Cache Components), Ty
 
 Planning and conventions live in `CLAUDE.md`, `docs/architecture/` and `context/`. Read those before changing anything.
 
-## First run
+## Quick start
 
-Requirements: Node 24+ (26 works), pnpm 12, a local PostgreSQL 16+ (your own installation; one-time setup in `docs/runbooks/local-database.md`). Docker Desktop is optional (`pnpm db:up` for Postgres + Mailpit, and Testcontainers for integration tests).
+Requirements: Node 24+ (26 works), pnpm 12 and a local PostgreSQL 16+ (your own installation; Docker is optional).
 
 ```bash
 pnpm install
-cp .env.example .env        # development defaults; nothing here is a real secret
-# one time: psql -h localhost -U postgres -f scripts/local-db-setup.sql   (see docs/runbooks/local-database.md)
-# optional: pnpm db:up      # Docker: PostgreSQL 16 + Mailpit (http://localhost:8025)
-pnpm db:migrate:deploy      # apply migrations
-pnpm db:seed                # owner account, 6 categories, 40 products, stock
-pnpm dev                    # http://localhost:3000
+cp .env.example .env.local   # git-ignored; add your database passwords and SEED_OWNER_* (see below)
+# one time, as the postgres user: psql -h localhost -U postgres -f scripts/local-db-setup.local.sql
+#   (copy scripts/local-db-setup.sql first and set two passwords; details: docs/runbooks/local-database.md)
+pnpm setup:local             # = pnpm db:migrate:deploy && pnpm db:seed
+pnpm dev
 ```
 
-The seed prints a temporary owner password once (or uses `SEED_OWNER_PASSWORD`). Sign in at `/admin/sign-in`; staff must enrol two-factor authentication at first login. For a production database, create the owner with `pnpm owner:create you@example.com`.
+`.env.local` needs `DATABASE_URL` (role `auren_app`), `DIRECT_URL` (role `auren_migrator`), `BETTER_AUTH_SECRET` (32+ characters) and, for the integration tests, `TEST_DATABASE_URL` and `TEST_APP_DATABASE_URL` (database `auren_test`). Prisma commands, the seed and `pnpm dev` all read it.
+
+| URL                                  | What                                           |
+| ------------------------------------ | ---------------------------------------------- |
+| http://localhost:3000                | Storefront (home, shop)                        |
+| http://localhost:3000/admin/sign-in  | Staff sign-in                                  |
+| http://localhost:3000/admin          | Console (after sign-in and two-factor)         |
+| http://localhost:3000/admin/security | Authenticator setup (first sign-in lands here) |
+| http://localhost:3000/api/health     | Health check                                   |
+
+### Demo login and first-run two-factor
+
+1. Set `SEED_OWNER_EMAIL` and `SEED_OWNER_PASSWORD` in `.env.local`. For a throwaway local password also set `SEED_DEMO_ADMIN=1` (local only: it skips the forced password change; the app refuses to boot with it outside a localhost, non-production run, and production rejects it and `SEED_OWNER_PASSWORD`). Run `pnpm db:seed`.
+2. Open `/admin/sign-in` and sign in with that email and password.
+3. You land on `/admin/security` (staff two-factor is mandatory). Confirm your password, scan the QR code with an authenticator app (or choose manual entry and type the key shown), enter the 6-digit code, save the backup codes and continue to `/admin`.
+4. Next sign-ins ask for the 6-digit code after the password.
+
+Without `SEED_DEMO_ADMIN` the owner must also choose a new password at first sign-in. For a production database create the owner with `pnpm owner:create you@example.com` and never set `SEED_OWNER_PASSWORD` there.
+
+### Tests
+
+```bash
+pnpm test                    # unit
+pnpm test:integration        # real PostgreSQL in TEST_DATABASE_URL (auren_test), never the dev database
+E2E_WITH_DB=1 pnpm test:e2e  # build + Playwright incl. database specs (point DATABASE_URL at auren_test)
+```
 
 Email goes to Mailpit locally (`SMTP_URL`), to Resend in production (`RESEND_API_KEY`), and to the log when neither is set. Background jobs: run `pnpm dlx inngest-cli@latest dev` and keep `INNGEST_DEV=1`.
 

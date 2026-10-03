@@ -1,7 +1,10 @@
 import { NextRequest } from 'next/server';
 import { match } from 'next/dist/compiled/path-to-regexp';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { proxy } from '../../proxy';
+
+// The proxy asks the catalogue for slug redirects; these tests are about headers only.
+vi.mock('@/modules/catalog/queries', () => ({ resolveRedirect: async () => null }));
 import {
   API_CSP,
   NONCE_SECTIONS,
@@ -38,7 +41,7 @@ describe('which paths are dynamic sections', () => {
     '%s is still /admin or /api',
     (path) => expect(isNonceSection(path)).toBe(true),
   );
-  it('does not throw on malformed escapes', () => {
+  it('does not throw on malformed escapes', async () => {
     expect(isNonceSection('/%E0%A4%A')).toBe(false);
     expect(isNonceSection('/admin/%E0%A4%A')).toBe(true);
   });
@@ -71,7 +74,7 @@ describe('header rules (every path gets exactly one value per header)', () => {
     }
   });
 
-  it('puts the static CSP on the storefront only', () => {
+  it('puts the static CSP on the storefront only', async () => {
     const storefront = headersFor('/products/oxford-shirt').get('Content-Security-Policy')?.[0];
     expect(storefront).toContain("script-src 'self' 'unsafe-inline'");
     for (const path of ['/admin', '/admin/orders', '/checkout', '/account', '/api/health']) {
@@ -80,7 +83,7 @@ describe('header rules (every path gets exactly one value per header)', () => {
     expect(headersFor('/administration').has('Content-Security-Policy')).toBe(true);
   });
 
-  it('adds Cross-Origin-Resource-Policy to dynamic sections only (email images must stay loadable)', () => {
+  it('adds Cross-Origin-Resource-Policy to dynamic sections only (email images must stay loadable)', async () => {
     for (const path of ['/admin', '/checkout/pay', '/account', '/api/auth/session']) {
       expect(headersFor(path).get('Cross-Origin-Resource-Policy')).toEqual(['same-origin']);
     }
@@ -88,7 +91,7 @@ describe('header rules (every path gets exactly one value per header)', () => {
     expect(headersFor('/seed/shirt.svg').has('Cross-Origin-Resource-Policy')).toBe(false);
   });
 
-  it('sends no Referer from pages whose URL carries a token', () => {
+  it('sends no Referer from pages whose URL carries a token', async () => {
     for (const path of ['/reset-password', '/reset-password/tok', '/verify-email', '/track/abc']) {
       expect(headersFor(path).get('Referrer-Policy')).toEqual(['no-referrer']);
     }
@@ -97,7 +100,7 @@ describe('header rules (every path gets exactly one value per header)', () => {
     }
   });
 
-  it('keeps the baseline everywhere, including HSTS', () => {
+  it('keeps the baseline everywhere, including HSTS', async () => {
     for (const path of paths) {
       const headers = headersFor(path);
       expect(headers.get('Strict-Transport-Security')).toBeTruthy();
@@ -108,7 +111,7 @@ describe('header rules (every path gets exactly one value per header)', () => {
     }
   });
 
-  it('denies powerful browser features by default', () => {
+  it('denies powerful browser features by default', async () => {
     for (const feature of [
       'camera',
       'microphone',
@@ -129,9 +132,9 @@ describe('per-request nonce from the proxy', () => {
   const policyOf = (response: Response) => response.headers.get('content-security-policy') ?? '';
   const nonceOf = (csp: string) => /'nonce-([^']+)'/.exec(csp)?.[1];
 
-  it('issues a fresh 128-bit nonce for every admin request and no unsafe-inline for scripts', () => {
-    const a = policyOf(proxy(request('/admin/orders')));
-    const b = policyOf(proxy(request('/admin/orders')));
+  it('issues a fresh 128-bit nonce for every admin request and no unsafe-inline for scripts', async () => {
+    const a = policyOf(await proxy(request('/admin/orders')));
+    const b = policyOf(await proxy(request('/admin/orders')));
     expect(nonceOf(a)).toBeTruthy();
     expect(nonceOf(a)).not.toBe(nonceOf(b));
     expect(atob(nonceOf(a)!)).toHaveLength(16);
@@ -142,8 +145,8 @@ describe('per-request nonce from the proxy', () => {
     expect(a).toContain("object-src 'none'");
   });
 
-  it('hands the same nonce to the page through request headers', () => {
-    const response = proxy(request('/admin/orders'));
+  it('hands the same nonce to the page through request headers', async () => {
+    const response = await proxy(request('/admin/orders'));
     const forwarded = response.headers.get('x-middleware-request-x-nonce');
     expect(forwarded).toBe(nonceOf(policyOf(response)));
     expect(response.headers.get('x-middleware-request-content-security-policy')).toBe(
@@ -153,50 +156,50 @@ describe('per-request nonce from the proxy', () => {
 
   it.each(['/checkout', '/checkout/payment', '/account', '/account/orders'])(
     'covers %s as well',
-    (path) => {
-      expect(nonceOf(policyOf(proxy(request(path))))).toBeTruthy();
+    async (path) => {
+      expect(nonceOf(policyOf(await proxy(request(path))))).toBeTruthy();
     },
   );
 
-  it('locks API responses down completely instead of issuing a nonce', () => {
-    expect(policyOf(proxy(request('/api/health')))).toBe(API_CSP);
-    expect(policyOf(proxy(request('/api/webhooks/stripe')))).toBe(API_CSP);
+  it('locks API responses down completely instead of issuing a nonce', async () => {
+    expect(policyOf(await proxy(request('/api/health')))).toBe(API_CSP);
+    expect(policyOf(await proxy(request('/api/webhooks/stripe')))).toBe(API_CSP);
   });
 
-  it('forbids inline handlers explicitly and never lets a nonce response be cached', () => {
-    const response = proxy(request('/admin/orders'));
+  it('forbids inline handlers explicitly and never lets a nonce response be cached', async () => {
+    const response = await proxy(request('/admin/orders'));
     expect(policyOf(response)).toContain("script-src-attr 'none'");
     expect(response.headers.get('cache-control')).toBe('private, no-store');
     expect(response.headers.get('vary')).toContain('Cookie');
-    expect(proxy(request('/api/health')).headers.get('cache-control')).toBeNull();
+    expect((await proxy(request('/api/health'))).headers.get('cache-control')).toBeNull();
   });
 
-  it('gives the maintenance page a policy whatever section was requested', () => {
+  it('gives the maintenance page a policy whatever section was requested', async () => {
     process.env.MAINTENANCE_MODE = '1';
     try {
-      const checkout = proxy(request('/checkout'));
+      const checkout = await proxy(request('/checkout'));
       expect(checkout.status).toBe(503);
       expect(policyOf(checkout)).toContain("script-src 'self' 'unsafe-inline'");
-      expect(policyOf(proxy(request('/api/orders')))).toBe(API_CSP);
+      expect(policyOf(await proxy(request('/api/orders')))).toBe(API_CSP);
     } finally {
       delete process.env.MAINTENANCE_MODE;
     }
   });
 
-  it('leaves the prerendered storefront to the static header', () => {
+  it('leaves the prerendered storefront to the static header', async () => {
     expect(
-      proxy(request('/products/oxford-shirt')).headers.get('content-security-policy'),
+      (await proxy(request('/products/oxford-shirt'))).headers.get('content-security-policy'),
     ).toBeNull();
-    expect(proxy(request('/')).headers.get('content-security-policy')).toBeNull();
+    expect((await proxy(request('/'))).headers.get('content-security-policy')).toBeNull();
   });
 
-  it('produces unique base64 nonces', () => {
+  it('produces unique base64 nonces', async () => {
     const seen = new Set(Array.from({ length: 200 }, () => newNonce()));
     expect(seen.size).toBe(200);
     for (const nonce of seen) expect(nonce).toMatch(/^[A-Za-z0-9+/]{22}==$/);
   });
 
-  it('keeps the section list in step with the matcher', () => {
+  it('keeps the section list in step with the matcher', async () => {
     expect([...NONCE_SECTIONS]).toEqual(['/admin', '/checkout', '/account', '/api']);
   });
 });

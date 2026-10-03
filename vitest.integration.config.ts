@@ -1,5 +1,16 @@
+import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { parse } from 'dotenv';
 import { defineConfig } from 'vitest/config';
+
+// Copies only the TEST_* variables from the git-ignored .env.local (never overriding values that
+// are already set). Application URLs and secrets stay untouched, so a test run can never pick up
+// the development DATABASE_URL.
+if (existsSync('.env.local')) {
+  for (const [key, value] of Object.entries(parse(readFileSync('.env.local')))) {
+    if (key.startsWith('TEST_') && process.env[key] === undefined) process.env[key] = value;
+  }
+}
 
 const r = (p: string) => fileURLToPath(new URL(p, import.meta.url));
 

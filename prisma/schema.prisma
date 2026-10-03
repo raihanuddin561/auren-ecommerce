@@ -300,6 +300,8 @@ model Category {
   name           String
   description    String?
   image          String?
+  /// Required when an image is set (content standard).
+  imageAlt       String?  @map("image_alt")
   position       Int      @default(0)
   /// Materialised path such as tops/shirts; unique across the tree.
   path           String   @unique
@@ -332,6 +334,7 @@ model Product {
   careInstructions String?       @map("care_instructions")
   fit              ProductFit?
   origin           String?
+  sizeChartId      String?       @map("size_chart_id") @db.Uuid
   tags             String[]      @default([])
   /// Fabric, occasion, season, pattern.
   attributes       Json          @default("{}")
@@ -343,13 +346,16 @@ model Product {
   createdAt        DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt        DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  category Category?        @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  options  ProductOption[]
-  variants ProductVariant[]
-  media    ProductMedia[]
+  category    Category?           @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  sizeChart   SizeChart?          @relation(fields: [sizeChartId], references: [id], onDelete: SetNull)
+  options     ProductOption[]
+  variants    ProductVariant[]
+  media       ProductMedia[]
+  collections CollectionProduct[]
 
   @@index([status, publishedAt(sort: Desc)])
   @@index([categoryId])
+  @@index([sizeChartId])
   @@map("products")
 }
 
@@ -423,33 +429,107 @@ model VariantOptionValue {
 }
 
 model ProductMedia {
-  id               String    @id @default(uuid(7)) @db.Uuid
-  productId        String    @map("product_id") @db.Uuid
+  id            String    @id @default(uuid(7)) @db.Uuid
+  productId     String    @map("product_id") @db.Uuid
   /// Ties an image to one colour.
-  optionValueId    String?   @map("option_value_id") @db.Uuid
-  type             MediaType @default(image)
+  optionValueId String?   @map("option_value_id") @db.Uuid
+  type          MediaType @default(image)
   /// static (file shipped with the app, development placeholders), local (development uploads) or vercel-blob.
-  provider         String    @default("static")
+  provider      String    @default("static")
   /// Random storage key from lib/media; null only for static files.
-  storageKey       String?   @map("storage_key")
-  url              String
+  storageKey    String?   @map("storage_key")
+  url           String
   /// jpeg, png, webp or avif only (CHECK); never SVG.
-  contentType      String?   @map("content_type")
-  sizeBytes        Int?      @map("size_bytes")
+  contentType   String?   @map("content_type")
+  sizeBytes     Int?      @map("size_bytes")
   /// Required: descriptive alt text is part of the content standard.
-  alt              String
-  width            Int?
-  height           Int?
-  dominantColor    String?   @map("dominant_color")
-  blurData         String?   @map("blur_data")
-  position         Int       @default(0)
-  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  alt           String
+  width         Int?
+  height        Int?
+  dominantColor String?   @map("dominant_color")
+  blurData      String?   @map("blur_data")
+  position      Int       @default(0)
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
 
   product     Product             @relation(fields: [productId], references: [id], onDelete: Cascade)
   optionValue ProductOptionValue? @relation(fields: [optionValueId], references: [id], onDelete: SetNull)
 
   @@index([productId, position])
   @@map("product_media")
+}
+
+/// Measurement table shared by many products. `table` is { columns: string[], rows: [{ size, values: string[] }] }.
+model SizeChart {
+  id           String   @id @default(uuid(7)) @db.Uuid
+  name         String
+  /// cm or in (CHECK).
+  unit         String   @default("cm")
+  table        Json     @default("{}")
+  /// Markdown.
+  howToMeasure String?  @map("how_to_measure")
+  modelInfo    String?  @map("model_info")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  products Product[]
+
+  @@map("size_charts")
+}
+
+model Collection {
+  id             String    @id @default(uuid(7)) @db.Uuid
+  slug           String    @unique
+  title          String
+  description    String?
+  /// { url, alt, provider, storageKey, contentType, sizeBytes } from the MediaProvider; alt is required.
+  heroMedia      Json?     @map("hero_media")
+  /// manual or automatic (CHECK).
+  type           String    @default("manual")
+  /// Automatic collections: { match: all|any, conditions: [{ field, operator, value }] }.
+  rules          Json      @default("{}")
+  /// manual, best_selling, newest, price_asc, price_desc (CHECK).
+  sortOrder      String    @default("manual") @map("sort_order")
+  seoTitle       String?   @map("seo_title")
+  seoDescription String?   @map("seo_description")
+  /// Null = draft. A future date schedules the publication.
+  publishedAt    DateTime? @map("published_at") @db.Timestamptz(6)
+  isFeatured     Boolean   @default(false) @map("is_featured")
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  products CollectionProduct[]
+
+  @@index([publishedAt])
+  @@map("collections")
+}
+
+/// Manual members, or the materialised result of an automatic collection's rules.
+model CollectionProduct {
+  collectionId String @map("collection_id") @db.Uuid
+  productId    String @map("product_id") @db.Uuid
+  position     Int    @default(0)
+
+  collection Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  product    Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@id([collectionId, productId])
+  @@index([productId])
+  @@index([collectionId, position])
+  @@map("collection_products")
+}
+
+/// Created automatically when the slug of a published product, category or collection changes.
+model Redirect {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  fromPath   String   @unique @map("from_path")
+  toPath     String   @map("to_path")
+  /// 301 or 302 (CHECK).
+  statusCode Int      @default(301) @map("status_code")
+  hits       Int      @default(0)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([toPath])
+  @@map("redirects")
 }
 
 model Location {

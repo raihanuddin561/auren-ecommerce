@@ -32,6 +32,8 @@ GRANT auren_app TO auren_migrator;
 
 -- The same defaults the migration would set, for runners that may not set role defaults.
 ALTER ROLE auren_app SET search_path = public, pg_catalog;
+ALTER ROLE auren_app SET timezone = 'UTC';
+ALTER ROLE auren_migrator SET timezone = 'UTC';
 ALTER ROLE auren_app SET statement_timeout = '60s';
 ALTER ROLE auren_app SET idle_in_transaction_session_timeout = '60s';
 

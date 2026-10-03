@@ -97,6 +97,8 @@ export interface ProcessedImage {
   height: number;
   /** Dominant colour as #rrggbb, for placeholders. */
   dominantColor: string;
+  /** Tiny WebP data URL for blur-up placeholders (product_media.blur_data). */
+  blurData: string;
 }
 
 const hex = (n: number) => Math.round(n).toString(16).padStart(2, '0');
@@ -113,6 +115,10 @@ export async function processImage(input: Buffer): Promise<ProcessedImage> {
     .webp({ quality: 82 });
   const { data, info } = await pipeline.toBuffer({ resolveWithObject: true });
   const { dominant } = await sharp(data).stats();
+  const blur = await sharp(data)
+    .resize({ width: 12, height: 12, fit: 'inside' })
+    .webp({ quality: 40 })
+    .toBuffer();
   return {
     body: data,
     mime: 'image/webp',
@@ -120,5 +126,6 @@ export async function processImage(input: Buffer): Promise<ProcessedImage> {
     width: info.width,
     height: info.height,
     dominantColor: `#${hex(dominant.r)}${hex(dominant.g)}${hex(dominant.b)}`,
+    blurData: `data:image/webp;base64,${blur.toString('base64')}`,
   };
 }

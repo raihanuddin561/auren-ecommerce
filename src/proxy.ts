@@ -10,6 +10,7 @@ import {
   newNonce,
 } from '@/lib/security/headers';
 import { isStaffBypassAllowed } from '@/lib/test-bypass';
+import { isRedirectablePath } from '@/modules/catalog/redirect-cache';
 
 const PUBLIC_ADMIN_PATHS = new Set(['/admin/sign-in']);
 const MAINTENANCE_PATH = '/maintenance';
@@ -73,7 +74,17 @@ export function nextWithSecurityHeaders(request: NextRequest): NextResponse {
  * the real checks (staff record, active, two-factor, permissions) run in the admin layout and in
  * every action through requireStaff() and assertPermission().
  */
-export function proxy(request: NextRequest) {
+/** The new address of a moved product, collection or category page, or null. Never throws. */
+async function movedTo(pathname: string): Promise<{ to: string; status: 301 | 302 } | null> {
+  try {
+    const { resolveRedirect } = await import('@/modules/catalog/queries');
+    return await resolveRedirect(pathname);
+  } catch {
+    return null;
+  }
+}
+
+export async function proxy(request: NextRequest): Promise<NextResponse> {
   const { pathname, search } = request.nextUrl;
 
   if (isUnderMaintenance(pathname, process.env.MAINTENANCE_MODE)) {
@@ -84,6 +95,24 @@ export function proxy(request: NextRequest) {
     response.headers.set('Retry-After', '3600');
     response.headers.set('Cache-Control', 'no-store');
     return response;
+  }
+
+  // A product, collection or category address that changed: send visitors, links and crawlers to
+  // the new one with a permanent redirect (slug redirects). Only these paths touch the table.
+  if ((request.method === 'GET' || request.method === 'HEAD') && isRedirectablePath(pathname)) {
+    const target = await movedTo(pathname);
+    if (target) {
+      const destination = new URL(`${target.to}${search}`, request.url);
+      // Never leave this site, whatever the table says.
+      if (destination.origin === request.nextUrl.origin) {
+        const response = NextResponse.redirect(destination, target.status);
+        // A short, explicit lifetime: a slug that moves back must not loop in a browser that cached
+        // the first move forever.
+        response.headers.set('cache-control', 'public, max-age=300');
+        return response;
+      }
+    }
+    return nextWithSecurityHeaders(request);
   }
 
   if (

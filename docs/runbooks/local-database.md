@@ -38,6 +38,14 @@ Development and the integration tests use the PostgreSQL service installed on th
    pnpm db:seed                # owner account, categories, products
    ```
 
+## What reads `.env.local`
+
+`pnpm dev`, `next build`, `pnpm db:migrate:deploy`, `pnpm db:seed`, `pnpm db:reset`, `pnpm db:roles` and `pnpm owner:create` read `.env.local` first, then `.env`. The integration tests read only the `TEST_*` variables from it (never `DATABASE_URL`), so a test run cannot touch the development database.
+
+## Time zone
+
+The migration `session_timezone_utc` sets the time zone of the database and of both login roles to UTC (ADR-027); the Prisma driver sends UTC text and a server in another zone (Asia/Dhaka) would otherwise store every timestamp hours off. If a migration prints a notice that it could not set it, run as `postgres`: `ALTER DATABASE auren SET timezone = 'UTC'; ALTER DATABASE auren_test SET timezone = 'UTC'; ALTER ROLE auren_app SET timezone = 'UTC'; ALTER ROLE auren_migrator SET timezone = 'UTC';`
+
 ## Integration tests
 
 ```bash
@@ -47,7 +55,7 @@ pnpm test:integration
 With `TEST_DATABASE_URL` set the suite migrates and wipes that database (its name must contain
 `test`, and the host must be local) and never touches `auren`. With `TEST_APP_DATABASE_URL` set as
 well, the checks that log in as `auren_app` run for real (they are skipped otherwise). Without
-`TEST_DATABASE_URL`, Testcontainers starts a PostgreSQL and needs Docker.
+`TEST_DATABASE_URL`, Testcontainers starts a PostgreSQL and needs Docker. The local setup gives `auren_migrator` the `CREATEROLE` attribute (it is the only role the tests log in with, and one test creates a probe role); the container and production roles do not have it.
 
 ## Troubleshooting
 

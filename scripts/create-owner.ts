@@ -10,7 +10,7 @@
 import { randomBytes } from 'node:crypto';
 import { config } from 'dotenv';
 
-config({ quiet: true });
+config({ path: ['.env.local', '.env'], quiet: true });
 
 const { ensureOwnerAccount } = await import('../src/lib/owner');
 const { db } = await import('../src/lib/db');

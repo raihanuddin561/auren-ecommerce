@@ -60,8 +60,10 @@ export function TwoFactorSetup() {
   if (step === 'done') {
     return (
       <div className="flex flex-col gap-5">
+        <p className="type-eyebrow text-fg-muted">Step 3 of 3</p>
         <p className="type-body">
-          Two-factor authentication is on. Store these backup codes somewhere safe.
+          Two-factor authentication is on. Store these backup codes somewhere safe: each one signs
+          you in once if you lose your phone.
         </p>
         <ul className="grid grid-cols-2 gap-2 border border-line bg-raised p-4 type-small font-mono">
           {backupCodes.map((code) => (
@@ -91,13 +93,20 @@ export function TwoFactorSetup() {
   if (step === 'scan') {
     return (
       <form onSubmit={onCode} className="flex flex-col gap-5" noValidate>
-        <p className="type-small">
-          Scan this code with an authenticator app (1Password, Authy, Google Authenticator), then
-          enter the 6-digit code it shows.
-        </p>
+        <p className="type-eyebrow text-fg-muted">Step 2 of 3</p>
+        <ol className="list-decimal space-y-1 pl-5 type-small">
+          <li>Open an authenticator app (1Password, Authy, Google Authenticator).</li>
+          <li>Scan the code below, or choose manual entry and type the key.</li>
+          <li>Enter the 6-digit code the app shows.</li>
+        </ol>
         {/* eslint-disable-next-line @next/next/no-img-element -- a data: URL QR code, not a content image */}
         <img src={qr} alt="Two-factor setup QR code" width={192} height={192} />
-        <p className="type-small break-all text-fg-muted">Or enter this key manually: {secret}</p>
+        <p className="type-small text-fg-muted">
+          Cannot scan? Enter this key manually:{' '}
+          <code data-testid="totp-manual-key" className="font-mono break-all text-fg">
+            {secret}
+          </code>
+        </p>
         <Field
           label="Authentication code"
           name="code"
@@ -113,9 +122,10 @@ export function TwoFactorSetup() {
 
   return (
     <form onSubmit={onPassword} className="flex flex-col gap-5">
+      <p className="type-eyebrow text-fg-muted">Step 1 of 3</p>
       <p className="type-small">
-        Staff accounts need two-factor authentication before they can use the admin console. Confirm
-        your password to begin.
+        Staff accounts need two-factor authentication before they can use the admin console. You
+        will need an authenticator app on your phone. Confirm your password to begin.
       </p>
       <Field
         label="Password"

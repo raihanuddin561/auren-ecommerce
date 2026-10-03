@@ -66,18 +66,18 @@ erDiagram
 
 | Table | Key columns | Notes |
 |---|---|---|
-| `categories` | parent_id, slug (unique per parent), name, description, image, position, path (materialized, e.g. `tops/shirts`), seo_title, seo_description, is_active | Tree |
+| `categories` | parent_id, slug (unique per parent), name, description, image, image_alt (required with an image), position, path (materialized, e.g. `tops/shirts`), seo_title, seo_description, is_active | Tree |
 | `products` | slug (unique), title, subtitle, description (markdown), status (`draft`,`active`,`archived`), category_id, product_type (shirt, trouser, blazer…), material, care_instructions, fit (`slim`,`regular`,`relaxed`), origin, tags text[], attributes jsonb (fabric, occasion, season, pattern), size_chart_id, seo_title, seo_description, published_at, featured_rank, search_vector tsvector (generated), deleted_at | GIN on `search_vector`, trigram on `title` |
 | `product_options` | product_id, name (`Size`,`Color`,`Fit`), position | |
 | `product_option_values` | option_id, value, label, swatch_hex, swatch_image, position | |
 | `product_variants` | product_id, sku (unique), barcode, price_minor, compare_at_minor, avg_cost_minor, currency, weight_g, status, position, is_default | Price lives on the variant |
 | `variant_option_values` | variant_id, option_value_id | PK (variant_id, option_value_id) |
 | `product_media` | product_id, option_value_id (nullable, ties images to a color), type (`image`,`video`), provider (`static`,`local`,`vercel-blob`), storage_key (random, never a client filename), url, content_type (jpeg/png/webp/avif, never SVG), size_bytes, alt (required), width, height, dominant_color, blur_data, position | Uploads re-encoded and metadata-stripped by `lib/media` (ADR-026); CHECKs: uploads need key, type and size; `static` rows are development placeholders |
-| `size_charts` | name, unit (`cm`,`in`), table jsonb (rows × measurements), how_to_measure (markdown), model_info | |
+| `size_charts` | name, unit (`cm`,`in`), table jsonb (`{ columns: string[], rows: [{ size, values: string[] }] }`), how_to_measure (markdown), model_info | Products point at one via `products.size_chart_id` (SET NULL on delete) |
 | `collections` | slug, title, description, hero_media, type (`manual`,`automatic`), rules jsonb (e.g. tag in, price <, category =), sort_order (`manual`,`best_selling`,`newest`,`price_asc`…), seo_*, published_at, is_featured | |
-| `collection_products` | collection_id, product_id, position | Materialized for automatic collections via job |
+| `collection_products` | collection_id, product_id, position | Manual members, or the materialised result of an automatic collection (rewritten synchronously on product writes, ADR-028) |
 | `product_relations` | product_id, related_product_id, type (`complete_the_look`,`similar`,`upsell`), position | Curated cross-sell |
-| `redirects` | from_path (unique), to_path, status_code (301/302), hits | Auto-created on slug change |
+| `redirects` | from_path (unique), to_path, status_code (301/302), hits | Auto-created on slug change of a live product, category or collection; chains stay one hop (ADR-028) |
 
 ## 3. Inventory and purchasing
 

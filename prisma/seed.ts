@@ -11,7 +11,7 @@
 import { randomBytes } from 'node:crypto';
 import { config } from 'dotenv';
 
-config({ quiet: true });
+config({ path: ['.env.local', '.env'], quiet: true });
 
 const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '::1', '[::1]']);
 const target = process.env.DATABASE_URL ? new URL(process.env.DATABASE_URL).hostname : '';
@@ -26,20 +26,35 @@ if (
   process.exit(1);
 }
 
+const { isDemoAdminAllowed, demoAdminConfigurationError } = await import('../src/lib/demo-admin');
 const { db } = await import('../src/lib/db');
 const { ensureOwnerAccount } = await import('../src/lib/owner');
-const { seedCatalog } = await import('./seed-catalog');
+const { seedCatalog, seedCatalogExtras } = await import('./seed-catalog');
+const { rebuildAutomaticCollections } = await import('../src/modules/catalog/service');
 
 async function seedOwner() {
+  const demoIssue = demoAdminConfigurationError(process.env);
+  if (demoIssue) {
+    console.error(demoIssue);
+    process.exit(1);
+  }
+  const demo = isDemoAdminAllowed(process.env);
   const email = process.env.SEED_OWNER_EMAIL || 'owner@auren.local';
   const generated = !process.env.SEED_OWNER_PASSWORD;
   const password = process.env.SEED_OWNER_PASSWORD || randomBytes(15).toString('base64url');
-  const result = await ensureOwnerAccount({ email, name: 'Store Owner', password });
+  const result = await ensureOwnerAccount({
+    email,
+    name: 'Store Owner',
+    password,
+    keepPassword: demo,
+  });
   if (result.created) {
     console.log(`Owner created: ${email}`);
     if (generated) console.log(`Temporary password (shown once): ${password}`);
     console.log(
-      'Sign in at /admin/sign-in; you will be asked to set up two-factor authentication.',
+      demo
+        ? 'Demo admin: sign in at /admin/sign-in, then enrol an authenticator at /admin/security.'
+        : 'Sign in at /admin/sign-in; you will be asked to change the password and set up two-factor authentication.',
     );
   } else {
     console.log(`Owner ${email} already exists.`);
@@ -54,6 +69,12 @@ try {
       ? 'Catalog already has products; skipping (run pnpm db:reset for a fresh seed).'
       : `Catalog seeded: ${catalog.categories} categories, ${catalog.products} products, ` +
           `${catalog.variants} variants, ${catalog.media} images, 1 location.`,
+  );
+  const extras = await seedCatalogExtras(db, rebuildAutomaticCollections);
+  console.log(
+    extras.sizeCharts + extras.collections > 0
+      ? `Added ${extras.sizeCharts} size charts and ${extras.collections} collections.`
+      : 'Size charts and collections already present.',
   );
 } finally {
   await db.$disconnect();

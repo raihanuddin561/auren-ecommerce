@@ -238,6 +238,17 @@ export function productionIssues(value: ProductionValues, source: Source): Produ
     add('EMAIL_FROM', 'must use a real sending domain in production');
   }
 
+  // Local-only bootstrap values: a demo owner or a seed password never belongs on a real host.
+  if ((source.SEED_DEMO_ADMIN ?? '').trim() !== '') {
+    add('SEED_DEMO_ADMIN', 'must not be set in production (local demo only)');
+  }
+  if ((source.SEED_OWNER_PASSWORD ?? '').trim() !== '') {
+    add(
+      'SEED_OWNER_PASSWORD',
+      'must not be set in production: create the owner with `pnpm owner:create` and remove it',
+    );
+  }
+
   const proxy = value.TRUSTED_PROXY;
   if (proxy === 'none' || proxy === 'forwarded') {
     add(

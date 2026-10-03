@@ -21,6 +21,7 @@
     "db:migrate:deploy": "prisma migrate deploy",
     "db:roles": "tsx scripts/db-roles.ts",
     "db:generate": "prisma generate",
+    "setup:local": "pnpm db:migrate:deploy && pnpm db:seed",
     "db:seed": "tsx --import ./scripts/stub-server-only.mjs prisma/seed.ts",
     "db:studio": "prisma studio",
     "postinstall": "prisma generate",

@@ -110,10 +110,13 @@ describe('role definition', () => {
     >`SELECT rolname, rolsuper, rolcreaterole, rolcreatedb, rolbypassrls
         FROM pg_roles WHERE rolname IN ('auren_app', 'auren_migrator') ORDER BY rolname`;
     expect(rows.map((r) => r.rolname)).toEqual(['auren_app', 'auren_migrator']);
+    // The local PostgreSQL setup (scripts/local-db-setup.sql) gives the migrator CREATEROLE so it
+    // can set role defaults and the tests can create probe roles; the container and CI do not.
+    const localMigrator = Boolean(process.env.TEST_DATABASE_URL);
     for (const row of rows) {
+      expect(row.rolcreaterole).toBe(localMigrator && row.rolname === 'auren_migrator');
       expect(row).toMatchObject({
         rolsuper: false,
-        rolcreaterole: false,
         rolcreatedb: false,
         rolbypassrls: false,
       });

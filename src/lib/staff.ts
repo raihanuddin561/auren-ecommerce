@@ -1,14 +1,20 @@
 import 'server-only';
 import { cache } from 'react';
 import { headers } from 'next/headers';
-import { redirect } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { getSession } from './auth';
 import { db } from './db';
 import { DomainError } from './errors';
 import { env } from './env';
 import { ipAllowed, PRIVILEGED_ROLES } from './ip-allowlist';
 import { logger } from './logger';
-import { toPermissionSet, type StaffContext, type StaffRole } from './permissions';
+import {
+  hasPermission,
+  toPermissionSet,
+  type Permission,
+  type StaffContext,
+  type StaffRole,
+} from './permissions';
 import { requestIp } from './request-meta';
 import { staffSessionTooOld } from './session-policy';
 import { BYPASS_STAFF, isStaffBypassAllowed, isStaffBypassConfigured } from './test-bypass';
@@ -140,6 +146,16 @@ export async function requireStaff(): Promise<StaffContext> {
   }
   if (resolution.status === 'not_staff') throw new DomainError('FORBIDDEN');
   return resolution.staff;
+}
+
+/**
+ * requireStaff plus a permission check for console pages: staff without the permission get the same
+ * 404 as anyone else, so a screen they cannot use does not announce itself.
+ */
+export async function requireStaffWith(permission: Permission): Promise<StaffContext> {
+  const staff = await requireStaff();
+  if (!hasPermission(staff, permission)) notFound();
+  return staff;
 }
 
 /**
