@@ -65,3 +65,13 @@ Email goes to Mailpit locally (`SMTP_URL`), to Resend in production (`RESEND_API
 - Every order is verified by staff before it can be confirmed, and the system never cancels an order on its own.
 - Environment variables are validated in `src/lib/env/schema.ts`; `next dev` and `next build` fail with a readable list when `DATABASE_URL` or `BETTER_AUTH_SECRET` is missing.
 - CI and branch protection: `docs/runbooks/ci-and-branch-protection.md`.
+
+## Troubleshooting (Windows)
+
+- **`npm.ps1 cannot be loaded because running scripts is disabled`** (PowerShell): run
+  `Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned` once and reopen the terminal,
+  or use `npm.cmd run dev`, Command Prompt or Git Bash instead.
+- **`Another next dev server is already running`**: a previous dev server still holds port 3000. Stop it with
+  `taskkill /PID <pid> /F` (the PID is printed in the message), then start again.
+- **Database connection errors**: make sure the PostgreSQL Windows service is running (`net start postgresql-x64-18`
+  from an administrator terminal), then see `docs/runbooks/local-database.md`.
