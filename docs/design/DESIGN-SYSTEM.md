@@ -89,7 +89,7 @@ Principles: fade + 8–16 px rise on scroll reveal (once only); image hover = sl
 
 Primitives (shadcn/Radix restyled): Button (primary ink, secondary outline, ghost, link-underline-gold), IconButton, Input, Select, Combobox, Checkbox, Radio, Switch, Textarea, Sheet/Drawer, Dialog, Popover, Tooltip, Accordion, Tabs, Toast, Skeleton, Badge, Breadcrumb, Pagination, Price, Rating, Spinner (rare; prefer skeletons).
 
-Storefront: AnnouncementBar, Header (transparent-over-hero → solid on scroll), MegaMenu (with editorial image tile), SearchOverlay (instant results + popular searches), CartDrawer (free-shipping progress bar), ProductCard, ProductGrid, FilterBar + FilterDrawer, SortMenu, ColorSwatches, SizeSelector, SizeGuideDrawer, ProductGallery (zoom/lightbox), StickyBuyBar (mobile), QuantityStepper, DeliveryEstimate, TrustRow, ReviewSummary + ReviewList + FitMeter, ProductRail, CollectionHero, EditorialSplit, LookbookHotspot, NewsletterForm, Footer, EmptyState, RecentlyViewed.
+Storefront: AnnouncementBar, Header (transparent-over-hero → solid on scroll), MegaMenu (with editorial image tile), SearchOverlay (instant results + popular searches), CartDrawer (free-shipping progress bar), ProductCard, ProductGrid, FilterBar + FilterDrawer, SortMenu, ColorSwatches, SizeSelector, SizeGuideDrawer, ProductGallery (zoom/lightbox), StickyBuyBar (mobile), QuantityStepper, DeliveryEstimate, TrustRow, ReviewSummary + ReviewList + FitMeter, ProductRail, CollectionHero, EditorialSplit, LookbookHotspot, NewsletterForm, Footer, EmptyState, Rece.ntlyViewed.
 
 Every component ships with **loading (skeleton), empty, error, and disabled** states, keyboard support and visible focus (2 px gold ring offset 2 px).
 

@@ -1634,3 +1634,73 @@ export async function removeCollectionHero(
   await discardImage(oldKey);
   return result;
 }
+
+// ---------------------------------------------------------------------------------------------
+// Cost basis and lookups for other modules (inventory, purchasing)
+// ---------------------------------------------------------------------------------------------
+
+export interface VariantCost {
+  id: string;
+  productId: string;
+  currency: string;
+  avgCostMinor: bigint;
+}
+
+/** Locks the variants (stable order) and returns their cost basis. Call inside a transaction. */
+export async function lockVariantCosts(
+  tx: Tx,
+  variantIds: readonly string[],
+): Promise<Map<string, VariantCost>> {
+  const rows = await repo.lockVariantCosts(tx, variantIds);
+  return new Map(rows.map((row) => [row.id, row]));
+}
+
+/** Stores a recalculated weighted average cost (purchasing owns the formula). */
+export async function setVariantAverageCost(
+  tx: Tx,
+  variantId: string,
+  avgCostMinor: bigint,
+): Promise<void> {
+  if (avgCostMinor < 0n) throw new DomainError('VALIDATION', 'Cost cannot be negative');
+  await repo.setVariantAvgCost(tx, variantId, avgCostMinor);
+}
+
+/** Product ids for variants, so stock writes can invalidate the product tags too. */
+export async function productIdsForVariants(
+  tx: Tx,
+  variantIds: readonly string[],
+): Promise<Map<string, string>> {
+  const rows = await repo.listVariantProductIds(tx, variantIds);
+  return new Map(rows.map((row) => [row.id, row.productId]));
+}
+
+export interface VariantLabel {
+  id: string;
+  sku: string;
+  productTitle: string;
+  /** For example White / M / Slim. */
+  optionsLabel: string;
+}
+
+/** Human labels for variants (purchase orders, stock screens). Unknown ids are left out. */
+export async function variantLabels(
+  tx: Tx,
+  variantIds: readonly string[],
+): Promise<Map<string, VariantLabel>> {
+  const rows = await repo.listVariantLabels(tx, variantIds);
+  return new Map(
+    rows.map((row) => [
+      row.id,
+      {
+        id: row.id,
+        sku: row.sku,
+        productTitle: row.product.title,
+        optionsLabel: row.optionValues
+          .map((entry) => entry.optionValue)
+          .sort((a, b) => a.option.position - b.option.position)
+          .map((value) => value.label)
+          .join(' / '),
+      },
+    ]),
+  );
+}

@@ -43,7 +43,9 @@ describe('development catalog seed', () => {
   it('keeps prices in integer minor units with a positive margin and valid markdowns', () => {
     for (const variant of rows.variants) {
       const price = variant.priceMinor as bigint;
-      const cost = variant.avgCostMinor as bigint;
+      const cost = rows.stockPlan.find(
+        (line) => line.variantId === variant.id,
+      )!.supplierUnitCostMinor;
       expect(typeof price).toBe('bigint');
       expect(price % 100n).toBe(0n); // whole taka
       expect(cost).toBeGreaterThan(0n);
@@ -60,7 +62,9 @@ describe('development catalog seed', () => {
   it('prices a shirt at exactly 3,290 taka', () => {
     const oxford = rows.variants.find((v) => String(v.sku).startsWith('AUR-OXFBUTDOW-WHITE'));
     expect(oxford?.priceMinor).toBe(329000n);
-    expect(oxford?.avgCostMinor).toBe(138180n); // 42% of the price
+    // The supplier charges 92% of the planned landed cost, which is 42% of the price.
+    const plan = rows.stockPlan.find((line) => line.variantId === oxford?.id);
+    expect(plan?.supplierUnitCostMinor).toBe(127126n);
   });
 
   it('has descriptive alt text and 4:5 images for every colour', () => {
@@ -76,20 +80,17 @@ describe('development catalog seed', () => {
     }
   });
 
-  it('stocks one default warehouse, writes an opening receipt per stocked variant, and has edge cases', () => {
+  it('plans stock for every variant through purchasing, with sold-out and low-stock edge cases', () => {
     expect(rows.location.name).toBe('Dhaka Warehouse');
-    expect(rows.inventory).toHaveLength(rows.variants.length);
-    const stocked = rows.inventory.filter((level) => (level.onHand ?? 0) > 0);
-    expect(rows.movements).toHaveLength(stocked.length);
-    expect(rows.inventory.some((level) => level.onHand === 0)).toBe(true);
-    expect(
-      rows.inventory.some((level) => (level.onHand ?? 0) > 0 && (level.onHand ?? 0) <= 5),
-    ).toBe(true);
-    for (const level of rows.inventory) {
-      expect(level.reserved).toBe(0);
-      const movement = rows.movements.find((m) => m.variantId === level.variantId);
-      expect(movement?.quantity ?? 0).toBe(level.onHand); // ledger sum equals on hand (INV-S3)
+    expect(rows.stockPlan).toHaveLength(rows.variants.length);
+    expect('inventory' in rows).toBe(false); // stock only arrives through purchasing
+    expect(rows.stockPlan.some((line) => line.quantity === 0)).toBe(true);
+    expect(rows.stockPlan.some((line) => line.quantity > 0 && line.quantity <= 5)).toBe(true);
+    for (const line of rows.stockPlan) {
+      expect(line.supplierUnitCostMinor > 0n).toBe(true);
     }
+    // A fresh variant starts with no cost: purchasing sets it on receipt.
+    for (const variant of rows.variants) expect(variant.avgCostMinor ?? 0n).toBe(0n);
   });
 
   it('is deterministic stock, so reruns and tests agree', () => {

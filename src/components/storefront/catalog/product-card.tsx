@@ -1,20 +1,22 @@
 import Link from 'next/link';
+import { Badge } from '@/components/ui/badge';
 import { Price } from '@/components/ui/price';
 import { cn } from '@/lib/cn';
-import { deserialize, type SerializedMoney } from '@/lib/money';
-import { CatalogImage, ImagePlaceholder, isLocalImage } from './catalog-image';
+import { deserialize } from '@/lib/money';
+import { cardBadges, type ProductCardData } from '@/modules/catalog/card';
+import { ImagePlaceholder, safeColor } from './catalog-image';
+import { CardImages, CardState, ColorSwatches, QuickAdd } from './product-card-client';
+import { WishlistButton } from './wishlist-button';
 
-/** What a card needs. Matches the catalogue's card data, which is serialisable across the server boundary. */
-export interface ProductCardView {
-  id: string;
-  slug: string;
-  title: string;
-  categoryName: string | null;
-  price: SerializedMoney;
-  compareAt: SerializedMoney | null;
-  image: { url: string; alt: string; width: number | null; height: number | null } | null;
-  hoverImage: { url: string; alt: string } | null;
-}
+/**
+ * What a card needs. Matches the catalogue's card data, which is serialisable across the server
+ * boundary; everything beyond the basics is optional so a plain card (no colours, no stock) works.
+ */
+export type ProductCardView = Pick<
+  ProductCardData,
+  'id' | 'slug' | 'title' | 'categoryName' | 'price' | 'compareAt' | 'image' | 'hoverImage'
+> &
+  Partial<Pick<ProductCardData, 'colors' | 'sizes' | 'variants' | 'isNew' | 'limited' | 'stock'>>;
 
 interface ProductCardProps {
   product: ProductCardView;
@@ -27,9 +29,20 @@ interface ProductCardProps {
 
 export const CARD_SIZES = '(min-width: 1024px) 22vw, (min-width: 768px) 30vw, 46vw';
 
+const BADGE_TONE = {
+  'sold-out': 'ink',
+  'low-stock': 'warning',
+  limited: 'oxblood',
+  new: 'gold',
+} as const;
+
 /**
- * A product in a grid: 4:5 image, a second image on hover and keyboard focus (pointer devices
- * only, handled in CSS), then category, name and price. The whole card is one link.
+ * A product in a grid: 4:5 picture, second picture on hover and keyboard focus (pointer devices),
+ * colour swatches that switch the picture, badges, a quick-add size row on desktop hover or focus,
+ * a wishlist heart, then category, name and price.
+ *
+ * The whole card is one link without nesting: the link is the product name, stretched over the card
+ * with a pseudo-element, and the swatches, quick-add and heart are siblings positioned above it.
  */
 export function ProductCard({
   product,
@@ -38,45 +51,74 @@ export function ProductCard({
   className,
 }: ProductCardProps) {
   const { image, hoverImage } = product;
-  // The second image is a convenience, so it is only shown when it can be loaded the same way.
-  const swap = hoverImage && isLocalImage(hoverImage.url) ? hoverImage : null;
+  const badges = cardBadges(product);
+  const background = safeColor(image?.dominantColor);
 
   return (
-    <Link
-      href={`/products/${product.slug}`}
-      className={cn('group block outline-offset-4', className)}
-    >
-      <div className="relative aspect-4/5 overflow-hidden bg-sunken">
-        {image ? (
-          <CatalogImage
-            src={image.url}
-            alt={image.alt}
-            sizes={sizes}
-            priority={priority}
-            width={image.width}
-            height={image.height}
-            className={swap ? undefined : 'img-zoom'}
+    <article className={cn('group relative', className)} data-stock={product.stock ?? undefined}>
+      <CardState
+        colors={product.colors ?? []}
+        variants={product.variants ?? []}
+        sizes={product.sizes ?? []}
+      >
+        <div
+          className="relative aspect-4/5 overflow-hidden bg-sunken"
+          style={background ? { backgroundColor: background } : undefined}
+        >
+          {image ? (
+            <CardImages
+              image={image}
+              hoverImage={hoverImage}
+              title={product.title}
+              sizes={sizes}
+              priority={priority}
+            />
+          ) : (
+            <ImagePlaceholder label="AUREN" />
+          )}
+          {badges.length > 0 ? (
+            <div className="absolute top-3 left-3 flex flex-col items-start gap-1">
+              {badges.map((badge) => (
+                <Badge
+                  key={badge.key}
+                  tone={BADGE_TONE[badge.key]}
+                  className={
+                    badge.key === 'low-stock' || badge.key === 'new' ? 'bg-page/90' : undefined
+                  }
+                >
+                  {badge.label}
+                </Badge>
+              ))}
+            </div>
+          ) : null}
+          <WishlistButton
+            productId={product.id}
+            title={product.title}
+            className="absolute top-1 right-1"
           />
-        ) : (
-          <ImagePlaceholder label="AUREN" />
-        )}
-        {image && swap ? (
-          // Decorative: the first image already names the product.
-          <CatalogImage src={swap.url} alt="" sizes={sizes} className="img-swap" />
-        ) : null}
-      </div>
-      <div className="mt-4 flex flex-col gap-1">
-        {product.categoryName ? (
-          <p className="type-eyebrow text-fg-muted">{product.categoryName}</p>
-        ) : null}
-        <h3 className="type-body font-medium text-fg">{product.title}</h3>
-        <Price
-          price={deserialize(product.price)}
-          compareAt={product.compareAt ? deserialize(product.compareAt) : null}
-          size="sm"
-        />
-      </div>
-    </Link>
+          <QuickAdd title={product.title} />
+        </div>
+        <div className="mt-4 flex flex-col gap-1">
+          {product.categoryName ? (
+            <p className="type-eyebrow text-fg-muted">{product.categoryName}</p>
+          ) : null}
+          <h3 className="type-body font-medium text-fg">
+            <Link
+              href={`/products/${product.slug}`}
+              className="outline-none after:absolute after:inset-0 after:z-10 after:content-[''] focus-visible:after:outline-2 focus-visible:after:outline-offset-2 focus-visible:after:outline-gold"
+            >
+              {product.title}
+            </Link>
+          </h3>
+          <Price
+            price={deserialize(product.price)}
+            compareAt={product.compareAt ? deserialize(product.compareAt) : null}
+            size="sm"
+          />
+          <ColorSwatches />
+        </div>
+      </CardState>
+    </article>
   );
 }
 

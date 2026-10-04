@@ -13,6 +13,10 @@ export const RATE_LIMITS = {
   twoFactor: { limit: 5, windowSeconds: 60 },
   otp: { limit: 3, windowSeconds: 300 },
   checkoutSubmit: { limit: 10, windowSeconds: 600 },
+  /** Add to bag from any button (cards, product page). */
+  addToBag: { limit: 60, windowSeconds: 60 },
+  /** "Load more" on the shop and collection pages. */
+  listingMore: { limit: 120, windowSeconds: 60 },
   couponApply: { limit: 10, windowSeconds: 300 },
   reviewSubmit: { limit: 5, windowSeconds: 3600 },
   /** Any other state-changing auth call (change password, sign out, delete account...). */

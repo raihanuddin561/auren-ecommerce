@@ -1,6 +1,6 @@
 import { cacheLife, cacheTag } from 'next/cache';
 import { db } from '@/lib/db';
-import { format, money, serialize, toDecimalString, type SerializedMoney } from '@/lib/money';
+import { format, money, toDecimalString } from '@/lib/money';
 import { EMPTY_RULES, type CollectionRules } from './collection-rules';
 import {
   SNAPSHOT_LIMIT,
@@ -10,8 +10,33 @@ import {
   writeRedirectSnapshot,
   type CachedRedirect,
 } from './redirect-cache';
+import { toCard, type ProductCardData } from './card';
+import { buildPdp, type PdpData } from './pdp';
 import * as repo from './repository';
-import { collectionTag, TAG_CATEGORIES, TAG_COLLECTIONS, TAG_PRODUCTS } from './tags';
+import {
+  buildFacets,
+  defaultOrderFor,
+  filterRows,
+  isPlainQuery,
+  LISTING_PAGE_SIZE,
+  paginate,
+  sortRows,
+  toListingRow,
+  type CollectionSortOrder,
+  type DefaultOrder,
+  type Facets,
+  type ListingQuery,
+  type ListingRow,
+} from './listing';
+import {
+  categoryTag,
+  collectionTag,
+  productTag,
+  TAG_CATEGORIES,
+  TAG_COLLECTIONS,
+  TAG_PRODUCTS,
+  TAG_SITEMAP,
+} from './tags';
 import { CATALOG_CURRENCY, type StoredImage } from './types';
 
 /**
@@ -442,48 +467,7 @@ export async function resolveRedirect(pathname: string): Promise<CachedRedirect 
 // Storefront (cached, invalidated by tags)
 // ---------------------------------------------------------------------------------------------
 
-export interface ProductCardData {
-  id: string;
-  slug: string;
-  title: string;
-  categoryName: string | null;
-  price: SerializedMoney;
-  compareAt: SerializedMoney | null;
-  priceLabel: string;
-  compareAtLabel: string | null;
-  image: { url: string; alt: string; width: number | null; height: number | null } | null;
-  hoverImage: { url: string; alt: string } | null;
-}
-
-type CardRow = Awaited<ReturnType<typeof repo.listPublishedProducts>>[number];
-
-function toCard(p: CardRow): ProductCardData | null {
-  const variant = p.variants[0];
-  if (!variant) return null;
-  const compareAt =
-    variant.compareAtMinor && variant.compareAtMinor > variant.priceMinor
-      ? variant.compareAtMinor
-      : null;
-  return {
-    id: p.id,
-    slug: p.slug,
-    title: p.title,
-    categoryName: p.category?.name ?? null,
-    price: serialize(money(variant.priceMinor, variant.currency)),
-    compareAt: compareAt === null ? null : serialize(money(compareAt, variant.currency)),
-    priceLabel: priceLabel(variant.priceMinor, variant.currency),
-    compareAtLabel: compareAt === null ? null : priceLabel(compareAt, variant.currency),
-    image: p.media[0]
-      ? {
-          url: p.media[0].url,
-          alt: p.media[0].alt,
-          width: p.media[0].width,
-          height: p.media[0].height,
-        }
-      : null,
-    hoverImage: p.media[1] ? { url: p.media[1].url, alt: p.media[1].alt } : null,
-  };
-}
+export type { ProductCardData };
 
 const present = <T>(value: T | null): value is T => value !== null;
 
@@ -497,7 +481,10 @@ export async function getNewArrivals(limit = 8): Promise<ProductCardData[]> {
     take: limit * 2,
     orderBy: [{ publishedAt: 'desc' }, { id: 'desc' }],
   });
-  return rows.map(toCard).filter(present).slice(0, limit);
+  return rows
+    .map((row) => toCard(row))
+    .filter(present)
+    .slice(0, limit);
 }
 
 export interface TopCategory {
@@ -562,10 +549,318 @@ export async function getFeaturedCollections(
       description: collection.description,
       hero: hero ? { url: hero.url, alt: hero.alt } : null,
       products: members
-        .map((m) => toCard(m.product as unknown as CardRow))
+        .map((m) => toCard(m.product))
         .filter(present)
         .slice(0, perCollection),
     });
   }
   return result;
+}
+
+// ---------------------------------------------------------------------------------------------
+// Storefront: shop and collection pages
+// ---------------------------------------------------------------------------------------------
+
+/** `path` is the category path under /shop ("" for everything, "shirts/oxford" for a subcategory). */
+export type ListingScope = { kind: 'shop'; path: string } | { kind: 'collection'; slug: string };
+
+export interface ListingHeader {
+  kind: 'shop' | 'collection';
+  eyebrow: string;
+  title: string;
+  description: string | null;
+  hero: { url: string; alt: string } | null;
+  /** Address of the page without a query string. */
+  basePath: string;
+  breadcrumb: Array<{ label: string; href?: string }>;
+  /** Sub-categories of a category page, as links. */
+  children: Array<{ label: string; href: string }>;
+  seoTitle: string | null;
+  seoDescription: string | null;
+}
+
+export interface ListingResult {
+  header: ListingHeader;
+  /** Cards of the requested page; stock is not included (it is merged in live). */
+  cards: ProductCardData[];
+  total: number;
+  page: number;
+  totalPages: number;
+  pageSize: number;
+  facets: Facets;
+  /** Newest pieces of the page's scope, only when nothing matches the filters. */
+  suggestions: ProductCardData[];
+  tags: string[];
+}
+
+const SHOP_DESCRIPTION =
+  'Elevated essentials and tailoring, crafted in breathable fabrics and made to be worn for years.';
+
+const COLLECTION_SORTS: readonly string[] = [
+  'manual',
+  'best_selling',
+  'newest',
+  'price_asc',
+  'price_desc',
+];
+const asCollectionSort = (value: string): CollectionSortOrder =>
+  COLLECTION_SORTS.includes(value) ? (value as CollectionSortOrder) : 'manual';
+
+interface ResolvedScope {
+  header: ListingHeader;
+  filter: repo.ListingScopeFilter;
+  defaultOrder: DefaultOrder;
+  tags: string[];
+}
+
+async function resolveScope(scope: ListingScope, now: Date): Promise<ResolvedScope | null> {
+  if (scope.kind === 'collection') {
+    const collection = await repo.findPublishedCollectionBySlug(db, scope.slug, now);
+    if (!collection) return null;
+    const hero = collection.heroMedia as StoredImage | null;
+    return {
+      header: {
+        kind: 'collection',
+        eyebrow: 'Collection',
+        title: collection.title,
+        description: collection.description,
+        hero: hero ? { url: hero.url, alt: hero.alt } : null,
+        basePath: `/collections/${collection.slug}`,
+        breadcrumb: [{ label: 'Home', href: '/' }, { label: collection.title }],
+        children: [],
+        seoTitle: collection.seoTitle,
+        seoDescription: collection.seoDescription,
+      },
+      filter: { collectionId: collection.id },
+      defaultOrder: defaultOrderFor(asCollectionSort(collection.sortOrder)),
+      tags: [TAG_COLLECTIONS, collectionTag(collection.id)],
+    };
+  }
+
+  const path = scope.path;
+  if (path === '') {
+    const top = (await repo.listActiveCategories(db)).filter((c) => c.parentId === null);
+    return {
+      header: {
+        kind: 'shop',
+        eyebrow: 'The collection',
+        title: 'Shop all',
+        description: SHOP_DESCRIPTION,
+        hero: null,
+        basePath: '/shop',
+        breadcrumb: [{ label: 'Home', href: '/' }, { label: 'Shop' }],
+        children: top.map((c) => ({ label: c.name, href: `/shop/${c.path}` })),
+        seoTitle: 'Shop all menswear',
+        seoDescription: SHOP_DESCRIPTION,
+      },
+      filter: {},
+      defaultOrder: 'featured',
+      tags: [TAG_CATEGORIES],
+    };
+  }
+
+  const category = await repo.findActiveCategoryByPath(db, path);
+  if (!category) return null;
+  const segments = path.split('/');
+  const ancestorPaths = segments.slice(0, -1).map((_, i) => segments.slice(0, i + 1).join('/'));
+  const [ancestors, subtree, children] = await Promise.all([
+    ancestorPaths.length > 0 ? repo.listActiveCategoriesByPaths(db, ancestorPaths) : [],
+    repo.listActiveCategorySubtreeIds(db, path),
+    repo.listActiveChildCategories(db, category.id),
+  ]);
+  const byPath = new Map(ancestors.map((a) => [a.path, a.name]));
+  const parentPath = ancestorPaths.at(-1);
+  return {
+    header: {
+      kind: 'shop',
+      eyebrow: (parentPath !== undefined ? byPath.get(parentPath) : undefined) ?? 'Shop',
+      title: category.name,
+      description: category.description,
+      hero: category.image
+        ? { url: category.image, alt: category.imageAlt ?? category.name }
+        : null,
+      basePath: `/shop/${category.path}`,
+      breadcrumb: [
+        { label: 'Home', href: '/' },
+        { label: 'Shop', href: '/shop' },
+        ...ancestorPaths.flatMap((p) =>
+          byPath.has(p) ? [{ label: byPath.get(p)!, href: `/shop/${p}` }] : [],
+        ),
+        { label: category.name },
+      ],
+      children: children.map((c) => ({ label: c.name, href: `/shop/${c.path}` })),
+      seoTitle: category.seoTitle,
+      seoDescription: category.seoDescription,
+    },
+    filter: { categoryIds: subtree.map((c) => c.id) },
+    defaultOrder: 'featured',
+    tags: [TAG_CATEGORIES, categoryTag(category.id)],
+  };
+}
+
+const NEWEST_SUGGESTIONS = 4;
+
+/**
+ * One page of a shop or collection listing. `inStockIds` is the live set from the inventory when
+ * the "In stock" filter is on, otherwise null. Uncached: the cached entry point is getListing.
+ * Returns null when the category or collection does not exist (or is not live).
+ */
+export async function loadListing(
+  scope: ListingScope,
+  query: ListingQuery,
+  inStockIds: ReadonlySet<string> | null = null,
+): Promise<ListingResult | null> {
+  const now = new Date();
+  const resolved = await resolveScope(scope, now);
+  if (!resolved) return null;
+
+  const source = await repo.listProductFacetSource(db, now, resolved.filter);
+  const all = source.map(toListingRow).filter((row): row is ListingRow => row !== null);
+  const stockSet = query.inStock ? (inStockIds ?? new Set<string>()) : null;
+  const matching = filterRows(all, query, stockSet);
+  const sorted = sortRows(matching, query.sort, resolved.defaultOrder);
+  const { total, totalPages } = paginate(sorted, 1);
+  const start = (query.page - 1) * LISTING_PAGE_SIZE;
+  const pageIds = sorted.slice(start, start + LISTING_PAGE_SIZE).map((row) => row.id);
+
+  const suggestionIds =
+    total === 0
+      ? sortRows(all, 'newest', 'featured')
+          .slice(0, NEWEST_SUGGESTIONS)
+          .map((row) => row.id)
+      : [];
+  const cardRows = await repo.listCardsByIds(db, now, [...pageIds, ...suggestionIds]);
+  const cards = new Map<string, ProductCardData>();
+  for (const row of cardRows) {
+    const card = toCard(row, now);
+    if (card) cards.set(row.id, card);
+  }
+  const pick = (ids: string[]) => ids.flatMap((id) => cards.get(id) ?? []);
+
+  return {
+    header: resolved.header,
+    cards: pick(pageIds),
+    total,
+    page: query.page,
+    totalPages,
+    pageSize: LISTING_PAGE_SIZE,
+    facets: buildFacets(all, query, stockSet),
+    suggestions: pick(suggestionIds),
+    tags: [TAG_PRODUCTS, ...resolved.tags, ...pageIds.map(productTag)],
+  };
+}
+
+/**
+ * The cached entry point (ARCHITECTURE 3.3). The plain listing (no filters, default sort) is built
+ * once and served for minutes; any filter or sort is a short, query-keyed entry. Invalidated by the
+ * catalogue tags. Stock is never part of this: the page merges live availability in a Suspense
+ * island. The "In stock" filter is the exception and goes through loadListing with the live set.
+ */
+export async function getListing(
+  scope: ListingScope,
+  query: ListingQuery,
+): Promise<ListingResult | null> {
+  'use cache';
+  cacheLife(isPlainQuery(query) && query.page === 1 ? 'minutes' : 'seconds');
+  const result = await loadListing(scope, query, null);
+  if (result) cacheTag(...result.tags);
+  return result;
+}
+
+// ---------------------------------------------------------------------------------------------
+// Product page
+// ---------------------------------------------------------------------------------------------
+
+/**
+ * The cacheable shell of a product page: copy, pictures, options, size chart, breadcrumb. Price and
+ * stock are deliberately not in it (see getLivePriceRows and the inventory queries). Revalidated by
+ * the product tag on every product, media, variant or size chart save. Unknown, draft, archived and
+ * scheduled products answer null (the page shows a 404).
+ */
+export async function getProductPage(slug: string): Promise<PdpData | null> {
+  'use cache';
+  cacheLife('hours');
+  cacheTag(TAG_PRODUCTS);
+  const now = new Date();
+  const row = await repo.findPublishedProductBySlug(db, slug, now);
+  if (!row) return null;
+  cacheTag(productTag(row.id));
+  const [trail, lead] = await Promise.all([
+    row.category ? repo.listCategoryTrail(db, row.category.path) : Promise.resolve([]),
+    repo.findLeadCollection(db, row.id, now),
+  ]);
+  return buildPdp(row, {
+    eyebrow: lead?.collection.title ?? row.category?.name ?? null,
+    categoryTrail: trail.map((category) => ({
+      name: category.name,
+      href: `/shop/${category.path}`,
+    })),
+  });
+}
+
+/** Current prices of a product's active variants. Uncached: read next to the live stock. */
+export const getLivePriceRows = (productId: string) => repo.listLiveVariantPrices(db, productId);
+
+/** Other live products in the same category, as cards without stock (merge it live). */
+export async function getRelatedProducts(
+  productId: string,
+  categoryId: string | null,
+  limit = 4,
+): Promise<ProductCardData[]> {
+  'use cache';
+  cacheLife('minutes');
+  cacheTag(TAG_PRODUCTS, productTag(productId));
+  if (!categoryId) return [];
+  const rows = await repo.listRelatedProducts(db, {
+    categoryId,
+    excludeId: productId,
+    now: new Date(),
+    take: limit * 2,
+  });
+  return rows
+    .map((row) => toCard(row))
+    .filter(present)
+    .slice(0, limit);
+}
+
+// ---------------------------------------------------------------------------------------------
+// Sitemap
+// ---------------------------------------------------------------------------------------------
+
+export interface SitemapEntry {
+  path: string;
+  lastModified: Date;
+  images: string[];
+}
+
+const SITEMAP_PRODUCT_LIMIT = 5000;
+
+/** Every live product, collection and category address, with product pictures. Tagged 'sitemap'. */
+export async function listSitemapEntries(): Promise<SitemapEntry[]> {
+  'use cache';
+  cacheLife('hours');
+  cacheTag(TAG_SITEMAP);
+  const now = new Date();
+  const [products, collections, categories] = await Promise.all([
+    repo.listSitemapProducts(db, now, SITEMAP_PRODUCT_LIMIT),
+    repo.listSitemapCollections(db, now),
+    repo.listSitemapCategories(db),
+  ]);
+  return [
+    ...categories.map((row) => ({
+      path: `/shop/${row.path}`,
+      lastModified: row.updatedAt,
+      images: [],
+    })),
+    ...collections.map((row) => ({
+      path: `/collections/${row.slug}`,
+      lastModified: row.updatedAt,
+      images: [],
+    })),
+    ...products.map((row) => ({
+      path: `/products/${row.slug}`,
+      lastModified: row.updatedAt,
+      images: row.media.map((media) => media.url),
+    })),
+  ];
 }

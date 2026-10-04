@@ -11,8 +11,8 @@ export interface CatalogSeedResult {
 }
 
 /**
- * Writes the development catalog (one warehouse, categories, products, variants, images, opening
- * stock and the matching stock ledger) in a single transaction. Does nothing when products exist.
+ * Writes the development catalog (one warehouse, categories, products, variants and images; stock
+ * arrives later through the seeded purchase orders) in a single transaction. Does nothing when products exist.
  */
 export async function seedCatalog(db: PrismaClient): Promise<CatalogSeedResult> {
   if ((await db.product.count()) > 0) {
@@ -21,15 +21,25 @@ export async function seedCatalog(db: PrismaClient): Promise<CatalogSeedResult> 
   const rows = buildCatalogSeed(newId);
   await db.$transaction(
     async (tx) => {
-      await tx.location.create({
-        data: {
-          id: rows.location.id,
-          name: rows.location.name,
-          type: 'warehouse',
-          isDefault: true,
-          address: { line1: 'Tejgaon Industrial Area', city: 'Dhaka', country: 'BD' },
-        },
-      });
+      // The migration already created the default warehouse; give it its real name.
+      const address = { line1: 'Tejgaon Industrial Area', city: 'Dhaka', country: 'BD' };
+      const existing = await tx.location.findFirst({ where: { isDefault: true } });
+      if (existing) {
+        await tx.location.update({
+          where: { id: existing.id },
+          data: { name: rows.location.name, address },
+        });
+      } else {
+        await tx.location.create({
+          data: {
+            id: rows.location.id,
+            name: rows.location.name,
+            type: 'warehouse',
+            isDefault: true,
+            address,
+          },
+        });
+      }
       await tx.category.createMany({ data: rows.categories });
       await tx.product.createMany({ data: rows.products });
       await tx.productOption.createMany({ data: rows.options });
@@ -37,8 +47,6 @@ export async function seedCatalog(db: PrismaClient): Promise<CatalogSeedResult> 
       await tx.productVariant.createMany({ data: rows.variants });
       await tx.variantOptionValue.createMany({ data: rows.variantOptionValues });
       await tx.productMedia.createMany({ data: rows.media });
-      await tx.inventoryLevel.createMany({ data: rows.inventory });
-      await tx.stockMovement.createMany({ data: rows.movements });
     },
     { timeout: 120_000, maxWait: 10_000 },
   );

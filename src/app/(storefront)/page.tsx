@@ -13,6 +13,7 @@ import {
   NewArrivalsSkeleton,
 } from '@/components/storefront/catalog/home-sections';
 import { Button } from '@/components/ui/button';
+import { withLiveStock } from './_listing/load';
 import {
   getFeaturedCollections,
   getNewArrivals,
@@ -34,12 +35,23 @@ async function Categories() {
 
 async function NewArrivals() {
   await connection();
-  return <NewArrivalsSection products={await getNewArrivals(8)} />;
+  // Cached cards, live stock: the badges and the size row never go stale.
+  return <NewArrivalsSection products={await withLiveStock(await getNewArrivals(8))} />;
 }
 
 async function FeaturedCollections() {
   await connection();
-  return <FeaturedCollectionsSection collections={await getFeaturedCollections(2, 4)} />;
+  const collections = await getFeaturedCollections(2, 4);
+  const stocked = await withLiveStock(collections.flatMap((collection) => collection.products));
+  const byId = new Map(stocked.map((card) => [card.id, card]));
+  return (
+    <FeaturedCollectionsSection
+      collections={collections.map((collection) => ({
+        ...collection,
+        products: collection.products.map((card) => byId.get(card.id) ?? card),
+      }))}
+    />
+  );
 }
 
 /** One ink hero, then the catalogue sections that have something to show. */

@@ -30,6 +30,7 @@ const { isDemoAdminAllowed, demoAdminConfigurationError } = await import('../src
 const { db } = await import('../src/lib/db');
 const { ensureOwnerAccount } = await import('../src/lib/owner');
 const { seedCatalog, seedCatalogExtras } = await import('./seed-catalog');
+const { seedPurchasing } = await import('./seed-purchasing');
 const { rebuildAutomaticCollections } = await import('../src/modules/catalog/service');
 
 async function seedOwner() {
@@ -75,6 +76,15 @@ try {
     extras.sizeCharts + extras.collections > 0
       ? `Added ${extras.sizeCharts} size charts and ${extras.collections} collections.`
       : 'Size charts and collections already present.',
+  );
+  const purchasing = await seedPurchasing(db);
+  console.log(
+    purchasing.skipped
+      ? 'Purchasing history already present (or no variants to stock).'
+      : `Purchasing seeded: ${purchasing.orders} purchase orders, ${purchasing.receivedUnits} units received` +
+          (purchasing.retiredLegacyUnits > 0
+            ? `, ${purchasing.retiredLegacyUnits} legacy opening units replaced.`
+            : '.'),
   );
 } finally {
   await db.$disconnect();

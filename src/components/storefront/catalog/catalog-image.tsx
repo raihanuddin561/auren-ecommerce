@@ -4,6 +4,14 @@ import { cn } from '@/lib/cn';
 /** A same-origin path (placeholders under /seed, uploads under /api/media). Anything else is remote. */
 export const isLocalImage = (src: string): boolean => src.startsWith('/') && !src.startsWith('//');
 
+/** A stored preview is only used when it really is an inline image. */
+const isBlurData = (value: string | null | undefined): value is string =>
+  typeof value === 'string' && /^data:image\/(png|jpe?g|webp|avif);base64,/i.test(value);
+
+/** A stored dominant colour is only used when it is a plain hex value. */
+export const safeColor = (value: string | null | undefined): string | undefined =>
+  typeof value === 'string' && /^#[0-9a-f]{3,8}$/i.test(value) ? value : undefined;
+
 interface CatalogImageProps {
   src: string;
   /** Required. Use an empty string only when the image repeats text beside it. */
@@ -13,6 +21,10 @@ interface CatalogImageProps {
   priority?: boolean;
   width?: number | null;
   height?: number | null;
+  /** Tiny stored preview shown while the picture loads. */
+  blurData?: string | null;
+  /** Called when the picture cannot be loaded, so the caller can show a calm stand-in. */
+  onError?: () => void;
   className?: string;
 }
 
@@ -28,6 +40,8 @@ export function CatalogImage({
   priority = false,
   width,
   height,
+  blurData,
+  onError,
   className,
 }: CatalogImageProps) {
   if (isLocalImage(src)) {
@@ -38,6 +52,8 @@ export function CatalogImage({
         fill
         sizes={sizes}
         priority={priority}
+        onError={onError}
+        {...(isBlurData(blurData) ? { placeholder: 'blur' as const, blurDataURL: blurData } : {})}
         className={cn('object-cover', className)}
       />
     );
@@ -51,6 +67,7 @@ export function CatalogImage({
       height={height ?? undefined}
       loading={priority ? 'eager' : 'lazy'}
       decoding="async"
+      onError={onError}
       className={cn('absolute inset-0 size-full object-cover', className)}
     />
   );
@@ -66,7 +83,7 @@ export function ImagePlaceholder({ label, className }: { label: string; classNam
         className,
       )}
     >
-      <span className="line-clamp-3 type-h2 text-fg-muted/70">{label}</span>
+      <span className="line-clamp-3 type-h2 text-fg-muted">{label}</span>
     </div>
   );
 }

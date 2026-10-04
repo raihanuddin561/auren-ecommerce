@@ -888,8 +888,22 @@ export interface SeedRows {
   variants: Prisma.ProductVariantCreateManyInput[];
   variantOptionValues: Prisma.VariantOptionValueCreateManyInput[];
   media: Prisma.ProductMediaCreateManyInput[];
-  inventory: Prisma.InventoryLevelCreateManyInput[];
-  movements: Prisma.StockMovementCreateManyInput[];
+  /**
+   * What the seeded purchase orders bring in. Stock is never written directly (only the inventory
+   * service changes levels): prisma/seed-purchasing.ts receives these through purchase orders.
+   */
+  stockPlan: StockPlanLine[];
+}
+
+export interface StockPlanLine {
+  variantId: string;
+  /** Deterministic, so the plan can be matched to variants already in a database. */
+  sku: string;
+  productIndex: number;
+  /** Units to buy and receive; 0 means the variant starts sold out. */
+  quantity: number;
+  /** What the supplier charges per unit (before landed costs), in minor units. */
+  supplierUnitCostMinor: bigint;
 }
 
 export function buildCatalogSeed(newId: () => string, now: Date = new Date()): SeedRows {
@@ -902,8 +916,7 @@ export function buildCatalogSeed(newId: () => string, now: Date = new Date()): S
     variants: [],
     variantOptionValues: [],
     media: [],
-    inventory: [],
-    movements: [],
+    stockPlan: [],
   };
 
   const categoryIds = new Map<string, string>();
@@ -1010,7 +1023,6 @@ export function buildCatalogSeed(newId: () => string, now: Date = new Date()): S
           sku: `AUR-${abbreviate(def.slug)}-${skuPart(color.value)}-${skuPart(size)}`,
           priceMinor: price.minor,
           compareAtMinor: compareAt?.minor ?? null,
-          avgCostMinor: cost.minor,
           currency: CURRENCY,
           weightG: def.weightG,
           status: 'active',
@@ -1021,27 +1033,14 @@ export function buildCatalogSeed(newId: () => string, now: Date = new Date()): S
           { variantId, optionValueId: colorValueIds.get(color.value)! },
           { variantId, optionValueId: sizeValueIds.get(size)! },
         );
-        const onHand = stockFor(productIndex, variantIndex);
-        rows.inventory.push({
+        rows.stockPlan.push({
           variantId,
-          locationId: rows.location.id,
-          onHand,
-          reserved: 0,
-          lowStockThreshold: 5,
+          sku: rows.variants[rows.variants.length - 1]!.sku,
+          productIndex,
+          quantity: stockFor(productIndex, variantIndex),
+          // The supplier charges 92% of the planned landed cost; freight and duty make up the rest.
+          supplierUnitCostMinor: percent(cost, 9200).minor,
         });
-        if (onHand > 0) {
-          rows.movements.push({
-            id: newId(),
-            variantId,
-            locationId: rows.location.id,
-            type: 'receipt',
-            quantity: onHand,
-            unitCostMinor: cost.minor,
-            referenceType: 'seed',
-            referenceId: 'initial-stock',
-            reason: 'Opening stock (development seed)',
-          });
-        }
         variantIndex += 1;
       });
     });

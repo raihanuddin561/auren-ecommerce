@@ -52,24 +52,24 @@
 | 2.6 | Product relations | P1 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
 | 2.7 | Slug redirects | P0 | Done | Done | Done | Done | Done | Done | Done | new. Slug change of a live product, category (subtree) or collection writes a 301 in the same transaction (chains one hop, loops removed, reclaimed when a page goes live again, removed when the target is deleted); proxy.ts resolves /products/*, /collections/* and /shop/* through a 15 second snapshot of the redirects table with a same-site target guard and a DB CHECK; verified end to end in Playwright (301 to the new address). ADR-028. Tests: unit 891/891, integration 207 passed (1 skipped by design) on real PostgreSQL incl. 43 catalogue tests, Playwright 170 passed with axe (desktop and mobile, 16 skipped visual or preview-only), typecheck, lint and format clean. Review gate 2026-10-03: code-reviewer and commerce-invariants-reviewer, all high and medium findings fixed (product row locks, option ids, redirect hardening, publish rights, constraint mapping), re-review run after the fixes. |
 | 2.8 | Bulk import/export | P1 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 2.9 | Product listing page (PLP) | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 2.10 | Product card | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 2.11 | Product detail page (PDP) | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 2.12 | Live price/stock island | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 2.13 | Recently viewed | P1 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 2.14 | Product SEO | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
+| 2.9 | Product listing page (PLP) | P0 | Done | Done | Done | Done | Done | Done | Done | new. /shop/[[...category]], /collections/[slug] and a /search stub: filters (size, colour, fit, fabric, price, in stock) and sort and density in the URL (Zod-parsed, nonsense ignored), load-more over crawlable ?page=N, skeletons, empty state, canonical and noindex rules of ARCHITECTURE 9, CollectionPage JSON-LD. Stock badges and the in-stock filter come from the inventory service. Playwright with axe at desktop and mobile; premium-ui-qa: axe clean, CLS 0 |
+| 2.10 | Product card | P0 | Done | Done | Done | Done | Done | Done | Done | new. 4:5 card, second image on hover, colour swatches that switch the image, New, Low stock and Sold out badges, quick-add sizes on pointer devices, wishlist heart (localStorage stub until accounts exist). Quick-add calls addToCart (src/modules/cart/actions.ts): validates, rate-limits and re-checks live stock but stores nothing yet (INTEGRATION POINT for the cart stage); the toast says so honestly |
+| 2.11 | Product detail page (PDP) | P0 | Done | Done | Done | Done | Done | Done | Done | new. /products/[slug]: stacked gallery with zoom and lightbox (arrow keys, swipe, pinch), swipe strip with dots on phones, sticky buy box, colour swatches that move the gallery, size selector (sold out struck through and announced, Only N left, nearly-gone line), quantity, size guide drawer with chart, how to measure, model info and a find-my-size helper, accordions, sticky mobile bar, 404 and loading states. Add to bag uses the cart contract above (not persisted yet). Not built, belongs to later modules: ratings and fit meter (reviews), delivery estimate (shipping), Complete the look (2.6, P1) |
+| 2.12 | Live price/stock island | P0 | Done | N/A | Done | Done | Done | Done | Done | new. Cached shell (getProductPage with cacheTag product:<id> and products) plus an uncached Suspense island for price and stock (getLivePriceRows and the inventory service, one read per request); a stock change shows on the next visit with no rebuild (Playwright proves it); inventory writes revalidate stock:<variantId>, stock, product:<id>, products |
+| 2.13 | Recently viewed | P1 | N/A | N/A | Done | Done | Done | Done | Done | new. Recently viewed rail on the product page (localStorage, 12 entries, validated on read). The cart rail comes with the cart stage |
+| 2.14 | Product SEO | P0 | Done | N/A | Done | Done | Done | Done | Done | new. generateMetadata (title, description capped at 160, canonical, Open Graph and Twitter), per-product OG card (next/og), Product with Offer or AggregateOffer (exact prices, live availability) and BreadcrumbList JSON-LD, sitemap.ts (live products, collections, categories, product images; drafts never listed), robots.ts (admin, account, checkout, cart, api, search disallowed), product with no active variant is noindex |
 
 ## Module 3: Inventory and Purchasing
 
 | ID | Sub-feature | Pri | BE | API | UT | FE | E2E | CR | Overall | Notes |
 |---|---|---|---|---|---|---|---|---|---|---|
-| 3.1 | Stock levels and ledger | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 3.2 | Manual adjustments | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 3.3 | Atomic reserve/commit/release | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 3.4 | Suppliers | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 3.5 | Purchase orders | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 3.6 | Landed costs | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 3.7 | Goods receipt + weighted avg cost | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
+| 3.1 | Stock levels and ledger | P0 | Done | N/A | Done | Done | Done | Done | Done | new. inventoryService is the only writer of inventory_levels and stock_movements; migrations add_inventory_and_purchasing and harden_reservation_release; ledger semantics in ADR-029, proved by the reconcile helper. /admin/inventory (search, status and category filters, avg cost for staff who may see cost) and /admin/inventory/movements (ledger, filters). New variants start with no stock row and no cost |
+| 3.2 | Manual adjustments | P0 | Done | Done | Done | Done | Done | Done | Done | new. adjustStock: inventory.adjust, strict Zod, reasons, audit, step-up for any removal of stock (INV-A6), maker-checker above the threshold in either direction; dialog with the password confirmation; Playwright covers add and remove with step-up |
+| 3.3 | Atomic reserve/commit/release | P0 | Done | N/A | Done | N/A | N/A | Done | Done | new. reserve, commitReservation (names its lines, CONFLICT when the hold is gone), releaseReservation, sell: one conditional UPDATE each. Real concurrency tests on PostgreSQL: 50 buys of 1 against 10 units gives exactly 10, 50 buys of 10 gives exactly 1, mixed reserve, receive and expiry run with no deadlock; release_expired_reservations() granted to the app role, checkout holds only, per-minute Inngest job, never touches orders |
+| 3.4 | Suppliers | P0 | Done | Done | Done | Done | Done | Done | Done | new. Suppliers at /admin/suppliers (list, create, edit, deactivate), purchasing.manage, audit without free text |
+| 3.5 | Purchase orders | P0 | Done | Done | Done | Done | Done | Done | Done | new. Purchase orders (PO-0001 sequence): draft, ordered, partially received, received, cancelled with a tested state machine; create, edit draft, place, cancel; PDF export at /admin/purchasing/[id]/pdf (pdf-lib); permission-gated and audited |
+| 3.6 | Landed costs | P0 | Done | Done | Done | Done | Done | Done | Done | new. Landed costs by quantity or value, largest remainder, allocations always sum to the cost (property test over 300 random orders); added or removed only before the first delivery (ADR-029) |
+| 3.7 | Goods receipt + weighted avg cost | P0 | Done | Done | Done | Done | Done | Done | Done | new. Goods receipt, full or partial, idempotent per key, over-receipt refused; receipt movements through inventoryService; weighted average cost (half-even, worked examples in unit tests); outbox event purchase_order.received; Playwright receives in two deliveries. Dev DB seeded with a supplier and 4 purchase orders (two received in two deliveries each, one placed, one draft); seed is re-run safe |
 | 3.8 | Low-stock alerts | P1 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
 | 3.9 | Inventory valuation and aging | P1 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
 | 3.10 | Multi-location and transfers | P2 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
@@ -283,7 +283,7 @@ By priority: **P0 119** · **P1 28** · **P2 13** (total 160)
 | Release | Modules | Sub-features | Done |
 |---|---|---|---|
 | R1 Foundation | 0, 1 | 23 | 10 |
-| R2 Sellable MVP | 2, 3, 4, 5, 6, 7 | 64 | 0 |
+| R2 Sellable MVP | 2, 3, 4, 5, 6, 7 | 64 | 19 |
 | R3 Premium launch | 8, 9, 11, 14, 16 | 42 | 0 |
 | R4 Growth | 10, 12, 13, 15 | 26 | 0 |
 | R5 Scale | 17 | 5 | 0 |

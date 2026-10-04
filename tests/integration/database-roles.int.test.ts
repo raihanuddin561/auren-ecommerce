@@ -167,6 +167,9 @@ describe('role definition', () => {
       audit_logs: { sel: true, ins: true, upd: false, del: false },
       stock_movements: { sel: true, ins: true, upd: false, del: false },
       processed_events: { sel: true, ins: true, upd: false, del: false },
+      // A delivery that happened is never edited: corrections are new movements.
+      goods_receipts: { sel: true, ins: true, upd: false, del: false },
+      goods_receipt_items: { sel: true, ins: true, upd: false, del: false },
       // Column level UPDATE (delivery bookkeeping only) is checked in its own test.
       outbox_events: { sel: true, ins: true, upd: true, del: false },
       role_permissions: { sel: true, ins: false, upd: false, del: false },

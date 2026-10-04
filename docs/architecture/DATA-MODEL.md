@@ -84,14 +84,15 @@ erDiagram
 | Table | Key columns | Notes |
 |---|---|---|
 | `locations` | name, type (`warehouse`,`store`), address jsonb, is_default, is_active | Start with one warehouse; a partial unique index allows exactly one default |
-| `inventory_levels` | variant_id, location_id, on_hand INT ≥ 0, reserved INT ≥ 0, low_stock_threshold | PK(variant_id, location_id); CHECK `reserved <= on_hand` |
-| `stock_movements` | variant_id, location_id, type (`receipt`,`sale`,`reservation`,`release`,`return_restock`,`adjustment`,`transfer_in`,`transfer_out`,`write_off`), quantity (signed), unit_cost_minor, reference_type, reference_id, reason, actor_id | Append-only ledger (trigger enforced) |
-| `stock_reservations` | variant_id, location_id, quantity, checkout_id/order_id, expires_at, status (`active`,`committed`,`released`) | Prepaid flow |
+| `inventory_levels` | variant_id, location_id, on_hand INT ≥ 0, reserved INT ≥ 0, low_stock_threshold | PK(variant_id, location_id); CHECK `reserved <= on_hand`; rows are created on first receipt or adjustment, so a new variant has no row (zero stock). Only `inventoryService` writes here |
+| `stock_movements` | variant_id, location_id, type (`receipt`,`sale`,`reservation`,`release`,`return_restock`,`adjustment`,`transfer_in`,`transfer_out`,`write_off`), quantity (signed), unit_cost_minor, reference_type, reference_id, reason, actor_id | Append-only ledger (trigger enforced, UPDATE and DELETE revoked from the app role). `reservation`/`release` explain `reserved`; all other types explain `on_hand` (ADR-029) |
+| `stock_reservations` | variant_id, location_id, quantity > 0, reference_type, reference_id, status (`active`,`committed`,`released`), expires_at (default 15 min), resolved_at | UNIQUE(reference_type, reference_id, variant_id) makes reserve idempotent; `release_expired_reservations()` frees expired ones |
 | `suppliers` | name, contact_name, phone, email, address, payment_terms, notes, is_active | |
-| `purchase_orders` | po_number (seq, e.g. `PO-0001`), supplier_id, status (`draft`,`ordered`,`partially_received`,`received`,`cancelled`), ordered_at, expected_at, currency, exchange_rate, notes | |
+| `purchase_orders` | po_number (sequence, `PO-0001`), supplier_id, status (`draft`,`ordered`,`partially_received`,`received`,`cancelled`), ordered_at, expected_at, currency (base currency only for now), notes, created_by | Lines editable only in draft |
 | `purchase_order_items` | po_id, variant_id, quantity_ordered, quantity_received, unit_cost_minor | |
 | `landed_costs` | po_id, type (`freight`,`customs_duty`,`inbound_transport`,`agent_fee`,`other`), amount_minor, allocation_method (`by_quantity`,`by_value`) | Allocated into variant landed unit cost on receipt |
-| `goods_receipts` | po_id, received_at, received_by, location_id, notes | Lines → `stock_movements(type=receipt)` + avg cost recalculation |
+| `goods_receipts` | po_id, received_at, received_by, location_id, notes | Append-only. One delivery |
+| `goods_receipt_items` | receipt_id, po_item_id, quantity, unit_cost_minor, landed_cost_minor | Append-only. Each line writes a `stock_movements(type=receipt)` row and recalculates `product_variants.avg_cost_minor` (ADR-029) |
 
 ## 4. Cart and checkout
 

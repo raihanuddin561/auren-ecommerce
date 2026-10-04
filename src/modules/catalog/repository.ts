@@ -573,13 +573,40 @@ const publishedWhere = (now: Date): Prisma.ProductWhereInput => ({
 const cardInclude = {
   variants: {
     where: { status: 'active' as const },
-    select: { priceMinor: true, compareAtMinor: true, currency: true },
+    select: {
+      id: true,
+      priceMinor: true,
+      compareAtMinor: true,
+      currency: true,
+      optionValues: {
+        select: {
+          optionValue: {
+            select: {
+              id: true,
+              label: true,
+              value: true,
+              swatchHex: true,
+              position: true,
+              option: { select: { name: true } },
+            },
+          },
+        },
+      },
+    },
     orderBy: { priceMinor: 'asc' as const },
   },
   media: {
-    select: { url: true, alt: true, width: true, height: true },
+    select: {
+      url: true,
+      alt: true,
+      width: true,
+      height: true,
+      optionValueId: true,
+      dominantColor: true,
+      blurData: true,
+    },
     orderBy: { position: 'asc' as const },
-    take: 2,
+    take: 24,
   },
   category: { select: { name: true, slug: true, path: true } },
 } satisfies Prisma.ProductInclude;
@@ -642,4 +669,309 @@ export const listPublishedCollectionProducts = (
     orderBy: [{ position: 'asc' }, { productId: 'asc' }],
     take,
     include: { product: { include: cardInclude } },
+  });
+
+// ---------------------------------------------------------------------------------------------
+// Variant cost basis (used by purchasing through the catalog service)
+// ---------------------------------------------------------------------------------------------
+
+export interface VariantCostRow {
+  id: string;
+  productId: string;
+  currency: string;
+  avgCostMinor: bigint;
+}
+
+/** Locks variant rows in a stable order so concurrent receipts never deadlock. */
+export async function lockVariantCosts(
+  tx: Tx,
+  variantIds: readonly string[],
+): Promise<VariantCostRow[]> {
+  if (variantIds.length === 0) return [];
+  const ids = [...new Set(variantIds)].sort();
+  const rows = await tx.$queryRaw<
+    Array<{ id: string; product_id: string; currency: string; avg_cost_minor: bigint }>
+  >`SELECT id, product_id, currency, avg_cost_minor FROM product_variants
+     WHERE id = ANY(${ids}::uuid[]) ORDER BY id FOR NO KEY UPDATE`;
+  return rows.map((row) => ({
+    id: row.id,
+    productId: row.product_id,
+    currency: row.currency,
+    avgCostMinor: row.avg_cost_minor,
+  }));
+}
+
+export const setVariantAvgCost = (tx: Tx, id: string, avgCostMinor: bigint) =>
+  tx.productVariant.update({ where: { id }, data: { avgCostMinor } });
+
+export const listVariantProductIds = (tx: Tx, variantIds: readonly string[]) =>
+  tx.productVariant.findMany({
+    where: { id: { in: [...variantIds] } },
+    select: { id: true, productId: true },
+  });
+
+// ---------------------------------------------------------------------------------------------
+// Public reads: shop and collection pages
+// ---------------------------------------------------------------------------------------------
+
+const categoryPageSelect = {
+  id: true,
+  parentId: true,
+  name: true,
+  slug: true,
+  path: true,
+  description: true,
+  image: true,
+  imageAlt: true,
+  seoTitle: true,
+  seoDescription: true,
+} satisfies Prisma.CategorySelect;
+
+export const findActiveCategoryByPath = (tx: Tx, path: string) =>
+  tx.category.findFirst({ where: { path, isActive: true }, select: categoryPageSelect });
+
+/** A category and everything under it (materialised path), active ones only. */
+export const listActiveCategorySubtreeIds = (tx: Tx, path: string) =>
+  tx.category.findMany({
+    where: { isActive: true, OR: [{ path }, { path: { startsWith: `${path}/` } }] },
+    select: { id: true },
+  });
+
+/** The categories along a path, for the breadcrumb: `tops/shirts` gives `tops` and `tops/shirts`. */
+export const listActiveCategoriesByPaths = (tx: Tx, paths: readonly string[]) =>
+  tx.category.findMany({
+    where: { path: { in: [...paths] }, isActive: true },
+    select: { name: true, path: true },
+  });
+
+export const listActiveChildCategories = (tx: Tx, parentId: string) =>
+  tx.category.findMany({
+    where: { parentId, isActive: true },
+    orderBy: [{ position: 'asc' }, { name: 'asc' }],
+    select: { name: true, path: true },
+  });
+
+/** Live collections only: draft (no date) and scheduled (future date) are not found. */
+export const findPublishedCollectionBySlug = (tx: Tx, slug: string, now: Date) =>
+  tx.collection.findFirst({
+    where: { slug, publishedAt: { lte: now } },
+    select: {
+      id: true,
+      slug: true,
+      title: true,
+      description: true,
+      heroMedia: true,
+      sortOrder: true,
+      seoTitle: true,
+      seoDescription: true,
+    },
+  });
+
+export interface ListingScopeFilter {
+  categoryIds?: readonly string[];
+  collectionId?: string;
+}
+
+const scopeWhere = (scope: ListingScopeFilter): Prisma.ProductWhereInput => ({
+  ...(scope.categoryIds ? { categoryId: { in: [...scope.categoryIds] } } : {}),
+  ...(scope.collectionId ? { collections: { some: { collectionId: scope.collectionId } } } : {}),
+});
+
+/**
+ * Everything filtering, counting and sorting need, for every listed product of a scope, in one
+ * query and without pictures: active, not deleted, published, with at least one active variant.
+ */
+export async function listProductFacetSource(tx: Tx, now: Date, scope: ListingScopeFilter) {
+  return tx.product.findMany({
+    where: {
+      ...publishedWhere(now),
+      variants: { some: { status: 'active' } },
+      ...scopeWhere(scope),
+    },
+    select: {
+      id: true,
+      publishedAt: true,
+      featuredRank: true,
+      fit: true,
+      attributes: true,
+      collections: scope.collectionId
+        ? { where: { collectionId: scope.collectionId }, select: { position: true } }
+        : false,
+      variants: {
+        where: { status: 'active' },
+        select: {
+          priceMinor: true,
+          optionValues: {
+            select: {
+              optionValue: {
+                select: {
+                  value: true,
+                  label: true,
+                  swatchHex: true,
+                  option: { select: { name: true } },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+}
+
+/** Card rows for the given products (still re-checked as listed), in the order of `ids`. */
+export async function listCardsByIds(tx: Tx, now: Date, ids: readonly string[]) {
+  if (ids.length === 0) return [];
+  const rows = await tx.product.findMany({
+    where: { ...publishedWhere(now), id: { in: [...ids] } },
+    include: cardInclude,
+  });
+  const position = new Map(ids.map((id, index) => [id, index]));
+  return rows.sort((a, b) => (position.get(a.id) ?? 0) - (position.get(b.id) ?? 0));
+}
+
+export const listVariantLabels = (tx: Tx, variantIds: readonly string[]) =>
+  tx.productVariant.findMany({
+    where: { id: { in: [...variantIds] } },
+    select: {
+      id: true,
+      sku: true,
+      product: { select: { title: true, slug: true } },
+      optionValues: {
+        select: {
+          optionValue: { select: { label: true, option: { select: { position: true } } } },
+        },
+      },
+    },
+  });
+
+// ---------------------------------------------------------------------------------------------
+// Product page reads
+// ---------------------------------------------------------------------------------------------
+
+export const findPublishedProductBySlug = (tx: Tx, slug: string, now: Date) =>
+  tx.product.findFirst({
+    where: { slug, ...publishedWhere(now) },
+    include: {
+      category: { select: { name: true, path: true } },
+      options: {
+        orderBy: { position: 'asc' },
+        select: {
+          id: true,
+          name: true,
+          position: true,
+          values: {
+            orderBy: { position: 'asc' },
+            select: { id: true, label: true, swatchHex: true, position: true },
+          },
+        },
+      },
+      variants: {
+        where: { status: 'active' },
+        orderBy: { position: 'asc' },
+        select: {
+          id: true,
+          sku: true,
+          currency: true,
+          position: true,
+          optionValues: { select: { optionValueId: true } },
+        },
+      },
+      media: {
+        orderBy: { position: 'asc' },
+        select: {
+          id: true,
+          url: true,
+          alt: true,
+          width: true,
+          height: true,
+          dominantColor: true,
+          blurData: true,
+          optionValueId: true,
+          type: true,
+        },
+      },
+      sizeChart: {
+        select: { name: true, unit: true, table: true, howToMeasure: true, modelInfo: true },
+      },
+    },
+  });
+
+/** Categories along a materialised path (tops, tops/shirts), shallowest first. */
+export const listCategoryTrail = (tx: Tx, path: string) => {
+  const parts = path.split('/');
+  const paths = parts.map((_, index) => parts.slice(0, index + 1).join('/'));
+  return tx.category.findMany({
+    where: { path: { in: paths }, isActive: true },
+    orderBy: { path: 'asc' },
+    select: { name: true, path: true },
+  });
+};
+
+/** The first live collection the product belongs to (featured ones first), for the eyebrow. */
+export const findLeadCollection = (tx: Tx, productId: string, now: Date) =>
+  tx.collectionProduct.findFirst({
+    where: { productId, collection: { publishedAt: { lte: now } } },
+    orderBy: [{ collection: { isFeatured: 'desc' } }, { position: 'asc' }],
+    select: { collection: { select: { title: true, slug: true } } },
+  });
+
+/** Current prices of the active variants of a product (read live, never cached). */
+export const listLiveVariantPrices = (tx: Tx, productId: string) =>
+  tx.productVariant.findMany({
+    where: { productId, status: 'active', product: { status: 'active', deletedAt: null } },
+    orderBy: { position: 'asc' },
+    select: { id: true, priceMinor: true, compareAtMinor: true, currency: true },
+  });
+
+/** Other live products in the same category, newest first. */
+export const listRelatedProducts = (
+  tx: Tx,
+  input: { categoryId: string; excludeId: string; now: Date; take: number },
+) =>
+  tx.product.findMany({
+    where: {
+      ...publishedWhere(input.now),
+      categoryId: input.categoryId,
+      id: { not: input.excludeId },
+    },
+    orderBy: [{ publishedAt: 'desc' }, { id: 'desc' }],
+    take: input.take,
+    include: cardInclude,
+  });
+
+// ---------------------------------------------------------------------------------------------
+// Sitemap
+// ---------------------------------------------------------------------------------------------
+
+/** Live products with the first pictures, for sitemap entries. */
+export const listSitemapProducts = (tx: Tx, now: Date, take: number) =>
+  tx.product.findMany({
+    where: { ...publishedWhere(now), variants: { some: { status: 'active' } } },
+    orderBy: [{ publishedAt: 'desc' }, { id: 'asc' }],
+    take,
+    select: {
+      slug: true,
+      updatedAt: true,
+      media: {
+        where: { type: 'image' },
+        orderBy: { position: 'asc' },
+        take: 4,
+        select: { url: true },
+      },
+    },
+  });
+
+export const listSitemapCollections = (tx: Tx, now: Date) =>
+  tx.collection.findMany({
+    where: { publishedAt: { lte: now } },
+    orderBy: { id: 'asc' },
+    select: { slug: true, updatedAt: true },
+  });
+
+export const listSitemapCategories = (tx: Tx) =>
+  tx.category.findMany({
+    where: { isActive: true },
+    orderBy: { path: 'asc' },
+    select: { path: true, updatedAt: true },
   });

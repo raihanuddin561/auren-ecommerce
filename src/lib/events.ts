@@ -20,6 +20,12 @@ export const eventSchemas = {
     kind: z.string().min(1).max(40),
     decision: z.enum(['approved', 'rejected']),
   }),
+  /** Goods arrived against a purchase order (ids only, INV-A9); `complete` when nothing is outstanding. */
+  'purchase_order.received': z.object({
+    purchaseOrderId: z.uuid(),
+    receiptId: z.uuid(),
+    complete: z.boolean(),
+  }),
   /** An audit rule fired (ids and counts only): who acted and which audit row to look at. */
   'security.alert': z.object({
     rule: z.string().min(1).max(60),
