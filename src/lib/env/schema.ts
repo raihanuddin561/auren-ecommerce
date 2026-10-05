@@ -165,7 +165,11 @@ const formatIssues = (error: z.ZodError) =>
     return `${issue.path.join('.') || '(root)'}: ${message}`;
   });
 
-export function parseServerEnv(source: Record<string, string | undefined>): ServerEnv {
+export function parseServerEnv(rawSource: Record<string, string | undefined>): ServerEnv {
+  const source = { ...rawSource };
+  source.DATABASE_URL ||= source.POSTGRES_PRISMA_URL || source.POSTGRES_URL;
+  source.DIRECT_URL ||= source.POSTGRES_URL_NON_POOLING;
+
   // Test-only admin bypass: refuse to boot anywhere that is not a local test run.
   const bypassIssue = staffBypassConfigurationError(source);
   if (bypassIssue) throw new EnvValidationError([bypassIssue]);

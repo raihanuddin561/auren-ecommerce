@@ -1,5 +1,6 @@
 import { cacheLife, cacheTag } from 'next/cache';
 import { db } from '@/lib/db';
+import { logger } from '@/lib/logger';
 import { format, money, toDecimalString } from '@/lib/money';
 import { EMPTY_RULES, type CollectionRules } from './collection-rules';
 import {
@@ -840,29 +841,37 @@ export async function listSitemapEntries(): Promise<SitemapEntry[]> {
   'use cache';
   cacheLife('hours');
   cacheTag(TAG_SITEMAP);
-  const now = new Date();
-  const [products, collections, categories] = await Promise.all([
-    repo.listSitemapProducts(db, now, SITEMAP_PRODUCT_LIMIT),
-    repo.listSitemapCollections(db, now),
-    repo.listSitemapCategories(db),
-  ]);
-  return [
-    ...categories.map((row) => ({
-      path: `/shop/${row.path}`,
-      lastModified: row.updatedAt,
-      images: [],
-    })),
-    ...collections.map((row) => ({
-      path: `/collections/${row.slug}`,
-      lastModified: row.updatedAt,
-      images: [],
-    })),
-    ...products.map((row) => ({
-      path: `/products/${row.slug}`,
-      lastModified: row.updatedAt,
-      images: row.media.map((media) => media.url),
-    })),
-  ];
+  try {
+    const now = new Date();
+    const [products, collections, categories] = await Promise.all([
+      repo.listSitemapProducts(db, now, SITEMAP_PRODUCT_LIMIT),
+      repo.listSitemapCollections(db, now),
+      repo.listSitemapCategories(db),
+    ]);
+    return [
+      ...categories.map((row) => ({
+        path: `/shop/${row.path}`,
+        lastModified: row.updatedAt,
+        images: [],
+      })),
+      ...collections.map((row) => ({
+        path: `/collections/${row.slug}`,
+        lastModified: row.updatedAt,
+        images: [],
+      })),
+      ...products.map((row) => ({
+        path: `/products/${row.slug}`,
+        lastModified: row.updatedAt,
+        images: row.media.map((media) => media.url),
+      })),
+    ];
+  } catch (error) {
+    logger.warn(
+      { err: error },
+      'failed to list sitemap entries from database; continuing with empty sitemap entries',
+    );
+    return [];
+  }
 }
 
 /** Published products by id, in the order asked, for the wishlist. Not cached: the ids are personal. */

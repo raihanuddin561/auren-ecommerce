@@ -10,7 +10,12 @@ const STATIC_PATHS = ['/', '/shop'];
  * Cached under the `sitemap` tag, which every publish invalidates, and revalidated hourly.
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const entries = await listSitemapEntries();
+  let entries: Awaited<ReturnType<typeof listSitemapEntries>> = [];
+  try {
+    entries = await listSitemapEntries();
+  } catch {
+    entries = [];
+  }
   return [
     ...STATIC_PATHS.map((path) => ({ url: absoluteUrl(path), changeFrequency: 'daily' as const })),
     ...entries.map((entry) => ({
