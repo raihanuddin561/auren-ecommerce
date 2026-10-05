@@ -20,6 +20,10 @@ const serverSchema = z.object({
   // Shows the maintenance page on storefront pages (admin and /api keep working)
   MAINTENANCE_MODE: z.preprocess(blankToUndefined, z.enum(['0', '1']).optional()),
 
+  // Bypasses strict third-party production guards (Upstash, Inngest, Resend, Vercel Blob) for preview/demo deployments
+  ALLOW_INCOMPLETE_ENV: z.preprocess(blankToUndefined, z.enum(['0', '1']).optional()),
+  STRICT_ENV_GUARDS: z.preprocess(blankToUndefined, z.enum(['0', '1']).optional()),
+
   // Core (required everywhere: the app cannot run or build without them)
   APP_URL: z.preprocess(blankToUndefined, z.url().default('http://localhost:3000')),
   DATABASE_URL: z
@@ -170,6 +174,32 @@ export function parseServerEnv(rawSource: Record<string, string | undefined>): S
   source.DATABASE_URL ||= source.POSTGRES_PRISMA_URL || source.POSTGRES_URL;
   source.DIRECT_URL ||= source.POSTGRES_URL_NON_POOLING;
 
+  // On Vercel, populate APP_URL from VERCEL_URL if unset, and ensure TLS on remote DB URLs
+  if (source.VERCEL === '1' || source.VERCEL_ENV) {
+    if (!source.APP_URL && source.VERCEL_URL) {
+      source.APP_URL = `https://${source.VERCEL_URL}`;
+    }
+    const appendSsl = (u: string | undefined) => {
+      if (!u) return u;
+      try {
+        const parsed = new URL(u);
+        const host = parsed.hostname.toLowerCase();
+        if (
+          host !== 'localhost' &&
+          host !== '127.0.0.1' &&
+          !parsed.searchParams.has('sslmode') &&
+          !parsed.searchParams.has('ssl')
+        ) {
+          parsed.searchParams.set('sslmode', 'require');
+          return parsed.toString();
+        }
+      } catch {}
+      return u;
+    };
+    source.DATABASE_URL = appendSsl(source.DATABASE_URL);
+    source.DIRECT_URL = appendSsl(source.DIRECT_URL);
+  }
+
   // Test-only admin bypass: refuse to boot anywhere that is not a local test run.
   const bypassIssue = staffBypassConfigurationError(source);
   if (bypassIssue) throw new EnvValidationError([bypassIssue]);
@@ -186,13 +216,27 @@ export function parseServerEnv(rawSource: Record<string, string | undefined>): S
   if (requiresProductionGuards(source)) {
     const issues = productionIssues(result.data, source);
     if (issues.length > 0) {
-      throw new EnvValidationError(issues.map((issue) => `${issue.path}: ${issue.message}`));
+      const messages = issues.map((issue) => `${issue.path}: ${issue.message}`);
+      if (source.VERCEL === '1' || source.VERCEL_ENV) {
+        messages.push(
+          'Tip: If this is a preview or staging deployment on Vercel without all SaaS integrations, set ALLOW_INCOMPLETE_ENV=1 in Vercel Project Settings.',
+        );
+      }
+      throw new EnvValidationError(messages);
     }
   }
   return result.data;
 }
 
-export function parseClientEnv(source: Record<string, string | undefined>): ClientEnv {
+export function parseClientEnv(rawSource: Record<string, string | undefined>): ClientEnv {
+  const source = { ...rawSource };
+  if (
+    (source.VERCEL === '1' || source.VERCEL_ENV) &&
+    !source.NEXT_PUBLIC_APP_URL &&
+    source.NEXT_PUBLIC_VERCEL_URL
+  ) {
+    source.NEXT_PUBLIC_APP_URL = `https://${source.NEXT_PUBLIC_VERCEL_URL}`;
+  }
   const result = clientSchema.safeParse(source);
   if (!result.success) throw new EnvValidationError(formatIssues(result.error));
   return result.data;

@@ -97,6 +97,7 @@ export function skipsEnvValidation(source: Source): boolean {
  */
 export function requiresProductionGuards(source: Source): boolean {
   if (source.NODE_ENV !== 'production' || isBuildPhase(source)) return false;
+  if (source.ALLOW_INCOMPLETE_ENV === '1' || source.STRICT_ENV_GUARDS === '0') return false;
   const onVercel = source.VERCEL === '1' || Boolean(source.VERCEL_ENV);
   const explicitUrl = source.APP_URL?.trim();
   const localRun = source.LOCAL_PRODUCTION === '1' && !!explicitUrl && isLocalUrl(explicitUrl);

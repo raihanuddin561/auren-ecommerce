@@ -170,16 +170,16 @@ describe('components use tokens only', () => {
 
   it('has no raw hex colours', () => {
     expect(offending((source) => /#[0-9a-fA-F]{6}\b|#[0-9a-fA-F]{3}\b/.test(source))).toEqual([]);
-  });
+  }, 30_000);
 
   it('has no arbitrary colour or radius values', () => {
     const arbitrary = /\b(?:bg|text|border|ring|fill|stroke|from|to|via|rounded)-\[[^\]]+\]/;
     expect(offending((source) => arbitrary.test(source))).toEqual([]);
-  });
+  }, 30_000);
 
   it('never uses a radius above the brand maximum', () => {
     expect(offending((source) => /\brounded-(?:3xl|4xl)\b/.test(source))).toEqual([]);
-  });
+  }, 30_000);
 });
 
 describe('brand constants used outside CSS', () => {

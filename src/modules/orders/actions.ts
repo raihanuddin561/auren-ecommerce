@@ -75,7 +75,7 @@ export async function unlockOrder(input: unknown): Promise<ActionResult<{ unlock
  */
 export async function confirmOrderAction(
   input: unknown,
-): Promise<ActionResult<{ orderId: string; orderNumber: string; status: 'confirmed' }>> {
+): Promise<ActionResult<Awaited<ReturnType<typeof confirmOrderStaff>>>> {
   const staff = await requireStaff();
   assertPermission(staff, 'orders.verify');
 

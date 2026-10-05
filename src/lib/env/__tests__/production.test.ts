@@ -232,6 +232,22 @@ describe('local production runs and builds', () => {
     expect(issuesOf(build)).not.toBe('');
     expect(issuesOf({ ...build, NEXT_PHASE: 'phase-production-build' })).toBe('');
   });
+
+  it('allows ALLOW_INCOMPLETE_ENV=1 or STRICT_ENV_GUARDS=0 to bypass external services requirement on Vercel', () => {
+    const minimalVercel = {
+      NODE_ENV: 'production',
+      VERCEL: '1',
+      APP_URL: 'https://aurenbd.vercel.app',
+      NEXT_PUBLIC_APP_URL: 'https://aurenbd.vercel.app',
+      DATABASE_URL: production.DATABASE_URL,
+      BETTER_AUTH_SECRET: STRONG_SECRET,
+      ALLOW_INCOMPLETE_ENV: '1',
+    };
+    expect(issuesOf(minimalVercel)).toBe('');
+    expect(
+      issuesOf({ ...minimalVercel, ALLOW_INCOMPLETE_ENV: undefined, STRICT_ENV_GUARDS: '0' }),
+    ).toBe('');
+  });
 });
 
 describe('SKIP_ENV_VALIDATION', () => {
