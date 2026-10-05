@@ -1,6 +1,7 @@
 import { Suspense, type ReactNode } from 'react';
 import { ANNOUNCEMENTS } from '@/lib/site';
 import { AnnouncementBar } from './announcement-bar';
+import { CartDrawer } from './cart/cart-drawer';
 import { ConciergeButton } from './concierge-button';
 import { Footer } from './footer';
 import { Header } from './header';
@@ -11,7 +12,14 @@ import { Header } from './header';
  * dynamic address (the shop, collections), so each sits in a Suspense boundary; the header's
  * fallback has the header's height, so nothing moves when it arrives.
  */
-export function StorefrontShell({ children }: { children: ReactNode }) {
+export function StorefrontShell({
+  children,
+  cartIsland,
+}: {
+  children: ReactNode;
+  /** The dynamic island that gives the browser the visitor's bag (a page that has none shows an empty bag). */
+  cartIsland?: ReactNode;
+}) {
   return (
     <>
       <a
@@ -35,6 +43,8 @@ export function StorefrontShell({ children }: { children: ReactNode }) {
         {children}
       </main>
       <Footer />
+      {cartIsland}
+      <CartDrawer />
       <Suspense fallback={null}>
         <ConciergeButton />
       </Suspense>

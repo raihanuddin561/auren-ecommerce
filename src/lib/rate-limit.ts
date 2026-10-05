@@ -13,6 +13,14 @@ export const RATE_LIMITS = {
   twoFactor: { limit: 5, windowSeconds: 60 },
   otp: { limit: 3, windowSeconds: 300 },
   checkoutSubmit: { limit: 10, windowSeconds: 600 },
+  /** Order submits per phone number (hashed), whichever network they come from. */
+  checkoutPhone: { limit: 4, windowSeconds: 3600 },
+  /** Wrong-code guesses for the phone code at checkout, per phone number. */
+  otpVerify: { limit: 6, windowSeconds: 300 },
+  /** Guest order lookups and unlocks: guesses at the phone or email on an order, per address. */
+  orderLookup: { limit: 8, windowSeconds: 600 },
+  /** The same, per order number or tracking link, so a botnet cannot spread guesses over addresses. */
+  orderLookupTarget: { limit: 5, windowSeconds: 900 },
   /** Add to bag from any button (cards, product page). */
   addToBag: { limit: 60, windowSeconds: 60 },
   /** "Load more" on the shop and collection pages. */
@@ -40,6 +48,9 @@ export const FAIL_CLOSED: ReadonlySet<LimiterName> = new Set<LimiterName>([
   'verificationEmail',
   'twoFactor',
   'otp',
+  'otpVerify',
+  'orderLookup',
+  'orderLookupTarget',
   'authMutation',
 ]);
 

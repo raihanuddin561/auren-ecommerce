@@ -864,3 +864,17 @@ export async function listSitemapEntries(): Promise<SitemapEntry[]> {
     })),
   ];
 }
+
+/** Published products by id, in the order asked, for the wishlist. Not cached: the ids are personal. */
+export async function getProductCardsByIds(ids: readonly string[]): Promise<ProductCardData[]> {
+  const unique = [...new Set(ids)].slice(0, 60);
+  if (unique.length === 0) return [];
+  const rows = await repo.listPublishedProducts(db, {
+    now: new Date(),
+    take: unique.length,
+    orderBy: [{ id: 'asc' }],
+    where: { id: { in: unique } },
+  });
+  const byId = new Map(rows.map((row) => [row.id, toCard(row)] as const));
+  return unique.map((id) => byId.get(id) ?? null).filter(present);
+}

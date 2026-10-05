@@ -18,14 +18,8 @@ describe('storefront chrome content', () => {
     }
   });
 
-  it('has the five primary destinations in order', () => {
-    expect(PRIMARY_NAV.map((item) => item.label)).toEqual([
-      'Shop',
-      'New',
-      'Collections',
-      'Lookbook',
-      'Journal',
-    ]);
+  it('has the primary destinations in order', () => {
+    expect(PRIMARY_NAV.map((item) => item.label)).toEqual(['Shop', 'New', 'Collections']);
   });
 
   it('gives every mega menu panel at least one column and every link a path', () => {

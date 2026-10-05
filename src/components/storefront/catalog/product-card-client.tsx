@@ -9,10 +9,9 @@ import {
   useTransition,
   type ReactNode,
 } from 'react';
-import { toast } from '@/components/ui/toast';
 import { cn } from '@/lib/cn';
 import type { CardColor, CardImage, CardVariant } from '@/modules/catalog/card';
-import { addToCart } from '@/modules/cart/actions';
+import { addToBag } from '../cart/cart-client';
 import { CatalogImage, ImagePlaceholder, isLocalImage } from './catalog-image';
 
 /**
@@ -223,10 +222,10 @@ interface QuickAddProps {
 /**
  * Sizes for the chosen colour, shown over the picture on desktop hover or keyboard focus. A size
  * with no stock is struck through and disabled. Choosing one asks the bag action, which re-checks
- * stock on the server; until the bag exists the answer is honest that nothing was saved.
+ * stock on the server and the bag drawer opens on success.
  */
 export function QuickAdd({ title }: QuickAddProps) {
-  const { colors, variants, sizes, selectedColorId } = useCardState();
+  const { variants, sizes, selectedColorId } = useCardState();
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -234,7 +233,6 @@ export function QuickAdd({ title }: QuickAddProps) {
   const known = variants.length > 0 && variants.every((variant) => variant.available !== null);
   if (!known || sizes.length === 0) return null;
 
-  const colorLabel = colors.find((color) => color.id === selectedColorId)?.label ?? null;
   const variantFor = (size: string) =>
     variants.find(
       (variant) =>
@@ -244,27 +242,8 @@ export function QuickAdd({ title }: QuickAddProps) {
   const add = (size: string, variant: CardVariant) => {
     setPendingId(variant.id);
     startTransition(async () => {
-      const result = await addToCart({ variantId: variant.id, quantity: 1 });
+      await addToBag(variant.id, 1);
       setPendingId(null);
-      if (result.ok) {
-        const choice = colorLabel ? `${size} in ${colorLabel}` : size;
-        if (result.data.persisted) {
-          toast.success('Added to your bag', `${title}, ${choice}.`);
-        } else {
-          toast.message(
-            'The bag is coming soon',
-            `We have noted ${title}, ${choice}. Nothing has been added yet.`,
-          );
-        }
-        return;
-      }
-      if (result.error.code === 'OUT_OF_STOCK') {
-        toast.error(result.error.message ?? 'That size is sold out.');
-      } else if (result.error.code === 'RATE_LIMITED') {
-        toast.error('Please wait a moment and try again.');
-      } else {
-        toast.error('We could not do that just now. Please try again.');
-      }
     });
   };
 

@@ -40,6 +40,9 @@ const credentialLimiters: LimiterName[] = [
   'verificationEmail',
   'twoFactor',
   'otp',
+  'otpVerify',
+  'orderLookup',
+  'orderLookupTarget',
   'authMutation',
 ];
 

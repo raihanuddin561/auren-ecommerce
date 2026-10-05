@@ -23,6 +23,7 @@
     "db:generate": "prisma generate",
     "setup:local": "pnpm db:migrate:deploy && pnpm db:seed",
     "db:seed": "tsx --import ./scripts/stub-server-only.mjs prisma/seed.ts",
+    "db:seed:reference": "tsx --import ./scripts/stub-server-only.mjs scripts/seed-reference.ts",
     "db:studio": "prisma studio",
     "postinstall": "prisma generate",
     "test:coverage": "vitest run --coverage",
@@ -39,6 +40,8 @@
   "dependencies": {
     "@prisma/adapter-pg": "7.10.0",
     "@prisma/client": "7.10.0",
+    "@react-email/components": "^1.0.12",
+    "@react-email/render": "^2.1.0",
     "@sentry/nextjs": "^11.1.0",
     "@upstash/ratelimit": "^2.2.0",
     "@upstash/redis": "^1.39.0",

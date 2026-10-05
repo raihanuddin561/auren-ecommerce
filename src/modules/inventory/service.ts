@@ -36,8 +36,9 @@ export interface VariantAvailability {
  */
 export async function getAvailability(
   variantIds: readonly string[],
+  client: Tx = db,
 ): Promise<Map<string, VariantAvailability>> {
-  const rows = await repo.sumLevelsByVariant(db, variantIds);
+  const rows = await repo.sumLevelsByVariant(client, variantIds);
   const result = new Map<string, VariantAvailability>();
   for (const id of variantIds) {
     result.set(id, { variantId: id, onHand: 0, reserved: 0, available: 0 });
@@ -431,6 +432,44 @@ export async function sell(tx: Tx, input: SellInput): Promise<StockEffect> {
   }
   return effectFor(tx, touched);
 }
+
+export interface RestockInput {
+  referenceType: string;
+  referenceId: string;
+  lines: readonly StockLine[];
+  reason?: string;
+  actorId?: string;
+}
+
+/**
+ * Returns sold units back to stock (e.g. cancelled order before fulfillment).
+ * Increments on_hand and records a 'return_restock' movement with positive quantity.
+ */
+export async function restock(tx: Tx, input: RestockInput): Promise<StockEffect> {
+  const locationId = await resolveLocation(tx);
+  const touched: string[] = [];
+  for (const line of normaliseLines(input.lines)) {
+    await repo.addOnHand(tx, line.variantId, locationId, line.quantity);
+    await repo.insertMovement(tx, {
+      variantId: line.variantId,
+      locationId,
+      type: 'return_restock',
+      quantity: line.quantity,
+      referenceType: input.referenceType,
+      referenceId: input.referenceId,
+      reason: input.reason ?? 'order_cancelled',
+      actorId: input.actorId ?? null,
+    });
+    touched.push(line.variantId);
+  }
+  return effectFor(tx, touched);
+}
+
+export const hasSoldStock = (tx: Tx, referenceType: string, referenceId: string) =>
+  repo.hasSaleMovements(tx, referenceType, referenceId);
+
+export const hasRestockedStock = (tx: Tx, referenceType: string, referenceId: string) =>
+  repo.hasRestockMovements(tx, referenceType, referenceId);
 
 /**
  * Releases every reservation past its expiry (cron). Safe to run twice and from two workers at

@@ -300,6 +300,32 @@ export async function releaseExpiredReservations(tx: Tx, limit: number) {
   }));
 }
 
+export async function hasSaleMovements(
+  tx: Tx,
+  referenceType: string,
+  referenceId: string,
+): Promise<boolean> {
+  const rows = await tx.$queryRaw<Array<{ exists: boolean }>>`
+    SELECT EXISTS (
+      SELECT 1 FROM stock_movements
+      WHERE reference_type = ${referenceType} AND reference_id = ${referenceId} AND type = 'sale'
+    ) AS "exists"`;
+  return Boolean(rows[0]?.exists);
+}
+
+export async function hasRestockMovements(
+  tx: Tx,
+  referenceType: string,
+  referenceId: string,
+): Promise<boolean> {
+  const rows = await tx.$queryRaw<Array<{ exists: boolean }>>`
+    SELECT EXISTS (
+      SELECT 1 FROM stock_movements
+      WHERE reference_type = ${referenceType} AND reference_id = ${referenceId} AND type = 'return_restock'
+    ) AS "exists"`;
+  return Boolean(rows[0]?.exists);
+}
+
 // ---------------------------------------------------------------------------------------------
 // Reconciliation
 // ---------------------------------------------------------------------------------------------

@@ -3,11 +3,19 @@ import { env, isProduction } from '@/lib/env';
 import { inngest } from '@/lib/jobs/client';
 import { functions } from '@/lib/jobs/functions';
 import { auditFunctions } from '@/modules/audit/queries';
+import { cartFunctions } from '@/modules/cart/queries';
+import { orderFunctions } from '@/modules/orders/queries';
 import { inventoryFunctions } from '@/modules/inventory/queries';
 
 export const { GET, POST, PUT } = serve({
   client: inngest,
-  functions: [...functions, ...auditFunctions, ...inventoryFunctions],
+  functions: [
+    ...functions,
+    ...auditFunctions,
+    ...inventoryFunctions,
+    ...cartFunctions,
+    ...orderFunctions,
+  ],
   // Registration (PUT) needs a valid signature too once the client runs in cloud mode.
   enableUnauthedSync: false,
   // Never derive the callback origin from request headers in production.

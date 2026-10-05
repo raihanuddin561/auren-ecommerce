@@ -84,8 +84,6 @@ export const PRIMARY_NAV: NavItem[] = [
       imageAlt: 'Charcoal tailoring',
     },
   },
-  { label: 'Lookbook', href: '/lookbook' },
-  { label: 'Journal', href: '/journal' },
 ];
 
 /** Shown in the announcement bar (at most three; the bar enforces it). */
@@ -95,11 +93,15 @@ export const ANNOUNCEMENTS: string[] = [
   'Cash on delivery across Bangladesh',
 ];
 
+/**
+ * Only pages that exist are linked: the lookbook, journal, policies and contact pages are added
+ * here as they are built.
+ */
 export const FOOTER_COLUMNS: Array<{ heading: string; links: NavLink[] }> = [
   {
     heading: 'Shop',
     links: [
-      { label: 'New arrivals', href: '/new' },
+      { label: 'New arrivals', href: '/shop?sort=newest' },
       { label: 'Shirts', href: '/shop/shirts' },
       { label: 'Trousers', href: '/shop/trousers' },
       { label: 'Tailoring', href: '/shop/tailoring' },
@@ -109,27 +111,14 @@ export const FOOTER_COLUMNS: Array<{ heading: string; links: NavLink[] }> = [
   {
     heading: 'Client care',
     links: [
-      { label: 'Shipping', href: '/shipping' },
-      { label: 'Returns and exchange', href: '/returns' },
-      { label: 'Size guide', href: '/size-guide' },
-      { label: 'FAQ', href: '/faq' },
-      { label: 'Contact', href: '/contact' },
-    ],
-  },
-  {
-    heading: 'The house',
-    links: [
-      { label: 'Our story', href: '/about' },
-      { label: 'Journal', href: '/journal' },
-      { label: 'Lookbook', href: '/lookbook' },
+      { label: 'Track your order', href: '/track' },
+      { label: 'Your bag', href: '/cart' },
+      { label: 'Wishlist', href: '/wishlist' },
     ],
   },
 ];
 
-export const LEGAL_LINKS: NavLink[] = [
-  { label: 'Privacy', href: '/privacy' },
-  { label: 'Terms', href: '/terms' },
-];
+export const LEGAL_LINKS: NavLink[] = [];
 
 export const PAYMENT_MARKS = ['Cash on delivery', 'bKash', 'Nagad', 'Visa', 'Mastercard'] as const;
 

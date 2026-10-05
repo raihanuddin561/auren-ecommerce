@@ -421,7 +421,10 @@ test.describe('product card', () => {
     await expect(card.locator('s')).toBeVisible();
   });
 
-  test('quick add on desktop offers the sizes and answers honestly', async ({ page, isMobile }) => {
+  test('quick add on desktop offers the sizes and puts the piece in the bag', async ({
+    page,
+    isMobile,
+  }) => {
     test.skip(isMobile, 'Quick add is for pointer devices');
     await page.goto(SHOP);
     const card = cards(page).filter({ hasText: title(5) });
@@ -429,9 +432,10 @@ test.describe('product card', () => {
     const sizes = card.getByRole('group', { name: /Quick add/ });
     await expect(sizes).toBeVisible();
     await sizes.getByRole('button', { name: 'Add size M to bag' }).click();
-    // The bag does not exist yet: the message says so and does not claim anything was added.
-    await expect(page.getByText('The bag is coming soon')).toBeVisible();
-    await expect(page.getByText(/Added to your bag/)).toHaveCount(0);
+    // The server adds it and the bag drawer opens with the piece in it.
+    const drawer = page.getByRole('dialog', { name: /Your bag/ });
+    await expect(drawer).toBeVisible();
+    await expect(drawer.getByText(title(5))).toBeVisible();
   });
 
   test('quick add is reachable with the keyboard', async ({ page, isMobile }) => {

@@ -86,9 +86,11 @@ export function createLocalMediaProvider(config: LocalMediaConfig): MediaProvide
       if (!isPrivateKey(key)) return null;
       const file = fileFor(key);
       try {
-        const info = await stat(file);
+        const info = await stat(/*turbopackIgnore: true*/ file);
         return {
-          stream: Readable.toWeb(createReadStream(file)) as ReadableStream<Uint8Array>,
+          stream: Readable.toWeb(
+            createReadStream(/*turbopackIgnore: true*/ file),
+          ) as ReadableStream<Uint8Array>,
           contentType: contentTypeForKey(key),
           size: info.size,
         };
@@ -113,7 +115,10 @@ export async function readLocalPublicFile(
   const file = resolveInsideRoot(root, key);
   if (!file) return null;
   try {
-    return { body: await readFile(file), contentType: contentTypeForKey(key) };
+    return {
+      body: await readFile(/*turbopackIgnore: true*/ file),
+      contentType: contentTypeForKey(key),
+    };
   } catch {
     return null;
   }

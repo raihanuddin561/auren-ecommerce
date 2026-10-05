@@ -63,7 +63,7 @@ export const ADMIN_NAV: AdminNavGroup[] = [
         href: '/admin/orders',
         icon: ShoppingCart,
         permission: 'orders.read',
-        ready: false,
+        ready: true,
       },
       {
         label: 'Returns',
@@ -216,7 +216,8 @@ export const ADMIN_NAV: AdminNavGroup[] = [
         href: '/admin/settings',
         icon: Settings,
         permission: 'settings.manage',
-        ready: false,
+        ready: true,
+        keywords: ['shipping', 'delivery', 'cash on delivery', 'zones'],
       },
       {
         label: 'Staff',

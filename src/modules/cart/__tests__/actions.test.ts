@@ -1,9 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DomainError } from '@/lib/errors';
+import { emptyCartView } from '../view';
 
 const mocks = vi.hoisted(() => ({
-  getAvailability: vi.fn(),
+  addLine: vi.fn(),
+  setLineQuantity: vi.fn(),
+  getView: vi.fn(),
   rateLimit: vi.fn(),
+  readCartIdentity: vi.fn(),
+  writeCartCookie: vi.fn(),
 }));
 
 vi.mock('next/navigation', () => ({
@@ -15,31 +20,47 @@ vi.mock('@/lib/request-meta', () => ({
   getRequestMeta: async () => ({ ip: '198.51.100.9', userAgent: 'vitest' }),
 }));
 vi.mock('@/lib/rate-limit', () => ({ rateLimit: mocks.rateLimit }));
-vi.mock('@/modules/inventory/service', () => ({ getAvailability: mocks.getAvailability }));
+vi.mock('../service', () => ({
+  addLine: mocks.addLine,
+  setLineQuantity: mocks.setLineQuantity,
+  getView: mocks.getView,
+}));
+vi.mock('../cookie', () => ({
+  readCartIdentity: mocks.readCartIdentity,
+  writeCartCookie: mocks.writeCartCookie,
+}));
 
-import { addToCart } from '../actions';
+import { addToCart, refreshCart, setCartLine } from '../actions';
 
 const VARIANT = '0192f7c2-8b1a-7c3e-9d4f-1a2b3c4d5e6f';
-const stock = (available: number) =>
-  new Map([[VARIANT, { variantId: VARIANT, onHand: available, reserved: 0, available }]]);
+const view = emptyCartView('BDT', null);
 
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.rateLimit.mockResolvedValue({ success: true });
-  mocks.getAvailability.mockResolvedValue(stock(5));
+  mocks.readCartIdentity.mockResolvedValue({ userId: null, token: null });
+  mocks.addLine.mockResolvedValue({ view, newToken: null });
+  mocks.setLineQuantity.mockResolvedValue({ view, newToken: null });
 });
 
 describe('addToCart', () => {
-  it('re-checks live stock and honestly reports that nothing was saved yet', async () => {
-    const result = await addToCart({ variantId: VARIANT, quantity: 1 });
-    expect(result).toEqual({
-      ok: true,
-      data: { variantId: VARIANT, quantity: 1, persisted: false },
-    });
-    expect(mocks.getAvailability).toHaveBeenCalledWith([VARIANT]);
+  it('adds the line for the caller identity and returns the server-computed bag', async () => {
+    const result = await addToCart({ variantId: VARIANT, quantity: 2 });
+    expect(result).toEqual({ ok: true, data: { view } });
+    expect(mocks.addLine).toHaveBeenCalledWith(
+      { userId: null, token: null },
+      { variantId: VARIANT, quantity: 2 },
+    );
+    expect(mocks.writeCartCookie).not.toHaveBeenCalled();
   });
 
-  it('refuses invalid input without touching stock', async () => {
+  it('sets the bag cookie only when a new bag was created', async () => {
+    mocks.addLine.mockResolvedValue({ view, newToken: 'a'.repeat(43) });
+    await addToCart({ variantId: VARIANT, quantity: 1 });
+    expect(mocks.writeCartCookie).toHaveBeenCalledWith('a'.repeat(43));
+  });
+
+  it('refuses invalid input, including client-sent prices, before doing any work (INV-O8)', async () => {
     for (const input of [
       null,
       {},
@@ -48,31 +69,12 @@ describe('addToCart', () => {
       { variantId: VARIANT, quantity: 11 },
       { variantId: VARIANT, quantity: 1.5 },
       { variantId: VARIANT, quantity: 1, price: 1 },
+      { variantId: VARIANT, quantity: 1, total: '0' },
     ]) {
-      const result = await addToCart(input);
-      expect(result).toMatchObject({ ok: false, error: { code: 'VALIDATION' } });
+      expect(await addToCart(input)).toMatchObject({ ok: false, error: { code: 'VALIDATION' } });
     }
-    expect(mocks.getAvailability).not.toHaveBeenCalled();
-  });
-
-  it('refuses a size that is sold out or has no stock row', async () => {
-    mocks.getAvailability.mockResolvedValue(stock(0));
-    expect(await addToCart({ variantId: VARIANT, quantity: 1 })).toMatchObject({
-      ok: false,
-      error: { code: 'OUT_OF_STOCK' },
-    });
-    mocks.getAvailability.mockResolvedValue(new Map());
-    expect(await addToCart({ variantId: VARIANT, quantity: 1 })).toMatchObject({
-      ok: false,
-      error: { code: 'OUT_OF_STOCK' },
-    });
-  });
-
-  it('refuses more than is available, naming what is left', async () => {
-    mocks.getAvailability.mockResolvedValue(stock(2));
-    const result = await addToCart({ variantId: VARIANT, quantity: 3 });
-    expect(result).toMatchObject({ ok: false, error: { code: 'OUT_OF_STOCK' } });
-    expect(result.ok === false && result.error.message).toContain('Only 2 left');
+    expect(mocks.addLine).not.toHaveBeenCalled();
+    expect(mocks.rateLimit).not.toHaveBeenCalled();
   });
 
   it('is rate limited per address', async () => {
@@ -82,14 +84,51 @@ describe('addToCart', () => {
       error: { code: 'RATE_LIMITED' },
     });
     expect(mocks.rateLimit).toHaveBeenCalledWith('addToBag', '198.51.100.9');
-    expect(mocks.getAvailability).not.toHaveBeenCalled();
+    expect(mocks.addLine).not.toHaveBeenCalled();
+  });
+
+  it('passes a stock refusal on with its message', async () => {
+    mocks.addLine.mockRejectedValue(new DomainError('OUT_OF_STOCK', 'Only 2 left in that size.'));
+    expect(await addToCart({ variantId: VARIANT, quantity: 3 })).toMatchObject({
+      ok: false,
+      error: { code: 'OUT_OF_STOCK', message: 'Only 2 left in that size.' },
+    });
   });
 
   it('turns an unexpected failure into a safe error', async () => {
-    mocks.getAvailability.mockRejectedValue(new DomainError('INTERNAL'));
+    mocks.addLine.mockRejectedValue(new Error('boom'));
     expect(await addToCart({ variantId: VARIANT, quantity: 1 })).toMatchObject({
       ok: false,
       error: { code: 'INTERNAL' },
     });
+  });
+});
+
+describe('setCartLine', () => {
+  it('sets, removes (zero) and restores with one contract', async () => {
+    expect(await setCartLine({ variantId: VARIANT, quantity: 0 })).toMatchObject({ ok: true });
+    expect(mocks.setLineQuantity).toHaveBeenLastCalledWith(expect.anything(), {
+      variantId: VARIANT,
+      quantity: 0,
+    });
+    expect(await setCartLine({ variantId: VARIANT, quantity: 3 })).toMatchObject({ ok: true });
+  });
+
+  it('rejects unknown fields and out-of-range quantities', async () => {
+    for (const input of [
+      { variantId: VARIANT, quantity: -1 },
+      { variantId: VARIANT, quantity: 11 },
+      { variantId: VARIANT, quantity: 1, unitPrice: 5 },
+    ]) {
+      expect(await setCartLine(input)).toMatchObject({ ok: false, error: { code: 'VALIDATION' } });
+    }
+    expect(mocks.setLineQuantity).not.toHaveBeenCalled();
+  });
+});
+
+describe('refreshCart', () => {
+  it('returns the current bag', async () => {
+    mocks.getView.mockResolvedValue(view);
+    expect(await refreshCart()).toEqual({ ok: true, data: { view } });
   });
 });

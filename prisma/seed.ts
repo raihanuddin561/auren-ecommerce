@@ -32,6 +32,7 @@ const { ensureOwnerAccount } = await import('../src/lib/owner');
 const { seedCatalog, seedCatalogExtras } = await import('./seed-catalog');
 const { seedPurchasing } = await import('./seed-purchasing');
 const { rebuildAutomaticCollections } = await import('../src/modules/catalog/service');
+const { ensureReferenceData } = await import('../src/modules/shipping/service');
 
 async function seedOwner() {
   const demoIssue = demoAdminConfigurationError(process.env);
@@ -64,6 +65,10 @@ async function seedOwner() {
 
 try {
   await seedOwner();
+  const reference = await db.$transaction((tx) => ensureReferenceData(tx), { timeout: 60_000 });
+  console.log(
+    `Delivery areas: ${reference.areasAdded} added, ${reference.zonesAdded} default zones added.`,
+  );
   const catalog = await seedCatalog(db);
   console.log(
     catalog.skipped

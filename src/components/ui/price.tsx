@@ -1,11 +1,12 @@
 import { cva, type VariantProps } from 'class-variance-authority';
-import { compare, format as formatMoney, type Money } from '@/lib/money';
+import { compare, type Money } from '@/lib/money';
+import { formatPriceText } from '@/lib/price-format';
 import { cn } from '@/lib/cn';
 import { Skeleton } from './skeleton';
 
 /** Display text for a price. The taka sign replaces the ISO code for BDT, as in all AUREN copy. */
 export function formatPrice(value: Money): string {
-  return formatMoney(value, { trimZeroFraction: true }).replace(/^BDT\s?/, '৳');
+  return formatPriceText(value);
 }
 
 const priceVariants = cva('inline-flex flex-wrap items-baseline gap-x-2 type-price', {

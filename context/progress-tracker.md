@@ -18,6 +18,15 @@
 
 ---
 
+### 2026-10-05 — 4.1 to 4.8, 5.1, 5.2 order flow (stage 2) — WIP (state checkpoint)
+- Type: new
+- Done so far (uncommitted, in the working tree): migration add_cart_checkout_orders (carts, cart_items, geo_areas, addresses, shipping_zones/rates, orders, order_items, order_events, payments, customer_risk_flags, notification_logs, order_number_seq, INV-O9 CHECK + trigger, append-only triggers, RLS) applied to dev and test DBs; modules shipping (geo data 8 divisions, 64 districts, ~355 thanas; zones, quote, admin actions), settings (checkout protection, COD), cart (service, cookie, actions, view; integration 14/14); storefront cart UI (store, drawer, bag page, header BagButton, wishlist page, PDP and card wired, dead header and footer links removed).
+- UPDATE (resume checkpoint): all code for 4.1-4.8, 5.1, 5.2 is written (payments, orders, checkout, notifications modules; checkout, track, cart, wishlist pages; admin /orders and /settings/shipping; migration applied; ADR-031..034; DATA-MODEL updated). Integration: cart 14/14, checkout 30/30 on real Postgres; unit 1127 pass (cod registry bug fixed). Playwright spec tests/e2e/checkout.db.spec.ts written; last fixes applied (empty-bag revision, uncached geo list, form-scoped locators) and NOT yet rebuilt or re-run. Run e2e with the scratchpad runner (loads .env.local TEST_ vars; server as auren_app). Then: dev-server cold-start performance task, code-reviewer, commerce-invariants-reviewer, premium-ui-qa (E2E_SHOTS=1 screenshots in tests/e2e/__qa__/shots), feature-progress rows, secret scan.
+- Next: reconcile checks, performance task, rebuild + e2e, reviews, progress rows.
+- Blockers/risks: none yet. Settings permission is the existing settings.manage (not settings.write).
+
+---
+
 ### 2026-10-04 — 2.9 to 2.14 and 3.1 to 3.7 Inventory, purchasing, storefront listing and product page — Done
 - Type: new (all rows)
 - Changed: prisma migrations add_inventory_and_purchasing and harden_reservation_release; src/modules/inventory and src/modules/purchasing (repository, service, schemas, actions, queries, cost maths, PO state machine, PDF); catalog (pdp.ts, card.ts, listing.ts, storefront queries, sitemap queries, cost helpers); src/modules/cart (addToCart contract, not persisted); admin pages inventory, movements, suppliers, purchasing (list, new, detail, edit, PDF route); storefront routes shop, collections, search stub, products/[slug] (page, live island, OG image), sitemap.ts, robots.ts; components storefront/{catalog,pdp}, admin/{inventory,purchasing}; prisma seed (supplier and four purchase orders through the real services); ADR-029; DATA-MODEL; admin nav; navigation links to existing routes only.

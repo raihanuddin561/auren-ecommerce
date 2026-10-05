@@ -8,7 +8,10 @@ import { createVercelBlobProvider } from './vercel-blob';
 export const DEFAULT_MEDIA_LOCAL_DIR = '.local-media';
 
 export function localMediaRoot(): string {
-  return path.resolve(process.cwd(), env.MEDIA_LOCAL_DIR || DEFAULT_MEDIA_LOCAL_DIR);
+  return path.resolve(
+    /*turbopackIgnore: true*/ process.cwd(),
+    env.MEDIA_LOCAL_DIR || DEFAULT_MEDIA_LOCAL_DIR,
+  );
 }
 
 let cached: MediaProvider | undefined;

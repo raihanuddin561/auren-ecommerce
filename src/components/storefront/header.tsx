@@ -1,6 +1,6 @@
 'use client';
 
-import { Heart, Search, ShoppingBag, User } from 'lucide-react';
+import { Heart, Search } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useSyncExternalStore } from 'react';
@@ -9,6 +9,7 @@ import { cn } from '@/lib/cn';
 import { hasHeroHeader, PRIMARY_NAV } from '@/lib/site';
 import { MegaMenu } from './mega-menu';
 import { MobileMenu } from './mobile-menu';
+import { BagButton } from './cart/bag-button';
 import { Wordmark } from './wordmark';
 
 /** Scroll distance after which a transparent header turns solid. */
@@ -27,11 +28,6 @@ function useScrolledPast(threshold: number): boolean {
   );
 }
 
-interface HeaderProps {
-  /** Items in the bag. Comes from the cart once it exists. */
-  bagCount?: number;
-}
-
 const iconLink =
   'touch-target relative inline-flex size-11 items-center justify-center text-fg transition-auren-fast hover:text-accent-text';
 
@@ -39,7 +35,7 @@ const iconLink =
  * Transparent over a hero (home) until the visitor scrolls 80px or opens a menu, then ivory with a
  * hairline border. On every other page it is solid from the start.
  */
-export function Header({ bagCount = 0 }: HeaderProps) {
+export function Header() {
   const pathname = usePathname();
   const scrolled = useScrolledPast(HEADER_SOLID_AFTER_PX);
   const [openPanel, setOpenPanel] = useState<string | null>(null);
@@ -81,36 +77,13 @@ export function Header({ bagCount = 0 }: HeaderProps) {
             <Icon icon={Search} />
           </Link>
           <Link
-            href="/account"
-            aria-label="Account"
-            className={cn(iconLink, 'hidden sm:inline-flex')}
-          >
-            <Icon icon={User} />
-          </Link>
-          <Link
             href="/wishlist"
             aria-label="Wishlist"
             className={cn(iconLink, 'hidden sm:inline-flex')}
           >
             <Icon icon={Heart} />
           </Link>
-          <Link
-            href="/cart"
-            aria-label={
-              bagCount > 0 ? `Bag, ${bagCount} ${bagCount === 1 ? 'item' : 'items'}` : 'Bag, empty'
-            }
-            className={iconLink}
-          >
-            <Icon icon={ShoppingBag} />
-            {bagCount > 0 ? (
-              <span
-                aria-hidden="true"
-                className="absolute top-1.5 right-0.5 inline-flex min-w-4 items-center justify-center bg-gold px-1 py-0.5 text-eyebrow leading-none text-ink tabular-nums"
-              >
-                {bagCount}
-              </span>
-            ) : null}
-          </Link>
+          <BagButton className={iconLink} />
         </div>
       </div>
     </header>

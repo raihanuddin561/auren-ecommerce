@@ -26,6 +26,25 @@ export const eventSchemas = {
     receiptId: z.uuid(),
     complete: z.boolean(),
   }),
+  /** A customer placed an order (ids and amounts only, INV-A9). It still needs staff verification. */
+  'order.placed': z.object({
+    orderId: z.uuid(),
+    paymentMethod: z.enum(['cod', 'sslcommerz', 'stripe', 'bkash']),
+    currency: z.string().length(3),
+    totalMinor: z.string().regex(/^\d+$/),
+    channel: z.enum(['web']),
+  }),
+  /** Staff verified and confirmed the order (ids only, INV-A9). */
+  'order.confirmed': z.object({
+    orderId: z.uuid(),
+    confirmedBy: z.uuid(),
+  }),
+  /** Staff cancelled the order (ids and reason only, INV-A9). */
+  'order.cancelled': z.object({
+    orderId: z.uuid(),
+    cancelledBy: z.uuid(),
+    reason: z.string().min(1).max(40),
+  }),
   /** An audit rule fired (ids and counts only): who acted and which audit row to look at. */
   'security.alert': z.object({
     rule: z.string().min(1).max(60),

@@ -975,3 +975,45 @@ export const listSitemapCategories = (tx: Tx) =>
     orderBy: { path: 'asc' },
     select: { path: true, updatedAt: true },
   });
+
+// ---------------------------------------------------------------------------------------------
+// Bag and order reads: what a variant is, costs and sells for right now
+// ---------------------------------------------------------------------------------------------
+
+export const listSellableVariantRows = (tx: Tx, variantIds: readonly string[]) =>
+  tx.productVariant.findMany({
+    where: { id: { in: [...variantIds] } },
+    select: {
+      id: true,
+      sku: true,
+      priceMinor: true,
+      compareAtMinor: true,
+      avgCostMinor: true,
+      currency: true,
+      status: true,
+      product: {
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+          status: true,
+          deletedAt: true,
+          publishedAt: true,
+          media: {
+            where: { type: 'image' },
+            orderBy: { position: 'asc' },
+            take: 24,
+            select: { url: true, alt: true, optionValueId: true },
+          },
+        },
+      },
+      optionValues: {
+        select: {
+          optionValueId: true,
+          optionValue: {
+            select: { label: true, option: { select: { name: true, position: true } } },
+          },
+        },
+      },
+    },
+  });

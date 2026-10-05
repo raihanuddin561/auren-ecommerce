@@ -38,8 +38,13 @@ const mobile = {
 };
 
 const sharedEnv = {
+  // The servers can run as the least-privilege role (E2E_SERVER_DATABASE_URL, the same database as
+  // auren_app) while the specs seed and clean up with DATABASE_URL, so the runtime role is proven
+  // on the real flow, not only in the role tests.
   DATABASE_URL:
-    process.env.DATABASE_URL ?? 'postgresql://auren:auren@localhost:5432/auren_e2e_test',
+    process.env.E2E_SERVER_DATABASE_URL ??
+    process.env.DATABASE_URL ??
+    'postgresql://auren:auren@localhost:5432/auren_e2e_test',
   BETTER_AUTH_SECRET:
     process.env.BETTER_AUTH_SECRET ?? 'e2e-secret-0123456789abcdef0123456789abcdef',
   INNGEST_DEV: '1',

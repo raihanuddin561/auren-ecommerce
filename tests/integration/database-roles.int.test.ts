@@ -170,6 +170,13 @@ describe('role definition', () => {
       // A delivery that happened is never edited: corrections are new movements.
       goods_receipts: { sel: true, ins: true, upd: false, del: false },
       goods_receipt_items: { sel: true, ins: true, upd: false, del: false },
+      // The order timeline and the send log are ledgers.
+      order_events: { sel: true, ins: true, upd: false, del: false },
+      notification_logs: { sel: true, ins: true, upd: false, del: false },
+      // Orders, their lines and payments are corrected, cancelled or refunded, never deleted.
+      orders: { sel: true, ins: true, upd: true, del: false },
+      order_items: { sel: true, ins: true, upd: true, del: false },
+      payments: { sel: true, ins: true, upd: true, del: false },
       // Column level UPDATE (delivery bookkeeping only) is checked in its own test.
       outbox_events: { sel: true, ins: true, upd: true, del: false },
       role_permissions: { sel: true, ins: false, upd: false, del: false },

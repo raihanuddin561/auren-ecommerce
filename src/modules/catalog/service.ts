@@ -1704,3 +1704,73 @@ export async function variantLabels(
     ]),
   );
 }
+
+/** A variant as the bag and checkout need it: what it is, what it sells for and what it cost. */
+export interface SellableVariant {
+  id: string;
+  productId: string;
+  productTitle: string;
+  productSlug: string;
+  sku: string;
+  /** For example White / M / Slim. */
+  optionsLabel: string;
+  options: Array<{ name: string; value: string }>;
+  priceMinor: bigint;
+  compareAtMinor: bigint | null;
+  /** Weighted average landed cost; zero means no cost basis has been recorded yet. */
+  avgCostMinor: bigint;
+  currency: string;
+  image: { url: string; alt: string } | null;
+  /** Active variant of a published, live product. Anything else cannot be bought. */
+  sellable: boolean;
+}
+
+/**
+ * Reads variants for the bag, the checkout and order snapshots. Unknown ids are left out. Prices
+ * come from the database here and nowhere else: the browser never states a price (INV-M3).
+ */
+export async function getSellableVariants(
+  tx: Tx,
+  variantIds: readonly string[],
+  now: Date = new Date(),
+): Promise<Map<string, SellableVariant>> {
+  if (variantIds.length === 0) return new Map();
+  const rows = await repo.listSellableVariantRows(tx, [...new Set(variantIds)]);
+  return new Map(
+    rows.map((row) => {
+      const ordered = [...row.optionValues].sort(
+        (a, b) => a.optionValue.option.position - b.optionValue.option.position,
+      );
+      const valueIds = new Set(ordered.map((entry) => entry.optionValueId));
+      const media =
+        row.product.media.find((m) => m.optionValueId && valueIds.has(m.optionValueId)) ??
+        row.product.media.find((m) => m.optionValueId === null) ??
+        row.product.media[0];
+      const live =
+        row.status === 'active' &&
+        row.product.status === 'active' &&
+        row.product.deletedAt === null &&
+        row.product.publishedAt !== null &&
+        row.product.publishedAt <= now;
+      const variant: SellableVariant = {
+        id: row.id,
+        productId: row.product.id,
+        productTitle: row.product.title,
+        productSlug: row.product.slug,
+        sku: row.sku,
+        optionsLabel: ordered.map((entry) => entry.optionValue.label).join(' / '),
+        options: ordered.map((entry) => ({
+          name: entry.optionValue.option.name,
+          value: entry.optionValue.label,
+        })),
+        priceMinor: row.priceMinor,
+        compareAtMinor: row.compareAtMinor,
+        avgCostMinor: row.avgCostMinor,
+        currency: row.currency,
+        image: media ? { url: media.url, alt: media.alt } : null,
+        sellable: live,
+      };
+      return [row.id, variant] as const;
+    }),
+  );
+}

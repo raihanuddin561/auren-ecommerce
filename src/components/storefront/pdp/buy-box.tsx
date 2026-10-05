@@ -8,8 +8,8 @@ import { Price } from '@/components/ui/price';
 import { toast } from '@/components/ui/toast';
 import { cn } from '@/lib/cn';
 import { deserialize } from '@/lib/money';
-import { addToCart } from '@/modules/cart/actions';
 import type { LivePrice, PdpColor, PdpSize, PdpSizeChart, PdpVariant } from '@/modules/catalog/pdp';
+import { addToBag } from '../cart/cart-client';
 import { WishlistButton } from '../catalog/wishlist-button';
 import {
   blockReason,
@@ -125,33 +125,8 @@ export function BuyBox({
     }
     if (reason || !variant) return;
     startTransition(async () => {
-      let result: Awaited<ReturnType<typeof addToCart>>;
-      try {
-        result = await addToCart({ variantId: variant.id, quantity: shownQuantity });
-      } catch {
-        toast.error('We could not do that just now. Please try again.');
-        return;
-      }
-      const choice = [color?.label, chosen?.label].filter(Boolean).join(', ');
-      if (result.ok) {
-        if (result.data.persisted) {
-          toast.success('Added to your bag', `${title}${choice ? `, ${choice}` : ''}.`);
-        } else {
-          // The bag itself arrives with the cart; say so rather than pretend.
-          toast.message(
-            'The bag is coming soon',
-            `We have noted ${title}${choice ? `, ${choice}` : ''}. Nothing has been added yet.`,
-          );
-        }
-        return;
-      }
-      if (result.error.code === 'OUT_OF_STOCK') {
-        toast.error(result.error.message ?? 'That size is sold out.');
-      } else if (result.error.code === 'RATE_LIMITED') {
-        toast.error('Please wait a moment and try again.');
-      } else {
-        toast.error('We could not do that just now. Please try again.');
-      }
+      // The server answers with the whole bag and the drawer opens; failures are toasted there.
+      await addToBag(variant.id, shownQuantity);
     });
   }
 

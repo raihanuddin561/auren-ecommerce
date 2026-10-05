@@ -65,6 +65,9 @@ model User {
   accounts    Account[]
   twoFactors  TwoFactor[]
   staffMember StaffMember?
+  cart        Cart?
+  addresses   Address[]
+  orders      Order[]
 
   @@map("users")
 }
@@ -162,7 +165,10 @@ model StaffMember {
   createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+  user            User    @relation(fields: [userId], references: [id], onDelete: Restrict)
+  confirmedOrders Order[] @relation("OrderConfirmedBy")
+  assignedOrders  Order[] @relation("OrderAssignedTo")
+  cancelledOrders Order[] @relation("OrderCancelledBy")
 
   @@index([role])
   @@map("staff_members")
@@ -413,6 +419,8 @@ model ProductVariant {
   movements    StockMovement[]
   reservations StockReservation[]
   poItems      PurchaseOrderItem[]
+  cartItems    CartItem[]
+  orderItems   OrderItem[]
 
   @@index([productId])
   @@map("product_variants")
@@ -798,4 +806,398 @@ model ApprovalRequest {
 
   @@index([status, requestedAt])
   @@map("approval_requests")
+}
+
+// ---------------------------------------------------------------------------------------------
+// Cart, delivery areas, shipping
+// ---------------------------------------------------------------------------------------------
+
+/// A visitor's bag. A guest cart is found by the hash of an opaque HttpOnly cookie, a signed-in
+/// customer's by user id (one each); a guest bag is merged into the customer's on sign-in.
+model Cart {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  /// SHA-256 of the cookie token; the token itself is never stored.
+  tokenHash String?  @unique @map("token_hash")
+  userId    String?  @unique @map("user_id") @db.Uuid
+  currency  String   @default("BDT") @db.Char(3)
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(6)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user  User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items CartItem[]
+
+  @@index([expiresAt])
+  @@map("carts")
+}
+
+model CartItem {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  cartId    String   @map("cart_id") @db.Uuid
+  variantId String   @map("variant_id") @db.Uuid
+  /// 1 to the per-line cap (CHECK). Prices are never stored here: they are read live.
+  quantity  Int
+  addedAt   DateTime @default(now()) @map("added_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  cart    Cart           @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  variant ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  @@unique([cartId, variantId])
+  @@index([variantId])
+  @@map("cart_items")
+}
+
+enum GeoLevel {
+  division
+  district
+  thana
+  area
+
+  @@map("geo_level")
+}
+
+/// Bangladesh address hierarchy: division, district, thana or upazila (and later area).
+model GeoArea {
+  id           String   @id @default(uuid(7)) @db.Uuid
+  parentId     String?  @map("parent_id") @db.Uuid
+  level        GeoLevel
+  /// Stable slug path (`dhaka`, `dhaka/mirpur`) that seeds and settings use instead of ids.
+  code         String   @unique
+  name         String
+  nameBn       String?  @map("name_bn")
+  /// Courier area codes per courier, filled in when couriers are connected.
+  courierCodes Json?    @map("courier_codes")
+  position     Int      @default(0)
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  parent   GeoArea?  @relation("GeoTree", fields: [parentId], references: [id], onDelete: Restrict)
+  children GeoArea[] @relation("GeoTree")
+
+  @@index([parentId, level])
+  @@map("geo_areas")
+}
+
+/// A customer's saved delivery address (accounts build on it; checkout stores a snapshot on the order).
+model Address {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
+  label      String?
+  fullName   String   @map("full_name")
+  phone      String
+  divisionId String   @map("division_id") @db.Uuid
+  districtId String   @map("district_id") @db.Uuid
+  /// A listed thana or upazila, or null when the customer typed one (see `thanaName`).
+  thanaId    String?  @map("thana_id") @db.Uuid
+  /// Display name of the thana or upazila, listed or typed (the free-text fallback).
+  thanaName  String?  @map("thana_name")
+  area       String?
+  line1      String
+  line2      String?
+  postalCode String?  @map("postal_code")
+  country    String   @default("BD") @db.Char(2)
+  isDefault  Boolean  @default(false) @map("is_default")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("addresses")
+}
+
+/// Where a set of rates applies. A zone lists geo areas of any level; the deepest match wins and
+/// the single fallback zone catches everything else.
+model ShippingZone {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  name       String
+  geoAreaIds String[] @default([]) @map("geo_area_ids") @db.Uuid
+  isFallback Boolean  @default(false) @map("is_fallback")
+  position   Int      @default(0)
+  isActive   Boolean  @default(true) @map("is_active")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  rates ShippingRate[]
+
+  @@map("shipping_zones")
+}
+
+model ShippingRate {
+  id            String   @id @default(uuid(7)) @db.Uuid
+  zoneId        String   @map("zone_id") @db.Uuid
+  name          String
+  rateMinor     BigInt   @map("rate_minor")
+  currency      String   @default("BDT") @db.Char(3)
+  /// Delivery is free when the subtotal reaches this; null means never free.
+  freeOverMinor BigInt?  @map("free_over_minor")
+  minDays       Int      @map("min_days")
+  maxDays       Int      @map("max_days")
+  codAllowed    Boolean  @default(true) @map("cod_allowed")
+  isActive      Boolean  @default(true) @map("is_active")
+  position      Int      @default(0)
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  zone ShippingZone @relation(fields: [zoneId], references: [id], onDelete: Restrict)
+
+  @@index([zoneId])
+  @@map("shipping_rates")
+}
+
+// ---------------------------------------------------------------------------------------------
+// Orders and payments
+// ---------------------------------------------------------------------------------------------
+
+enum OrderStatus {
+  pending_payment
+  payment_expired
+  placed
+  under_verification
+  on_hold
+  confirmed
+  processing
+  shipped
+  delivered
+  delivery_failed
+  returned_to_origin
+  completed
+  return_requested
+  returned
+  refunded
+  exchanged
+  cancelled
+
+  @@map("order_status")
+}
+
+enum OrderPaymentStatus {
+  unpaid
+  pending
+  paid
+  partially_refunded
+  refunded
+  failed
+
+  @@map("order_payment_status")
+}
+
+enum OrderFulfillmentStatus {
+  unfulfilled
+  partially_fulfilled
+  fulfilled
+  returned
+
+  @@map("order_fulfillment_status")
+}
+
+enum OrderChannel {
+  web
+  manual
+  facebook
+  instagram
+  whatsapp
+  store
+
+  @@map("order_channel")
+}
+
+enum PaymentRecordStatus {
+  initiated
+  pending
+  succeeded
+  failed
+  cancelled
+
+  @@map("payment_record_status")
+}
+
+enum RiskFlagType {
+  fake_order
+  repeat_rto
+  abusive
+  manual
+
+  @@map("risk_flag_type")
+}
+
+/// An order. It is born `placed` and only a staff member with `orders.verify` can confirm it: the
+/// database refuses any status from `confirmed` onward without `confirmed_by` and `confirmed_at`
+/// (INV-O9). The system never cancels an order (INV-O2).
+model Order {
+  id                   String                 @id @default(uuid(7)) @db.Uuid
+  /// AUR-100001, from a sequence.
+  orderNumber          String                 @unique @default(dbgenerated("('AUR-'::text || nextval('order_number_seq'::regclass))")) @map("order_number")
+  userId               String?                @map("user_id") @db.Uuid
+  email                String?
+  phone                String
+  customerName         String                 @map("customer_name")
+  status               OrderStatus            @default(placed)
+  paymentStatus        OrderPaymentStatus     @default(unpaid) @map("payment_status")
+  fulfillmentStatus    OrderFulfillmentStatus @default(unfulfilled) @map("fulfillment_status")
+  channel              OrderChannel           @default(web)
+  currency             String                 @db.Char(3)
+  subtotalMinor        BigInt                 @map("subtotal_minor")
+  discountMinor        BigInt                 @default(0) @map("discount_minor")
+  shippingChargedMinor BigInt                 @map("shipping_charged_minor")
+  /// VAT portion contained in the prices (prices are tax inclusive); informational.
+  taxMinor             BigInt                 @default(0) @map("tax_minor")
+  totalMinor           BigInt                 @map("total_minor")
+  paidMinor            BigInt                 @default(0) @map("paid_minor")
+  refundedMinor        BigInt                 @default(0) @map("refunded_minor")
+  /// Snapshot: names, ids, area, line1, line2, postal code.
+  shippingAddress      Json                   @map("shipping_address")
+  billingAddress       Json?                  @map("billing_address")
+  /// Snapshot of the delivery method (zone, rate name, estimate days, free-over rule applied).
+  shippingMethod       Json                   @map("shipping_method")
+  discountCodes        String[]               @default([]) @map("discount_codes")
+  customerNote         String?                @map("customer_note")
+  riskScore            Int                    @default(0) @map("risk_score")
+  riskFlags            String[]               @default([]) @map("risk_flags")
+  utm                  Json?
+  /// SHA-256 of the guest tracking token (INV-O10); the token is derived, never stored.
+  trackingTokenHash    String                 @unique @map("tracking_token_hash")
+  /// Keyed hashes used for velocity limits (INV-O11).
+  addressHash          String                 @map("address_hash")
+  ipHash               String?                @map("ip_hash")
+  placedAt             DateTime               @default(now()) @map("placed_at") @db.Timestamptz(6)
+  assignedTo           String?                @map("assigned_to") @db.Uuid
+  assignedAt           DateTime?              @map("assigned_at") @db.Timestamptz(6)
+  verificationAttempts Int                    @default(0) @map("verification_attempts")
+  nextAttemptAt        DateTime?              @map("next_attempt_at") @db.Timestamptz(6)
+  confirmedBy          String?                @map("confirmed_by") @db.Uuid
+  confirmedAt          DateTime?              @map("confirmed_at") @db.Timestamptz(6)
+  deliveredAt          DateTime?              @map("delivered_at") @db.Timestamptz(6)
+  cancelledAt          DateTime?              @map("cancelled_at") @db.Timestamptz(6)
+  cancelledBy          String?                @map("cancelled_by") @db.Uuid
+  cancelReason         String?                @map("cancel_reason")
+  cancelNote           String?                @map("cancel_note")
+  createdAt            DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime               @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user      User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  verifier  StaffMember? @relation("OrderConfirmedBy", fields: [confirmedBy], references: [id], onDelete: Restrict)
+  assignee  StaffMember? @relation("OrderAssignedTo", fields: [assignedTo], references: [id], onDelete: Restrict)
+  canceller StaffMember? @relation("OrderCancelledBy", fields: [cancelledBy], references: [id], onDelete: Restrict)
+  items     OrderItem[]
+  events    OrderEvent[]
+  payments  Payment[]
+
+  @@index([status, placedAt])
+  @@index([placedAt(sort: Desc)])
+  @@index([phone, status])
+  @@index([addressHash, status])
+  @@index([ipHash, placedAt])
+  @@index([userId])
+  @@index([assignedTo, status])
+  @@index([deliveredAt])
+  @@map("orders")
+}
+
+/// One line of an order with a snapshot of what was sold: title, SKU, options, unit price and unit
+/// cost (INV-O5). Later catalog edits never change it.
+model OrderItem {
+  id                   String   @id @default(uuid(7)) @db.Uuid
+  orderId              String   @map("order_id") @db.Uuid
+  variantId            String   @map("variant_id") @db.Uuid
+  productId            String   @map("product_id") @db.Uuid
+  titleSnapshot        String   @map("title_snapshot")
+  variantTitleSnapshot String   @map("variant_title_snapshot")
+  skuSnapshot          String   @map("sku_snapshot")
+  /// [{ "name": "Size", "value": "M" }, ...]
+  optionsSnapshot      Json     @map("options_snapshot")
+  imageSnapshot        String?  @map("image_snapshot")
+  unitPriceMinor       BigInt   @map("unit_price_minor")
+  compareAtMinor       BigInt?  @map("compare_at_minor")
+  /// Cost of goods at the time of sale (weighted average landed cost): the COGS snapshot.
+  unitCostMinor        BigInt   @map("unit_cost_minor")
+  quantity             Int
+  discountMinor        BigInt   @default(0) @map("discount_minor")
+  taxMinor             BigInt   @default(0) @map("tax_minor")
+  totalMinor           BigInt   @map("total_minor")
+  quantityReturned     Int      @default(0) @map("quantity_returned")
+  createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  order   Order          @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  variant ProductVariant @relation(fields: [variantId], references: [id], onDelete: Restrict)
+
+  @@index([orderId])
+  @@index([variantId])
+  @@map("order_items")
+}
+
+/// The order timeline. Append-only.
+model OrderEvent {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  orderId    String   @map("order_id") @db.Uuid
+  type       String
+  fromStatus String?  @map("from_status")
+  toStatus   String?  @map("to_status")
+  payload    Json     @default("{}")
+  actorId    String?  @map("actor_id") @db.Uuid
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Restrict)
+
+  @@index([orderId, createdAt])
+  @@map("order_events")
+}
+
+model Payment {
+  id                String              @id @default(uuid(7)) @db.Uuid
+  orderId           String              @map("order_id") @db.Uuid
+  /// cod, sslcommerz, stripe, bkash
+  provider          String
+  /// cash, card, bkash, nagad ...
+  method            String
+  amountMinor       BigInt              @map("amount_minor")
+  feeMinor          BigInt              @default(0) @map("fee_minor")
+  currency          String              @db.Char(3)
+  status            PaymentRecordStatus @default(initiated)
+  providerRef       String?             @map("provider_ref")
+  providerSessionId String?             @map("provider_session_id")
+  idempotencyKey    String?             @unique @map("idempotency_key")
+  raw               Json?
+  paidAt            DateTime?           @map("paid_at") @db.Timestamptz(6)
+  createdAt         DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Restrict)
+
+  @@index([orderId])
+  @@map("payments")
+}
+
+/// Phones that cannot order online (fake orders, repeat returns to origin, abuse). Checked at
+/// checkout and shown to the verification team.
+model CustomerRiskFlag {
+  id        String       @id @default(uuid(7)) @db.Uuid
+  phone     String
+  userId    String?      @map("user_id") @db.Uuid
+  type      RiskFlagType
+  note      String?
+  createdBy String?      @map("created_by") @db.Uuid
+  expiresAt DateTime?    @map("expires_at") @db.Timestamptz(6)
+  createdAt DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([phone])
+  @@map("customer_risk_flags")
+}
+
+/// One row per message the system tried to send. The recipient is stored masked. Append-only.
+model NotificationLog {
+  id          String   @id @default(uuid(7)) @db.Uuid
+  channel     String
+  template    String
+  toMasked    String   @map("to_masked")
+  status      String
+  providerRef String?  @map("provider_ref")
+  error       String?
+  relatedType String?  @map("related_type")
+  relatedId   String?  @map("related_id")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([relatedType, relatedId])
+  @@map("notification_logs")
 }

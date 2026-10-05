@@ -88,6 +88,15 @@ const serverSchema = z.object({
   TURNSTILE_SECRET_KEY: optionalString,
   NEXT_PUBLIC_TURNSTILE_SITE_KEY: optionalString,
 
+  // Key for guest order tracking links and the order lookup proof (32+ characters). Falls back to
+  // BETTER_AUTH_SECRET, so an existing deployment keeps working; set it separately to rotate one
+  // without the other. Changing it invalidates links already emailed to customers.
+  ORDER_TOKEN_SECRET: z.preprocess(blankToUndefined, z.string().min(32).optional()),
+
+  // SMS transport for order codes. Only "log" (writes the message to the server log, for local
+  // work) exists until a gateway is chosen; production refuses to send real codes with it.
+  SMS_PROVIDER: z.preprocess(blankToUndefined, z.enum(['log']).optional()),
+
   // Media storage (ADR-026): Vercel Blob in production (token required there), the local
   // filesystem in development and tests.
   BLOB_READ_WRITE_TOKEN: optionalString,

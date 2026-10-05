@@ -49,7 +49,7 @@ export function MobileMenu({ items }: MobileMenuProps) {
         <div className="flex h-14 items-center justify-center border-b border-line px-16">
           <SheetTitle className="sr-only">Menu</SheetTitle>
           <SheetDescription id="mobile-menu-description" className="sr-only">
-            Browse the collection, your account and customer care.
+            Browse the collection and find customer care.
           </SheetDescription>
           <SheetClose asChild>
             <Wordmark />
@@ -126,9 +126,8 @@ export function MobileMenu({ items }: MobileMenuProps) {
 
           <ul className="mt-auto flex flex-col pt-8">
             {[
-              { label: 'Account', href: '/account' },
+              { label: 'Track your order', href: '/track' },
               { label: 'Wishlist', href: '/wishlist' },
-              { label: 'Contact the concierge', href: '/contact' },
             ].map((link) => (
               <li key={link.href}>
                 <SheetClose asChild>

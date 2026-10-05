@@ -194,11 +194,14 @@ test.describe('product page', () => {
     await expect(sizeButton(page, 'M')).toHaveAttribute('aria-label', 'M, sold out');
   });
 
-  test('add to bag asks the server and answers honestly until the bag exists', async ({ page }) => {
+  test('add to bag puts the piece in the bag and opens the drawer', async ({ page }) => {
     await page.goto(`/products/${SLUG}`);
     await sizeButton(page, 'S').click();
     await page.getByRole('button', { name: 'Add to bag' }).first().click();
-    await expect(page.getByText('The bag is coming soon').first()).toBeVisible();
+    const drawer = page.getByRole('dialog', { name: /Your bag/ });
+    await expect(drawer).toBeVisible();
+    await expect(drawer.getByText(TITLE)).toBeVisible();
+    await expect(drawer.getByRole('link', { name: 'Checkout' })).toBeVisible();
   });
 
   test('a colour moves the gallery to its own pictures', async ({ page }, testInfo) => {

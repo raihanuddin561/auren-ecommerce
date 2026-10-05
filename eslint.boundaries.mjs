@@ -23,6 +23,7 @@ export const boundaryElements = [
   moduleFile('mod-actions', 'actions.{ts,tsx}'),
   moduleFile('mod-queries', 'queries.{ts,tsx}'),
   moduleFile('mod-service', 'service.{ts,tsx}'),
+  moduleFile('mod-service', 'verification.{ts,tsx}'),
   moduleFile('mod-repository', 'repository.{ts,tsx}'),
   // schemas, types, events, errors, constants: pure shared module files
   moduleFile('mod-shared', '*.{ts,tsx}'),

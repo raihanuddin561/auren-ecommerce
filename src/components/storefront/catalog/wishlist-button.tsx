@@ -18,6 +18,15 @@ const EMPTY: readonly string[] = [];
 let cachedRaw: string | null | undefined;
 let cachedIds: readonly string[] = EMPTY;
 
+export function readWishlistIds(): readonly string[] {
+  return readIds();
+}
+
+/** The wishlist ids, kept current as hearts are tapped anywhere on the page. */
+export function useWishlistIds(): readonly string[] {
+  return useSyncExternalStore(subscribe, readIds, () => EMPTY);
+}
+
 function readIds(): readonly string[] {
   let raw: string | null = null;
   try {
@@ -45,6 +54,12 @@ function writeIds(ids: readonly string[]): void {
     // Storage can be blocked (private windows); the heart then simply does not persist.
   }
   window.dispatchEvent(new Event(CHANGE_EVENT));
+}
+
+/** Adds a product to the wishlist without the heart (for "save for later" in the bag). */
+export function saveProductForLater(productId: string): void {
+  const current = readIds();
+  if (!current.includes(productId)) writeIds([productId, ...current].slice(0, MAX_ITEMS));
 }
 
 function subscribe(onChange: () => void): () => void {
