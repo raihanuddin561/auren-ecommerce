@@ -185,13 +185,13 @@ export function parseServerEnv(rawSource: Record<string, string | undefined>): S
       try {
         const parsed = new URL(u);
         const host = parsed.hostname.toLowerCase();
-        if (
-          host !== 'localhost' &&
-          host !== '127.0.0.1' &&
-          !parsed.searchParams.has('sslmode') &&
-          !parsed.searchParams.has('ssl')
-        ) {
-          parsed.searchParams.set('sslmode', 'require');
+        if (host !== 'localhost' && host !== '127.0.0.1') {
+          if (!parsed.searchParams.has('sslmode') && !parsed.searchParams.has('ssl')) {
+            parsed.searchParams.set('sslmode', 'require');
+          }
+          if (!parsed.searchParams.has('uselibpqcompat')) {
+            parsed.searchParams.set('uselibpqcompat', 'true');
+          }
           return parsed.toString();
         }
       } catch {}
