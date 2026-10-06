@@ -22,6 +22,8 @@ Last updated: 2026-10-06 21:59 UTC+6
 - Resolved build issues on Vercel: ensured `prisma generate` executes during build and sitemap gracefully handles build-time DB absence.
 - Repaired COD registry lookup and phone normalization for Bangladesh numbers.
 - Fixed form-scoped locators and empty-bag state in Playwright checkout spec.
+- Made Upstash Redis, Email providers, and Inngest background jobs optional in production boot guards.
+- Fixed Prisma P1011 `self-signed certificate in certificate chain` error by configuring pg Pool with `rejectUnauthorized: false` and `uselibpqcompat=true` for remote Supabase connections.
 
 ## Current state
 
