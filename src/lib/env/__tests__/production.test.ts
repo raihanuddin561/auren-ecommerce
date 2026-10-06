@@ -83,9 +83,13 @@ describe('production boot guards', () => {
     expect(issuesOf({ ...source, STRICT_REDIS_GUARD: '1' })).toMatch(/Upstash Redis is required/);
   });
 
-  it('refuses missing Inngest keys and Inngest dev mode', () => {
-    expect(issuesOf(without('INNGEST_SIGNING_KEY'))).toMatch(/INNGEST_SIGNING_KEY: is required/);
-    expect(issuesOf(without('INNGEST_EVENT_KEY'))).toMatch(/INNGEST_EVENT_KEY: is required/);
+  it('allows missing Inngest keys by default, refuses if STRICT_INNGEST_GUARD=1 or dev mode is active', () => {
+    const source = without('INNGEST_SIGNING_KEY');
+    delete source.INNGEST_EVENT_KEY;
+    expect(issuesOf(source)).toBe('');
+    expect(issuesOf({ ...source, STRICT_INNGEST_GUARD: '1' })).toMatch(
+      /INNGEST_SIGNING_KEY: is required/,
+    );
     expect(issuesOf({ ...production, INNGEST_DEV: '1' })).toMatch(/INNGEST_DEV/);
   });
 
@@ -215,7 +219,7 @@ describe('local production runs and builds', () => {
 
   it('does not exempt a bare localhost APP_URL without the explicit opt-in', () => {
     const { LOCAL_PRODUCTION: _omit, ...rest } = local;
-    expect(issuesOf(rest)).toMatch(/INNGEST_SIGNING_KEY/);
+    expect(issuesOf(rest)).toMatch(/BLOB_READ_WRITE_TOKEN/);
   });
 
   it('does not treat a missing APP_URL as local', () => {

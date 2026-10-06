@@ -135,6 +135,7 @@ const groups: ReadonlyArray<{ name: string; keys: readonly string[] }> = [
   { name: 'Google OAuth', keys: ['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET'] },
   { name: 'Turnstile', keys: ['TURNSTILE_SECRET_KEY', 'NEXT_PUBLIC_TURNSTILE_SITE_KEY'] },
   { name: 'Upstash Redis', keys: ['UPSTASH_REDIS_REST_URL', 'UPSTASH_REDIS_REST_TOKEN'] },
+  { name: 'Inngest Cloud', keys: ['INNGEST_SIGNING_KEY', 'INNGEST_EVENT_KEY'] },
 ];
 
 const fullServerSchema = serverSchema.superRefine((value, ctx) => {

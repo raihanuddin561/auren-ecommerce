@@ -222,8 +222,15 @@ export function productionIssues(value: ProductionValues, source: Source): Produ
     add('UPSTASH_REDIS_REST_URL', 'Upstash Redis is required when STRICT_REDIS_GUARD=1');
   }
 
-  if (!value.INNGEST_SIGNING_KEY) add('INNGEST_SIGNING_KEY', 'is required in production');
-  if (!value.INNGEST_EVENT_KEY) add('INNGEST_EVENT_KEY', 'is required in production');
+  // Inngest background jobs are optional.
+  // If explicitly required via STRICT_INNGEST_GUARD=1, enforce it.
+  const hasInngest = Boolean(value.INNGEST_SIGNING_KEY && value.INNGEST_EVENT_KEY);
+  if (source.STRICT_INNGEST_GUARD === '1' && !hasInngest) {
+    if (!value.INNGEST_SIGNING_KEY)
+      add('INNGEST_SIGNING_KEY', 'is required when STRICT_INNGEST_GUARD=1');
+    if (!value.INNGEST_EVENT_KEY)
+      add('INNGEST_EVENT_KEY', 'is required when STRICT_INNGEST_GUARD=1');
+  }
   if (value.INNGEST_DEV === '1') add('INNGEST_DEV', 'must not be 1 in production');
   if (value.INNGEST_BASE_URL) {
     add('INNGEST_BASE_URL', 'must not be set in production (events go to Inngest Cloud)');
