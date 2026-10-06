@@ -213,8 +213,13 @@ export function productionIssues(value: ProductionValues, source: Source): Produ
       );
   }
 
-  if (!(value.UPSTASH_REDIS_REST_URL && value.UPSTASH_REDIS_REST_TOKEN)) {
-    add('UPSTASH_REDIS_REST_URL', 'Upstash Redis is required in production (shared rate limits)');
+  // Upstash Redis is optional (falls back to in-memory rate limiting).
+  // If explicitly required via STRICT_REDIS_GUARD=1, enforce it.
+  if (
+    source.STRICT_REDIS_GUARD === '1' &&
+    !(value.UPSTASH_REDIS_REST_URL && value.UPSTASH_REDIS_REST_TOKEN)
+  ) {
+    add('UPSTASH_REDIS_REST_URL', 'Upstash Redis is required when STRICT_REDIS_GUARD=1');
   }
 
   if (!value.INNGEST_SIGNING_KEY) add('INNGEST_SIGNING_KEY', 'is required in production');
@@ -224,16 +229,25 @@ export function productionIssues(value: ProductionValues, source: Source): Produ
     add('INNGEST_BASE_URL', 'must not be set in production (events go to Inngest Cloud)');
   }
 
+  // Email provider is optional (falls back to logging).
   const smtpIsReal = value.SMTP_URL
     ? !isLocalHost(new URL(value.SMTP_URL.replace(/^smtps?:/i, 'http:')).hostname)
     : false;
-  if (!value.RESEND_API_KEY && !smtpIsReal) {
+  if (value.SMTP_URL && !smtpIsReal) {
+    add(
+      'SMTP_URL',
+      'must not point to a local host in production (use a non-local SMTP_URL or Resend)',
+    );
+  }
+  const hasEmailProvider = Boolean(value.RESEND_API_KEY || smtpIsReal);
+  if (source.STRICT_EMAIL_GUARD === '1' && !hasEmailProvider) {
     add(
       'RESEND_API_KEY',
-      'an email provider (Resend or a non-local SMTP_URL) is required in production',
+      'an email provider (Resend or a non-local SMTP_URL) is required when STRICT_EMAIL_GUARD=1',
     );
   }
   if (
+    hasEmailProvider &&
     /(\.(local|test|invalid|localhost)|@example\.(com|org|net))>?$/i.test(value.EMAIL_FROM.trim())
   ) {
     add('EMAIL_FROM', 'must use a real sending domain in production');

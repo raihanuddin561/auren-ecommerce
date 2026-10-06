@@ -76,10 +76,11 @@ describe('production boot guards', () => {
     expect(issuesOf({ ...production, BETTER_AUTH_SECRET: secret })).toMatch(/BETTER_AUTH_SECRET/);
   });
 
-  it('refuses a missing Upstash configuration', () => {
+  it('allows missing Upstash configuration by default, refuses if STRICT_REDIS_GUARD=1', () => {
     const source = without('UPSTASH_REDIS_REST_URL');
     delete source.UPSTASH_REDIS_REST_TOKEN;
-    expect(issuesOf(source)).toMatch(/Upstash Redis is required/);
+    expect(issuesOf(source)).toBe('');
+    expect(issuesOf({ ...source, STRICT_REDIS_GUARD: '1' })).toMatch(/Upstash Redis is required/);
   });
 
   it('refuses missing Inngest keys and Inngest dev mode', () => {
@@ -94,20 +95,23 @@ describe('production boot guards', () => {
     );
   });
 
-  it('refuses a deployment without an email provider or with a local one', () => {
-    expect(issuesOf(without('RESEND_API_KEY'))).toMatch(/email provider/);
-    expect(issuesOf({ ...without('RESEND_API_KEY'), SMTP_URL: 'smtp://localhost:1025' })).toMatch(
+  it('allows a deployment without an email provider by default, refuses local SMTP or placeholder domain if configured', () => {
+    expect(issuesOf(without('RESEND_API_KEY'))).toBe('');
+    expect(issuesOf({ ...without('RESEND_API_KEY'), STRICT_EMAIL_GUARD: '1' })).toMatch(
       /email provider/,
     );
+    expect(issuesOf({ ...without('RESEND_API_KEY'), SMTP_URL: 'smtp://localhost:1025' })).toMatch(
+      /must not point to a local host/,
+    );
     expect(issuesOf({ ...without('RESEND_API_KEY'), SMTP_URL: 'smtp://mailpit:1025' })).toMatch(
-      /email provider/,
+      /must not point to a local host/,
     );
     expect(
       issuesOf({ ...without('RESEND_API_KEY'), SMTP_URL: 'smtp://smtp.example.com:587' }),
     ).toBe('');
   });
 
-  it('refuses a placeholder sender domain', () => {
+  it('refuses a placeholder sender domain when an email provider is configured', () => {
     expect(issuesOf({ ...production, EMAIL_FROM: 'AUREN <no-reply@auren.local>' })).toMatch(
       /EMAIL_FROM/,
     );

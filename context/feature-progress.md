@@ -78,21 +78,21 @@
 
 | ID | Sub-feature | Pri | BE | API | UT | FE | E2E | CR | Overall | Notes |
 |---|---|---|---|---|---|---|---|---|---|---|
-| 4.1 | Cart service | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 4.2 | Cart drawer and page | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 4.3 | Address model (BD hierarchy) | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 4.4 | Shipping zones and rates | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 4.5 | Checkout page | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 4.6 | Order placement transaction | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 4.7 | Order confirmation page | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 4.8 | Checkout abuse protection | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
+| 4.1 | Cart service | P0 | Done | Done | Done | N/A | Done | Done | Done | new. Cart repository, service, token cookies, DB cart sync on sign-in, merge rules, stock reservation integration. 14 integration tests green on Postgres |
+| 4.2 | Cart drawer and page | P0 | N/A | Done | Done | Done | Done | Done | Done | new. /cart route, CartDrawer with slide-over, free delivery threshold indicator, quantity controls, optimistic updates, line items price/stock sync |
+| 4.3 | Address model (BD hierarchy) | P0 | Done | Done | Done | Done | Done | Done | Done | new. Geo areas seed (8 divisions, 64 districts, 355+ thanas), address validation, cascading selects |
+| 4.4 | Shipping zones and rates | P0 | Done | Done | Done | Done | Done | Done | Done | new. /admin/settings/shipping editor, zone rates, quotes by weight/division, fallback default rate |
+| 4.5 | Checkout page | P0 | Done | Done | Done | Done | Done | Done | Done | new. /checkout page, multi-step flow, guest and authenticated checkout, address selector, payment selector, price summary |
+| 4.6 | Order placement transaction | P0 | Done | Done | Done | N/A | Done | Done | Done | new. Atomic order creation, outbox event generation, stock reservations, order sequence, risk flag tagging |
+| 4.7 | Order confirmation page | P0 | Done | Done | Done | Done | Done | Done | Done | new. /track/[token] with secret token, order summary, timeline status, next step instructions |
+| 4.8 | Checkout abuse protection | P0 | Done | Done | Done | N/A | Done | Done | Done | new. Upstash rate limits, customer risk flags, fail-closed handling, phone validation |
 
 ## Module 5: Payments
 
 | ID | Sub-feature | Pri | BE | API | UT | FE | E2E | CR | Overall | Notes |
 |---|---|---|---|---|---|---|---|---|---|---|
-| 5.1 | Payment provider interface | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 5.2 | Cash on Delivery | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
+| 5.1 | Payment provider interface | P0 | Done | Done | Done | N/A | Done | Done | Done | new. Payment registry and provider contract, transaction lifecycle states, webhook interfaces |
+| 5.2 | Cash on Delivery | P0 | Done | Done | Done | Done | Done | Done | Done | new. COD provider implementation, max limit check, verification required notice, admin order confirmation integration |
 | 5.3 | SSLCommerz (cards, bKash, Nagad) | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
 | 5.4 | Payment fees capture | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
 | 5.5 | Refunds | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
