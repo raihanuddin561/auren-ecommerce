@@ -359,9 +359,21 @@ export async function getSizeChartForAdmin(id: string) {
   };
 }
 
-export async function listSizeChartOptions() {
+export interface SizeChartOption {
+  id: string;
+  label: string;
+  sizes: string[];
+}
+
+export async function listSizeChartOptions(): Promise<SizeChartOption[]> {
   const rows = await repo.listSizeCharts(db);
-  return rows.map((c) => ({ id: c.id, label: c.name }));
+  return rows.map((c) => ({
+    id: c.id,
+    label: c.name,
+    sizes: toTable(c.table)
+      .rows.map((r) => r.size)
+      .filter(Boolean),
+  }));
 }
 
 // ---------------------------------------------------------------------------------------------

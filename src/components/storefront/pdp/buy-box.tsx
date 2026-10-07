@@ -63,11 +63,13 @@ export function BuyBox({
   const variant = resolveVariant(variants, colorId, sizeId);
   const liveVariant = variant ? liveById.get(variant.id) : undefined;
   const anyAvailable = live.variants.some((entry) => entry.available > 0);
+  const sizesPending = sizeChart !== null && sizes.length === 0;
   const reason = blockReason({
     hasSizes: sizes.length > 0,
     sizeChosen: Boolean(chosen),
     variantAvailable: liveVariant ? liveVariant.available : null,
     anyAvailable,
+    sizesPending,
   });
   const color = colors.find((entry) => entry.id === colorId);
   const note = stockNote(chosen);
@@ -131,7 +133,13 @@ export function BuyBox({
   }
 
   const buttonLabel =
-    reason === 'sold-out' ? 'Sold out' : reason === 'choose-size' ? 'Choose a size' : 'Add to bag';
+    reason === 'sizes-pending'
+      ? 'Sizes updating'
+      : reason === 'sold-out'
+        ? 'Sold out'
+        : reason === 'choose-size'
+          ? 'Choose a size'
+          : 'Add to bag';
 
   return (
     <div className="flex flex-col gap-6">
@@ -257,6 +265,17 @@ export function BuyBox({
             />
           </div>
         </div>
+      ) : sizeChart !== null ? (
+        <div className="relative flex flex-col gap-2 border border-line p-4">
+          <div className="flex items-center justify-between">
+            <span className="type-eyebrow text-fg">Size</span>
+            <SizeGuideDrawer chart={sizeChart} title={title} showHelper={false} offered={[]} />
+          </div>
+          <p className="type-small text-fg-muted">
+            Size options are being updated for this piece. Please check back shortly or consult the
+            size guide.
+          </p>
+        </div>
       ) : null}
 
       <div ref={buttonRef} className="flex flex-col gap-3">
@@ -269,7 +288,7 @@ export function BuyBox({
             <button
               type="button"
               aria-label="Decrease quantity"
-              disabled={shownQuantity <= 1}
+              disabled={shownQuantity <= 1 || reason === 'sizes-pending'}
               onClick={() => setQuantity(Math.max(1, shownQuantity - 1))}
               className="touch-target inline-flex size-10 items-center justify-center disabled:opacity-40"
             >
@@ -281,7 +300,7 @@ export function BuyBox({
             <button
               type="button"
               aria-label="Increase quantity"
-              disabled={shownQuantity >= Math.max(1, limit)}
+              disabled={shownQuantity >= Math.max(1, limit) || reason === 'sizes-pending'}
               onClick={() => setQuantity(Math.min(Math.max(1, limit), shownQuantity + 1))}
               className="touch-target inline-flex size-10 items-center justify-center disabled:opacity-40"
             >
@@ -293,7 +312,7 @@ export function BuyBox({
             fullWidth
             className="min-w-0 flex-1 px-3"
             loading={pending}
-            disabled={reason === 'sold-out'}
+            disabled={reason === 'sold-out' || reason === 'sizes-pending'}
             onClick={add}
           >
             {buttonLabel}
@@ -337,7 +356,7 @@ export function BuyBox({
           <Button
             size="md"
             loading={pending}
-            disabled={reason === 'sold-out'}
+            disabled={reason === 'sold-out' || reason === 'sizes-pending'}
             tabIndex={barVisible ? 0 : -1}
             onClick={() => {
               if (reason === 'choose-size') {

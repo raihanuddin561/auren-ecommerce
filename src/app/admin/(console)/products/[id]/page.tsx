@@ -61,7 +61,7 @@ export default async function EditProductPage({ params }: PageProps<'/admin/prod
           sizeCharts={sizeCharts}
           canWrite={canWrite}
         />
-        <VariantsSection product={product} canWrite={canWrite} />
+        <VariantsSection product={product} sizeCharts={sizeCharts} canWrite={canWrite} />
         <MediaSection product={product} canWrite={canWrite} />
         <StatusPanel
           productId={product.id}

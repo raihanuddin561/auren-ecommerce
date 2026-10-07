@@ -79,7 +79,7 @@ export function maxQuantity(available: number): number {
   return Math.max(0, Math.min(MAX_QUANTITY, available));
 }
 
-export type BlockReason = 'choose-size' | 'sold-out' | null;
+export type BlockReason = 'choose-size' | 'sold-out' | 'sizes-pending' | null;
 
 /**
  * Why the main button cannot add yet. Availability comes from the resolved variant (colour and
@@ -91,7 +91,9 @@ export function blockReason(input: {
   /** Units of the resolved variant, or null while no variant is resolved. */
   variantAvailable: number | null;
   anyAvailable: boolean;
+  sizesPending?: boolean;
 }): BlockReason {
+  if (input.sizesPending) return 'sizes-pending';
   if (!input.anyAvailable) return 'sold-out';
   if (input.hasSizes && !input.sizeChosen) return 'choose-size';
   if (input.variantAvailable !== null && input.variantAvailable <= 0) return 'sold-out';

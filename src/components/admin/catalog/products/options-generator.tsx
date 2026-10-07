@@ -29,6 +29,7 @@ import {
 
 interface OptionsGeneratorProps {
   product: ProductView;
+  sizeCharts?: Array<{ id: string; label: string; sizes: string[] }>;
 }
 
 /** Messages the server attached to anything but the two price fields, flattened for one alert. */
@@ -44,7 +45,7 @@ let counter = 0;
  * The option matrix: up to three options, a live preview of what will change, and the defaults
  * for the variants that get created. Prices stay as the text typed; the server parses them.
  */
-export function OptionsGenerator({ product }: OptionsGeneratorProps) {
+export function OptionsGenerator({ product, sizeCharts }: OptionsGeneratorProps) {
   const router = useRouter();
   const firstVariant = product.variants.find((v) => v.status !== 'archived') ?? product.variants[0];
   const [options, setOptions] = useState<DraftOption[]>(() => draftFromProduct(product.options));
@@ -60,6 +61,11 @@ export function OptionsGenerator({ product }: OptionsGeneratorProps) {
   const [formError, setFormError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [confirming, setConfirming] = useState(false);
+
+  const attachedChart = useMemo(() => {
+    if (!product.sizeChartId || !sizeCharts) return null;
+    return sizeCharts.find((c) => c.id === product.sizeChartId) ?? null;
+  }, [product.sizeChartId, sizeCharts]);
 
   const preview = useMemo(() => previewMatrix(options, product), [options, product]);
   const resolved = useMemo(
@@ -90,6 +96,52 @@ export function OptionsGenerator({ product }: OptionsGeneratorProps) {
       ...current,
       { key: `draft-${counter}`, name: nextOptionName(current), values: [] },
     ]);
+  }
+
+  function importSizesFromChart() {
+    if (!attachedChart || attachedChart.sizes.length === 0) return;
+    const existingIndex = options.findIndex((o) => /^size$/i.test(o.name.trim()));
+    if (existingIndex >= 0) {
+      const existing = options[existingIndex]!;
+      const existingLabels = new Set(existing.values.map((v) => v.label.trim().toLowerCase()));
+      const addedValues = attachedChart.sizes
+        .filter((s) => !existingLabels.has(s.trim().toLowerCase()))
+        .map((s) => {
+          counter += 1;
+          return {
+            key: `size-${counter}-${s}`,
+            label: s,
+            swatchHex: '',
+          };
+        });
+      if (addedValues.length === 0) {
+        toast.message('All sizes from this chart are already in the Size option.');
+        return;
+      }
+      changeOption(existing.key, {
+        ...existing,
+        values: [...existing.values, ...addedValues],
+      });
+      toast.success(`Added ${addedValues.length} size(s) from "${attachedChart.label}"`);
+    } else {
+      if (options.length >= MAX_OPTIONS) {
+        toast.error(`Cannot add Size option: maximum of ${MAX_OPTIONS} options reached.`);
+        return;
+      }
+      counter += 1;
+      const newOption: DraftOption = {
+        key: `draft-size-${counter}`,
+        name: 'Size',
+        values: attachedChart.sizes.map((s, idx) => ({
+          key: `size-${counter}-${idx}-${s}`,
+          label: s,
+          swatchHex: '',
+        })),
+      };
+      setOptions((current) => [...current, newOption]);
+      setErrors({});
+      toast.success(`Imported ${attachedChart.sizes.length} sizes from "${attachedChart.label}"`);
+    }
   }
 
   async function run() {
@@ -144,6 +196,27 @@ export function OptionsGenerator({ product }: OptionsGeneratorProps) {
         Options such as Color, Size or Fit make one variant for each combination. Changing them
         keeps matching variants, adds new ones and removes the rest.
       </p>
+      {attachedChart && attachedChart.sizes.length > 0 ? (
+        <div className="bg-surface flex flex-col gap-3 border border-line p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <p className="type-small font-medium text-fg">
+              Attached size chart: <span className="text-fg-muted">{attachedChart.label}</span>
+            </p>
+            <p className="type-micro text-fg-muted">
+              Sizes from chart: {attachedChart.sizes.join(', ')}
+            </p>
+          </div>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={importSizesFromChart}
+            className="shrink-0"
+          >
+            Import sizes to variants
+          </Button>
+        </div>
+      ) : null}
       {options.map((option, index) => (
         <OptionEditor
           key={option.key}

@@ -114,6 +114,18 @@ describe('add to bag rules', () => {
     ).toBeNull();
   });
 
+  it('blocks purchases when sizes are pending on a sized product', () => {
+    expect(
+      blockReason({
+        hasSizes: false,
+        sizeChosen: false,
+        variantAvailable: 5,
+        anyAvailable: true,
+        sizesPending: true,
+      }),
+    ).toBe('sizes-pending');
+  });
+
   it('caps the quantity at ten and at what is available', () => {
     expect(maxQuantity(25)).toBe(10);
     expect(maxQuantity(3)).toBe(3);

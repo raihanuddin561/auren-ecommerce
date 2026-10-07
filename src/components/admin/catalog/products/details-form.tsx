@@ -200,6 +200,7 @@ export function DetailsForm({ product, categories, sizeCharts, canWrite }: Detai
               onChange={(value) => set('sizeChartId', value)}
               options={sizeCharts.map((c) => ({ value: c.id, label: c.label }))}
               noneLabel="None"
+              hint="Attaches the size guide. Also configure matching sizes under 'Options and variants' below."
               error={err('sizeChartId')}
             />
             {text('productType', 'Product type', { max: 60 })}
