@@ -46,7 +46,9 @@ export function SignInForm({ next }: { next?: string }) {
       return setError('Please wait for the security check to finish.');
     }
     const { data, error: failure } = await authClient.signIn.email({
-      email: String(form.get('email') ?? ''),
+      email: String(form.get('email') ?? '')
+        .trim()
+        .toLowerCase(),
       password: String(form.get('password') ?? ''),
       ...(botToken ? { fetchOptions: { headers: { 'x-turnstile-token': botToken } } } : {}),
     });
