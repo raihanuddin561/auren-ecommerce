@@ -24,6 +24,11 @@ Last updated: 2026-10-06 21:59 UTC+6
 - Fixed form-scoped locators and empty-bag state in Playwright checkout spec.
 - Made Upstash Redis, Email providers, and Inngest background jobs optional in production boot guards.
 - Fixed Prisma P1011 `self-signed certificate in certificate chain` error by configuring pg Pool with `rejectUnauthorized: false` and `uselibpqcompat=true` for remote Supabase connections.
+- Resolved production admin sign-in failure caused by Better Auth `Invalid origin: https://aurenbd.vercel.app`:
+  - Better Auth validates the browser `Origin` header on auth endpoints. In Vercel, `APP_URL` defaulted to `VERCEL_URL` (deployment-specific preview hash) or `localhost`, causing Better Auth to reject requests from `https://aurenbd.vercel.app` with `403 FORBIDDEN (INVALID_ORIGIN)`.
+  - Configured `trustedOrigins` in `src/lib/auth.ts` (`https://aurenbd.vercel.app`, `https://*.vercel.app`, Vercel production & deployment URLs, and `BETTER_AUTH_TRUSTED_ORIGINS`).
+  - Updated `src/lib/env/schema.ts` to prioritize `VERCEL_PROJECT_PRODUCTION_URL` over preview hashes when `APP_URL` is unset, and sync `NEXT_PUBLIC_APP_URL`.
+  - Sanitized email input on the sign-in form (`src/components/admin/sign-in-form.tsx`) with `.trim().toLowerCase()`.
 
 ## Current state
 
