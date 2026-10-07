@@ -1,5 +1,6 @@
 'use client';
 
+import { ShieldCheck } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { FormField } from '@/components/ui/form-field';
@@ -409,15 +410,45 @@ export function PaymentSection({
   return (
     <Section step={4} title="Payment">
       <RadioGroup name="paymentMethod" aria-label="Payment method" value="cod" className="gap-3">
-        <div className="border border-fg px-4 py-3">
-          <RadioItem
-            value="cod"
-            disabled={cod ? !cod.available : false}
-            label={cod?.label ?? 'Cash on delivery'}
-            description={cod?.description ?? 'Pay in cash when your order arrives.'}
-          />
+        <div className="bg-surface/30 border border-fg/80 p-4 transition-colors">
+          <div className="flex flex-col gap-2">
+            <RadioItem
+              value="cod"
+              disabled={cod ? !cod.available : false}
+              label={cod?.label ?? 'Cash on Delivery (Doorstep)'}
+              description="Pay only when your parcel arrives at your doorstep."
+            />
+            <div className="mt-2 flex flex-wrap items-center gap-1.5 pl-6">
+              <span className="type-caption mr-1 text-fg-muted">Accepted:</span>
+              <span className="rounded bg-surface-raised border border-line px-2 py-0.5 text-[10px] font-medium tracking-wide text-fg/80">
+                Cash
+              </span>
+              <span className="rounded border border-[#E2136E]/20 bg-[#E2136E]/10 px-2 py-0.5 text-[10px] font-semibold text-[#E2136E]">
+                bKash
+              </span>
+              <span className="rounded border border-[#F7941D]/20 bg-[#F7941D]/10 px-2 py-0.5 text-[10px] font-semibold text-[#F7941D]">
+                Nagad
+              </span>
+              <span className="rounded bg-surface-raised border border-line px-2 py-0.5 text-[10px] font-medium text-fg/70">
+                Card at Doorstep
+              </span>
+            </div>
+          </div>
         </div>
       </RadioGroup>
+
+      {/* Doorstep Inspection Guarantee Card */}
+      <div className="rounded border-line-subtle bg-surface/40 flex items-start gap-3 border p-3.5 text-fg">
+        <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-accent-text" />
+        <div className="text-xs leading-relaxed text-fg-muted">
+          <span className="mb-0.5 block font-medium text-fg">
+            100% Doorstep Inspection Guarantee
+          </span>
+          Inspect your pieces upon delivery. If the fit or feel is not completely satisfactory,
+          return directly with the courier without hassle.
+        </div>
+      </div>
+
       {cod && !cod.available ? (
         <p role="alert" className="type-small text-danger-text">
           {cod.reason}

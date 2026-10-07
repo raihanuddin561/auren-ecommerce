@@ -20,21 +20,36 @@ export function ProductHeading({ product }: { product: PdpData }) {
 }
 
 const TRUST = [
-  { icon: Repeat, text: 'Easy size exchange' },
-  { icon: CreditCard, text: 'Secure payment' },
-  { icon: Truck, text: 'Cash on delivery available' },
+  { icon: Repeat, text: 'Doorstep size exchange' },
+  { icon: CreditCard, text: 'COD & Mobile Banking' },
+  { icon: Truck, text: '24–48h Dhaka · Nationwide 2–4d' },
 ] as const;
 
 export function TrustRow() {
   return (
-    <ul className="grid gap-3 border-y border-line py-5 sm:grid-cols-3">
-      {TRUST.map(({ icon, text }) => (
-        <li key={text} className="flex items-center gap-3 type-small text-fg-muted">
-          <Icon icon={icon} size={18} className="text-fg" />
-          {text}
-        </li>
-      ))}
-    </ul>
+    <div className="flex flex-col gap-3 border-y border-line py-5">
+      <ul className="grid gap-3 sm:grid-cols-3">
+        {TRUST.map(({ icon, text }) => (
+          <li key={text} className="flex items-center gap-2.5 type-small text-fg">
+            <Icon icon={icon} size={18} className="text-accent-text" />
+            <span>{text}</span>
+          </li>
+        ))}
+      </ul>
+      <div className="flex flex-wrap items-center gap-2 pt-1">
+        <span className="type-eyebrow text-[10px] tracking-wider text-fg-muted uppercase">
+          Accepted:
+        </span>
+        {['Cash on delivery', 'bKash', 'Nagad', 'Visa', 'Mastercard'].map((mark) => (
+          <span
+            key={mark}
+            className="rounded-xs border border-line bg-sunken/80 px-2 py-0.5 text-[11px] font-medium text-fg-muted"
+          >
+            {mark}
+          </span>
+        ))}
+      </div>
+    </div>
   );
 }
 

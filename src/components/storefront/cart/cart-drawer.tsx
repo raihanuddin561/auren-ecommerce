@@ -18,7 +18,7 @@ import {
 import { refreshCart } from '@/modules/cart/actions';
 import { CartLine } from './cart-line';
 import { closeCartDrawer, setCartView, useCartDrawerOpen, useCartView } from './cart-store';
-import { CartTotals, TRUST_LINES } from './cart-summary';
+import { CartTotals } from './cart-summary';
 import { FreeDeliveryBar } from './free-delivery-bar';
 
 /**
@@ -98,7 +98,20 @@ export function CartDrawer() {
                   View bag
                 </Link>
               </Button>
-              <p className="type-small text-fg-muted">{TRUST_LINES[0]}.</p>
+              <div className="flex flex-col items-center gap-1 pt-1 text-center">
+                <p className="type-caption text-fg-muted">
+                  Cash on delivery across 64 districts &middot; Doorstep inspection
+                </p>
+                <div className="text-fg-subtle flex items-center justify-center gap-1.5 text-[10px] tracking-wider uppercase">
+                  <span>Cash</span>
+                  <span>&bull;</span>
+                  <span>bKash</span>
+                  <span>&bull;</span>
+                  <span>Nagad</span>
+                  <span>&bull;</span>
+                  <span>Cards</span>
+                </div>
+              </div>
             </SheetFooter>
           </>
         )}

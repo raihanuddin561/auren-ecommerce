@@ -10,6 +10,7 @@ import {
   NewArrivalsSkeleton,
 } from '@/components/storefront/catalog/home-sections';
 import { HeroCarousel, HeroCarouselSkeleton } from '@/components/storefront/home/hero-carousel';
+import { BrandPerks } from '@/components/storefront/home/brand-perks';
 import { withLiveStock } from './_listing/load';
 import {
   getFeaturedCollections,
@@ -65,6 +66,8 @@ export default function HomePage() {
       <Suspense fallback={<HeroCarouselSkeleton />}>
         <Hero />
       </Suspense>
+
+      <BrandPerks />
 
       <Suspense fallback={<CategoriesSkeleton />}>
         <Categories />

@@ -1,6 +1,7 @@
 'use client';
 
 import { Minus, Plus } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
@@ -10,6 +11,7 @@ import { cn } from '@/lib/cn';
 import { deserialize } from '@/lib/money';
 import type { LivePrice, PdpColor, PdpSize, PdpSizeChart, PdpVariant } from '@/modules/catalog/pdp';
 import { addToBag } from '../cart/cart-client';
+import { closeCartDrawer } from '../cart/cart-store';
 import { WishlistButton } from '../catalog/wishlist-button';
 import {
   blockReason,
@@ -48,8 +50,10 @@ export function BuyBox({
   sizeChart,
 }: BuyBoxProps) {
   const { colorId, sizeId, setColorId, setSizeId } = usePdpState();
+  const router = useRouter();
   const [quantity, setQuantity] = useState(1);
   const [pending, startTransition] = useTransition();
+  const [buyNowPending, startBuyNowTransition] = useTransition();
   const [showChoose, setShowChoose] = useState(false);
   const [barVisible, setBarVisible] = useState(false);
   const buttonRef = useRef<HTMLDivElement>(null);
@@ -129,6 +133,22 @@ export function BuyBox({
     startTransition(async () => {
       // The server answers with the whole bag and the drawer opens; failures are toasted there.
       await addToBag(variant.id, shownQuantity);
+    });
+  }
+
+  function buyNow() {
+    if (reason === 'choose-size') {
+      setShowChoose(true);
+      document.getElementById('size-group')?.focus();
+      return;
+    }
+    if (reason || !variant) return;
+    startBuyNowTransition(async () => {
+      const added = await addToBag(variant.id, shownQuantity);
+      if (added) {
+        closeCartDrawer();
+        router.push('/checkout');
+      }
     });
   }
 
@@ -309,10 +329,11 @@ export function BuyBox({
           </div>
           <Button
             size="lg"
+            variant="secondary"
             fullWidth
-            className="min-w-0 flex-1 px-3"
+            className="min-w-0 flex-1 border border-line-strong px-3 hover:border-fg"
             loading={pending}
-            disabled={reason === 'sold-out' || reason === 'sizes-pending'}
+            disabled={reason === 'sold-out' || reason === 'sizes-pending' || buyNowPending}
             onClick={add}
           >
             {buttonLabel}
@@ -323,6 +344,22 @@ export function BuyBox({
             className="aspect-square h-12 w-12 shrink-0 border border-line-strong bg-transparent"
           />
         </div>
+
+        {/* High-conversion Express Buy Now button */}
+        {reason !== 'sold-out' && reason !== 'sizes-pending' ? (
+          <Button
+            size="lg"
+            variant="primary"
+            fullWidth
+            loading={buyNowPending}
+            disabled={pending}
+            onClick={buyNow}
+            className="w-full tracking-button"
+          >
+            {reason === 'choose-size' ? 'Choose size to buy' : 'Buy Now — Instant Checkout'}
+          </Button>
+        ) : null}
+
         {reason === 'sold-out' ? (
           <Button
             variant="secondary"
@@ -336,27 +373,44 @@ export function BuyBox({
             Notify me
           </Button>
         ) : null}
+
+        {/* Reassurance perks */}
+        <div className="mt-1 flex flex-col gap-1.5 rounded-xs border border-line/60 bg-sunken/40 p-3.5 type-small text-fg-muted">
+          <div className="flex items-center gap-2 text-fg">
+            <span className="font-bold text-accent-text">✓</span>
+            <span>Cash on delivery available across all 64 districts</span>
+          </div>
+          <div className="flex items-center gap-2 text-fg">
+            <span className="font-bold text-accent-text">✓</span>
+            <span>Personal fitting verification call before dispatch</span>
+          </div>
+          <div className="flex items-center gap-2 text-fg">
+            <span className="font-bold text-accent-text">✓</span>
+            <span>Doorstep size exchange within 7 days</span>
+          </div>
+        </div>
       </div>
 
       {/* Mobile sticky bar: shown once the main button has scrolled away. */}
       <div
         aria-hidden={!barVisible}
         className={cn(
-          'fixed inset-x-0 bottom-0 z-40 border-t border-line bg-page/95 px-5 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur transition-transform duration-(--dur-base) ease-auren motion-reduce:transition-none md:hidden',
+          'fixed inset-x-0 bottom-0 z-40 border-t border-line bg-page/95 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-float backdrop-blur transition-transform duration-(--dur-base) ease-auren motion-reduce:transition-none md:hidden',
           barVisible ? 'translate-y-0' : 'pointer-events-none translate-y-full',
         )}
       >
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <div className="min-w-0 flex-1">
-            <p className="truncate type-small text-fg">{title}</p>
+            <p className="truncate type-small font-medium text-fg">{title}</p>
             <p className="type-small text-fg-muted">
               {[color?.label, chosen?.label].filter(Boolean).join(' · ') || 'Choose your size'}
             </p>
           </div>
           <Button
-            size="md"
+            size="sm"
+            variant="secondary"
             loading={pending}
-            disabled={reason === 'sold-out' || reason === 'sizes-pending'}
+            disabled={reason === 'sold-out' || reason === 'sizes-pending' || buyNowPending}
             tabIndex={barVisible ? 0 : -1}
             onClick={() => {
               if (reason === 'choose-size') {
@@ -365,7 +419,22 @@ export function BuyBox({
               add();
             }}
           >
-            {buttonLabel}
+            Add
+          </Button>
+          <Button
+            size="sm"
+            variant="primary"
+            loading={buyNowPending}
+            disabled={reason === 'sold-out' || reason === 'sizes-pending' || pending}
+            tabIndex={barVisible ? 0 : -1}
+            onClick={() => {
+              if (reason === 'choose-size') {
+                document.getElementById('size-group')?.scrollIntoView({ block: 'center' });
+              }
+              buyNow();
+            }}
+          >
+            Buy Now
           </Button>
         </div>
       </div>
