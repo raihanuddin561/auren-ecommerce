@@ -217,7 +217,16 @@ export const ADMIN_NAV: AdminNavGroup[] = [
         icon: Settings,
         permission: 'settings.manage',
         ready: true,
-        keywords: ['shipping', 'delivery', 'cash on delivery', 'zones'],
+        keywords: [
+          'shipping',
+          'delivery',
+          'cash on delivery',
+          'zones',
+          'carousel',
+          'hero',
+          'banner',
+          'slides',
+        ],
       },
       {
         label: 'Staff',

@@ -4,7 +4,10 @@ import { z } from 'zod';
 export const SETTING_KEYS = {
   checkout: 'checkout.protection',
   cod: 'payments.cod',
+  heroCarousel: 'storefront.hero_carousel',
 } as const;
+
+export const HERO_CAROUSEL_CACHE_TAG = 'hero-carousel';
 
 const minorText = z.string().regex(/^\d{1,15}$/, 'Whole number of minor units');
 
@@ -58,3 +61,97 @@ export const saveCheckoutSettingsSchema = z
   .strict();
 
 export type SaveCheckoutSettingsInput = z.infer<typeof saveCheckoutSettingsSchema>;
+
+/** Hero carousel slide configuration for the storefront homepage. */
+export const heroSlideSchema = z
+  .object({
+    id: z.string().min(1),
+    eyebrow: z.string().trim().max(100).default(''),
+    title: z.string().trim().min(1, 'Title is required').max(200),
+    description: z.string().trim().max(500).default(''),
+    primaryCtaText: z.string().trim().max(100).default(''),
+    primaryCtaLink: z.string().trim().max(300).default(''),
+    secondaryCtaText: z.string().trim().max(100).default(''),
+    secondaryCtaLink: z.string().trim().max(300).default(''),
+    imageUrl: z.string().trim().min(1, 'Image URL is required').max(1000),
+    imageAlt: z.string().trim().max(200).default(''),
+    overlayOpacity: z.number().int().min(0).max(90).default(25),
+    textAlignment: z.enum(['left', 'center', 'right']).default('left'),
+    active: z.boolean().default(true),
+    sortOrder: z.number().int().default(0),
+  })
+  .strict();
+
+export type HeroSlide = z.infer<typeof heroSlideSchema>;
+
+export const heroCarouselSettingsSchema = z
+  .object({
+    autoplay: z.boolean().default(true),
+    autoplayInterval: z.number().int().min(2000).max(20000).default(6000),
+    slides: z.array(heroSlideSchema).default([]),
+  })
+  .strict();
+
+export type HeroCarouselSettings = z.infer<typeof heroCarouselSettingsSchema>;
+
+export const DEFAULT_HERO_SLIDES: readonly HeroSlide[] = [
+  {
+    id: 'default-slide-1',
+    eyebrow: 'NEW SEASON / 2026',
+    title: 'Modern, refined menswear',
+    description:
+      'Elevated essentials and tailoring, crafted in breathable fabrics and made to be worn for years.',
+    primaryCtaText: 'Explore the collection',
+    primaryCtaLink: '/shop',
+    secondaryCtaText: 'View Lookbook',
+    secondaryCtaLink: '/collections',
+    imageUrl: '/seed/charcoal.svg',
+    imageAlt: 'Modern refined menswear tailoring',
+    overlayOpacity: 25,
+    textAlignment: 'left',
+    active: true,
+    sortOrder: 0,
+  },
+  {
+    id: 'default-slide-2',
+    eyebrow: 'THE EDIT',
+    title: 'Effortless silhouettes in pure linen & silk',
+    description: 'Contemporary tailoring designed for the modern tropics and discerning wardrobe.',
+    primaryCtaText: 'Shop new arrivals',
+    primaryCtaLink: '/shop?sort=newest',
+    secondaryCtaText: 'Read the story',
+    secondaryCtaLink: '/collections/winter-layers',
+    imageUrl: '/seed/sand.svg',
+    imageAlt: 'Sand linen shirt and tailored collection',
+    overlayOpacity: 25,
+    textAlignment: 'left',
+    active: true,
+    sortOrder: 1,
+  },
+  {
+    id: 'default-slide-3',
+    eyebrow: 'TIMELESS ARCHIVE',
+    title: 'Architectural cuts, enduring comfort',
+    description:
+      'Precision-tailored shirts and formal wear constructed with heritage sartorial standards.',
+    primaryCtaText: 'Discover tailoring',
+    primaryCtaLink: '/shop/tailoring',
+    secondaryCtaText: '',
+    secondaryCtaLink: '',
+    imageUrl: '/seed/charcoal.svg',
+    imageAlt: 'Auren bespoke menswear',
+    overlayOpacity: 25,
+    textAlignment: 'left',
+    active: true,
+    sortOrder: 2,
+  },
+];
+
+export const DEFAULT_HERO_CAROUSEL_SETTINGS: HeroCarouselSettings = {
+  autoplay: true,
+  autoplayInterval: 6000,
+  slides: [...DEFAULT_HERO_SLIDES],
+};
+
+export const saveHeroCarouselSettingsSchema = heroCarouselSettingsSchema;
+export type SaveHeroCarouselSettingsInput = z.infer<typeof saveHeroCarouselSettingsSchema>;

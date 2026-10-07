@@ -12,6 +12,12 @@ const SECTIONS = [
     description:
       'Delivery zones and rates, free delivery, cash on delivery limits and checkout protection.',
   },
+  {
+    href: '/admin/settings/carousel',
+    title: 'Hero carousel & banners',
+    description:
+      'Homepage hero slides, campaign imagery, editorial messaging, and call-to-actions.',
+  },
 ] as const;
 
 export default async function SettingsPage() {
