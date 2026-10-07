@@ -472,66 +472,70 @@ export async function updateProductDetails(
   actor: Actor,
   input: ProductDetailsInput,
 ): Promise<Mutation<{ id: string; slug: string }>> {
-  return db.$transaction(async (tx) => {
-    const before = await repo.findProductForUpdate(tx, input.id);
-    if (!before) throw notFound('Product');
-    await assertCategory(tx, input.categoryId);
-    if (input.sizeChartId && !(await repo.findSizeChart(tx, input.sizeChartId))) {
-      throw fieldError('sizeChartId', 'Size chart not found');
-    }
-    if (input.slug !== before.slug) {
-      const taken = await repo.findProductBySlug(tx, input.slug);
-      if (taken && taken.id !== before.id) throw conflict('slug', 'Another product uses this slug');
-    }
-    const after = await repo.updateProduct(tx, before.id, {
-      title: input.title,
-      subtitle: input.subtitle,
-      description: input.description,
-      slug: input.slug,
-      categoryId: input.categoryId,
-      sizeChartId: input.sizeChartId,
-      productType: input.productType,
-      material: input.material,
-      careInstructions: input.careInstructions,
-      fit: input.fit,
-      origin: input.origin,
-      tags: input.tags,
-      attributes: stripNulls(input.attributes),
-      featuredRank: input.featuredRank,
-      seoTitle: input.seoTitle,
-      seoDescription: input.seoDescription,
-    });
-    if (after.slug !== before.slug) {
-      // An address that was ever public (the product may be archived or back in draft now) keeps
-      // working; a product that never went live can be renamed freely.
-      if (before.publishedAt) {
-        await recordRedirect(tx, productPath(before.slug), productPath(after.slug));
+  return db.$transaction(
+    async (tx) => {
+      const before = await repo.findProductForUpdate(tx, input.id);
+      if (!before) throw notFound('Product');
+      await assertCategory(tx, input.categoryId);
+      if (input.sizeChartId && !(await repo.findSizeChart(tx, input.sizeChartId))) {
+        throw fieldError('sizeChartId', 'Size chart not found');
       }
-      // Only a live page takes its address back from an old redirect; a draft does so when it goes live.
-      if (after.status === 'active') await reclaimPath(tx, productPath(after.slug));
-    }
-    if (before.status === 'active' && !after.categoryId) {
-      throw fieldError('categoryId', 'A live product needs a category.');
-    }
-    // Rules only match live products, so a draft or archived edit cannot change any collection.
-    const collections = after.status === 'active' ? await rebuildAutomaticCollections(tx) : [];
-    await audit(tx, {
-      ...auditBase(actor),
-      action: 'product.update',
-      entity: 'product',
-      entityId: before.id,
-      before: productSnapshot(before),
-      after: productSnapshot(after),
-    });
-    return {
-      data: { id: after.id, slug: after.slug },
-      tags: catalogTags({
-        products: [after.id],
-        collections,
-        categories: [before.categoryId, after.categoryId].filter((v): v is string => Boolean(v)),
-      }),
-    };
-  });
+      if (input.slug !== before.slug) {
+        const taken = await repo.findProductBySlug(tx, input.slug);
+        if (taken && taken.id !== before.id)
+          throw conflict('slug', 'Another product uses this slug');
+      }
+      const after = await repo.updateProduct(tx, before.id, {
+        title: input.title,
+        subtitle: input.subtitle,
+        description: input.description,
+        slug: input.slug,
+        categoryId: input.categoryId,
+        sizeChartId: input.sizeChartId,
+        productType: input.productType,
+        material: input.material,
+        careInstructions: input.careInstructions,
+        fit: input.fit,
+        origin: input.origin,
+        tags: input.tags,
+        attributes: stripNulls(input.attributes),
+        featuredRank: input.featuredRank,
+        seoTitle: input.seoTitle,
+        seoDescription: input.seoDescription,
+      });
+      if (after.slug !== before.slug) {
+        // An address that was ever public (the product may be archived or back in draft now) keeps
+        // working; a product that never went live can be renamed freely.
+        if (before.publishedAt) {
+          await recordRedirect(tx, productPath(before.slug), productPath(after.slug));
+        }
+        // Only a live page takes its address back from an old redirect; a draft does so when it goes live.
+        if (after.status === 'active') await reclaimPath(tx, productPath(after.slug));
+      }
+      if (before.status === 'active' && !after.categoryId) {
+        throw fieldError('categoryId', 'A live product needs a category.');
+      }
+      // Rules only match live products, so a draft or archived edit cannot change any collection.
+      const collections = after.status === 'active' ? await rebuildAutomaticCollections(tx) : [];
+      await audit(tx, {
+        ...auditBase(actor),
+        action: 'product.update',
+        entity: 'product',
+        entityId: before.id,
+        before: productSnapshot(before),
+        after: productSnapshot(after),
+      });
+      return {
+        data: { id: after.id, slug: after.slug },
+        tags: catalogTags({
+          products: [after.id],
+          collections,
+          categories: [before.categoryId, after.categoryId].filter((v): v is string => Boolean(v)),
+        }),
+      };
+    },
+    { timeout: 30_000, maxWait: 10_000 },
+  );
 }
 
 function stripNulls(values: Record<string, string | null>): Prisma.InputJsonObject {
@@ -641,209 +645,218 @@ export async function generateVariants(
     throw fieldError('options', `That makes ${total} variants. The limit is ${MAX_VARIANTS}.`);
   }
 
-  return db.$transaction(async (tx) => {
-    const product = await repo.findProductForUpdate(tx, input.productId);
-    if (!product) throw notFound('Product');
-    const before = await repo.listVariantsWithValues(tx, product.id);
-    const beforeOptions = await repo.listOptions(tx, product.id);
-    const optionById = new Map(beforeOptions.map((o) => [o.id, o]));
-    const valueById = new Map(
-      beforeOptions.flatMap((o) => o.values.map((v) => [v.id, v] as const)),
-    );
-
-    // 0. Rows that are renamed by id first move to throwaway names, so swapping or shifting names
-    // (M to L while L to XL) never collides with a unique index half way through.
-    for (const option of requested) {
-      if (!option.id || !optionById.has(option.id)) continue;
-      await repo.updateOption(
-        tx,
-        option.id,
-        `__tmp:${option.id}`,
-        optionById.get(option.id)!.position,
+  return db.$transaction(
+    async (tx) => {
+      const product = await repo.findProductForUpdate(tx, input.productId);
+      if (!product) throw notFound('Product');
+      const before = await repo.listVariantsWithValues(tx, product.id);
+      const beforeOptions = await repo.listOptions(tx, product.id);
+      const optionById = new Map(beforeOptions.map((o) => [o.id, o]));
+      const valueById = new Map(
+        beforeOptions.flatMap((o) => o.values.map((v) => [v.id, v] as const)),
       );
-      for (const value of option.values) {
-        const current = value.id ? valueById.get(value.id) : undefined;
-        if (current && current.optionId === option.id) {
-          await repo.updateOptionValue(tx, current.id, {
-            value: `__tmp:${current.id}`,
-            label: current.label,
-            swatchHex: current.swatchHex,
-            position: current.position,
-          });
-        }
-      }
-    }
 
-    // 1. Options and values. An id keeps the row (and so its variants) through a rename; without
-    // an id the option is matched by name and the value by its slug.
-    const savedOptions: Array<{ id: string; values: Array<{ id: string; label: string }> }> = [];
-    for (const [index, option] of requested.entries()) {
-      let optionId: string;
-      if (option.id) {
-        if (!optionById.has(option.id)) {
-          throw fieldError(`options.${index}.name`, 'Option not found');
-        }
-        optionId = (await repo.updateOption(tx, option.id, option.name, index)).id;
-      } else {
-        optionId = (await repo.upsertOption(tx, product.id, option.name, index)).id;
-      }
-      const values: Array<{ id: string; label: string }> = [];
-      for (const [valueIndex, value] of option.values.entries()) {
-        const data = {
-          value: value.slug,
-          label: value.label,
-          swatchHex: value.swatchHex,
-          position: valueIndex,
-        };
-        let row: { id: string };
-        if (value.id) {
-          const current = valueById.get(value.id);
-          if (!current || current.optionId !== optionId) {
-            throw fieldError(`options.${index}.values.${valueIndex}.label`, 'Value not found');
+      // 0. Rows that are renamed by id first move to throwaway names, so swapping or shifting names
+      // (M to L while L to XL) never collides with a unique index half way through.
+      for (const option of requested) {
+        if (!option.id || !optionById.has(option.id)) continue;
+        await repo.updateOption(
+          tx,
+          option.id,
+          `__tmp:${option.id}`,
+          optionById.get(option.id)!.position,
+        );
+        for (const value of option.values) {
+          const current = value.id ? valueById.get(value.id) : undefined;
+          if (current && current.optionId === option.id) {
+            await repo.updateOptionValue(tx, current.id, {
+              value: `__tmp:${current.id}`,
+              label: current.label,
+              swatchHex: current.swatchHex,
+              position: current.position,
+            });
           }
-          row = await repo.updateOptionValue(tx, value.id, data);
+        }
+      }
+
+      // 1. Options and values. An id keeps the row (and so its variants) through a rename; without
+      // an id the option is matched by name and the value by its slug.
+      const savedOptions: Array<{ id: string; values: Array<{ id: string; label: string }> }> = [];
+      for (const [index, option] of requested.entries()) {
+        let optionId: string;
+        if (option.id) {
+          if (!optionById.has(option.id)) {
+            throw fieldError(`options.${index}.name`, 'Option not found');
+          }
+          optionId = (await repo.updateOption(tx, option.id, option.name, index)).id;
         } else {
-          row = await repo.upsertOptionValue(tx, optionId, data);
+          optionId = (await repo.upsertOption(tx, product.id, option.name, index)).id;
         }
-        values.push({ id: row.id, label: value.label });
-      }
-      savedOptions.push({ id: optionId, values });
-    }
-
-    // 2. Reconcile variants with the wanted matrix, by option value ids.
-    const matrixOptions: MatrixOption[] = requested.map((option, index) => ({
-      name: option.name,
-      values: savedOptions[index]!.values.map((v) => ({ value: v.id, label: v.label })),
-    }));
-    const optionOrder = savedOptions.map((o) => o.id);
-    const existing = before.map((v) => ({
-      id: v.id,
-      status: v.status,
-      sku: v.sku,
-      priceMinor: v.priceMinor,
-      referenced: v._count.inventory + v._count.movements > 0,
-      hasValues: v.optionValues.length > 0,
-      values: optionOrder.map(
-        (optionId) =>
-          v.optionValues.find((ov) => ov.optionValue.optionId === optionId)?.optionValueId ?? '',
-      ),
-    }));
-    const plan = planMatrix(
-      matrixOptions,
-      existing.filter((v) => v.values.every(Boolean)),
-    );
-    const mismatched = existing.filter((v) => !v.values.every(Boolean)).map((v) => v.id);
-    const toRemove = [...plan.remove, ...mismatched];
-
-    let removed = 0;
-    let archived = 0;
-    const removedSkus: string[] = [];
-    const archivedSkus: string[] = [];
-    const reactivatedSkus: string[] = [];
-    for (const id of toRemove) {
-      const variant = existing.find((v) => v.id === id)!;
-      if (variant.referenced) {
-        if (variant.status !== 'archived') {
-          await repo.archiveVariant(tx, id);
-          archived += 1;
-          archivedSkus.push(variant.sku);
+        const values: Array<{ id: string; label: string }> = [];
+        for (const [valueIndex, value] of option.values.entries()) {
+          const data = {
+            value: value.slug,
+            label: value.label,
+            swatchHex: value.swatchHex,
+            position: valueIndex,
+          };
+          let row: { id: string };
+          if (value.id) {
+            const current = valueById.get(value.id);
+            if (!current || current.optionId !== optionId) {
+              throw fieldError(`options.${index}.values.${valueIndex}.label`, 'Value not found');
+            }
+            row = await repo.updateOptionValue(tx, value.id, data);
+          } else {
+            row = await repo.upsertOptionValue(tx, optionId, data);
+          }
+          values.push({ id: row.id, label: value.label });
         }
-      } else {
-        await repo.deleteVariant(tx, id);
-        removed += 1;
-        removedSkus.push(variant.sku);
+        savedOptions.push({ id: optionId, values });
       }
-    }
-    for (const id of plan.keep) {
-      const variant = existing.find((v) => v.id === id)!;
-      // A product without options keeps one default variant that points at no option value.
-      if (requested.length === 0 && variant.hasValues) await repo.unlinkVariantValues(tx, id);
-      // A combination that comes back reactivates its archived variant, unless it was never priced:
-      // a variant without a price must not become sellable by accident.
-      if (variant.status === 'archived' && variant.priceMinor > 0n) {
-        await repo.updateVariant(tx, id, { status: 'active' });
-        reactivatedSkus.push(variant.sku);
-      }
-    }
 
-    // 3. Create the missing variants with unique SKUs.
-    const prefix = input.defaults.skuPrefix || product.title;
-    // SKUs are unique across the shop: probe the database for every candidate (base, base-2, ...).
-    const used = new Set<string>();
-    let position = Math.max(-1, ...before.map((v) => v.position)) + 1;
-    const createdSkus: string[] = [];
-    for (const combination of plan.create) {
-      const base = skuFor(prefix, combination.labels) || `SKU-${position + 1}`;
-      let sku = dedupeSku(base, used);
-      while ((await repo.existingSkus(tx, [sku])).size > 0) {
+      // 2. Reconcile variants with the wanted matrix, by option value ids.
+      const matrixOptions: MatrixOption[] = requested.map((option, index) => ({
+        name: option.name,
+        values: savedOptions[index]!.values.map((v) => ({ value: v.id, label: v.label })),
+      }));
+      const optionOrder = savedOptions.map((o) => o.id);
+      const existing = before.map((v) => ({
+        id: v.id,
+        status: v.status,
+        sku: v.sku,
+        priceMinor: v.priceMinor,
+        referenced: v._count.inventory + v._count.movements > 0,
+        hasValues: v.optionValues.length > 0,
+        values: optionOrder.map(
+          (optionId) =>
+            v.optionValues.find((ov) => ov.optionValue.optionId === optionId)?.optionValueId ?? '',
+        ),
+      }));
+      const plan = planMatrix(
+        matrixOptions,
+        existing.filter((v) => v.values.every(Boolean)),
+      );
+      const mismatched = existing.filter((v) => !v.values.every(Boolean)).map((v) => v.id);
+      const toRemove = [...plan.remove, ...mismatched];
+
+      let removed = 0;
+      let archived = 0;
+      const removedSkus: string[] = [];
+      const archivedSkus: string[] = [];
+      const reactivatedSkus: string[] = [];
+      for (const id of toRemove) {
+        const variant = existing.find((v) => v.id === id)!;
+        if (variant.referenced) {
+          if (variant.status !== 'archived') {
+            await repo.archiveVariant(tx, id);
+            archived += 1;
+            archivedSkus.push(variant.sku);
+          }
+        } else {
+          await repo.deleteVariant(tx, id);
+          removed += 1;
+          removedSkus.push(variant.sku);
+        }
+      }
+      for (const id of plan.keep) {
+        const variant = existing.find((v) => v.id === id)!;
+        // A product without options keeps one default variant that points at no option value.
+        if (requested.length === 0 && variant.hasValues) await repo.unlinkVariantValues(tx, id);
+        // A combination that comes back reactivates its archived variant, unless it was never priced:
+        // a variant without a price must not become sellable by accident.
+        if (variant.status === 'archived' && variant.priceMinor > 0n) {
+          await repo.updateVariant(tx, id, { status: 'active' });
+          reactivatedSkus.push(variant.sku);
+        }
+      }
+
+      // 3. Create the missing variants with unique SKUs.
+      const prefix = input.defaults.skuPrefix || product.title;
+      // SKUs are unique across the shop: probe the database for candidate SKUs.
+      const used = new Set<string>();
+      let position = Math.max(-1, ...before.map((v) => v.position)) + 1;
+      const initialCandidates = plan.create.map(
+        (c, idx) => skuFor(prefix, c.labels) || `SKU-${position + idx + 1}`,
+      );
+      const existingSkuSet = await repo.existingSkus(tx, initialCandidates);
+      const createdSkus: string[] = [];
+      for (const combination of plan.create) {
+        const base = skuFor(prefix, combination.labels) || `SKU-${position + 1}`;
+        let sku = dedupeSku(base, used);
+        while (existingSkuSet.has(sku) || (await repo.existingSkus(tx, [sku])).size > 0) {
+          used.add(sku);
+          existingSkuSet.add(sku);
+          sku = dedupeSku(base, used);
+        }
         used.add(sku);
-        sku = dedupeSku(base, used);
-      }
-      used.add(sku);
-      createdSkus.push(sku);
-      const created = await repo.createVariant(tx, {
-        productId: product.id,
-        sku,
-        priceMinor: price,
-        compareAtMinor: compareAt,
-        currency: CATALOG_CURRENCY,
-        weightG: input.defaults.weightG,
-        status: 'active',
-        position: position++,
-      });
-      await repo.linkVariantValues(tx, created.id, combination.values);
-    }
-
-    // 4. Drop options and values that nothing uses any more (archived variants keep theirs).
-    const remaining = await repo.listVariantsWithValues(tx, product.id);
-    const inUse = new Set(remaining.flatMap((v) => v.optionValues.map((ov) => ov.optionValueId)));
-    for (const saved of savedOptions) {
-      await repo.deleteOptionValuesExcept(tx, saved.id, [
-        ...saved.values.map((v) => v.id),
-        ...inUse,
-      ]);
-    }
-    const stillReferenced = beforeOptions
-      .filter((o) => o.values.some((v) => inUse.has(v.id)))
-      .map((o) => o.id);
-    await repo.deleteOptionsExcept(tx, product.id, [
-      ...savedOptions.map((o) => o.id),
-      ...stillReferenced,
-    ]);
-    await repo.setDefaultVariant(tx, product.id);
-
-    const totalNow = await repo.countProductVariants(tx, product.id);
-    if (product.status === 'active') await assertSellable(tx, product.id);
-    const collections = product.status === 'active' ? await rebuildAutomaticCollections(tx) : [];
-    await audit(tx, {
-      ...auditBase(actor),
-      action: 'product.variants_generate',
-      entity: 'product',
-      entityId: product.id,
-      before: { variants: before.length, options: beforeOptions.map((o) => o.name) },
-      after: {
-        variants: totalNow,
-        created: plan.create.length,
-        removed,
-        archived,
-        options: requested.map((o) => ({ name: o.name, values: o.values.map((v) => v.slug) })),
-        defaults: {
+        existingSkuSet.add(sku);
+        createdSkus.push(sku);
+        const created = await repo.createVariant(tx, {
+          productId: product.id,
+          sku,
           priceMinor: price,
           compareAtMinor: compareAt,
+          currency: CATALOG_CURRENCY,
           weightG: input.defaults.weightG,
-          skuPrefix: input.defaults.skuPrefix,
+          status: 'active',
+          position: position++,
+        });
+        await repo.linkVariantValues(tx, created.id, combination.values);
+      }
+
+      // 4. Drop options and values that nothing uses any more (archived variants keep theirs).
+      const remaining = await repo.listVariantsWithValues(tx, product.id);
+      const inUse = new Set(remaining.flatMap((v) => v.optionValues.map((ov) => ov.optionValueId)));
+      for (const saved of savedOptions) {
+        await repo.deleteOptionValuesExcept(tx, saved.id, [
+          ...saved.values.map((v) => v.id),
+          ...inUse,
+        ]);
+      }
+      const stillReferenced = beforeOptions
+        .filter((o) => o.values.some((v) => inUse.has(v.id)))
+        .map((o) => o.id);
+      await repo.deleteOptionsExcept(tx, product.id, [
+        ...savedOptions.map((o) => o.id),
+        ...stillReferenced,
+      ]);
+      await repo.setDefaultVariant(tx, product.id);
+
+      const totalNow = await repo.countProductVariants(tx, product.id);
+      if (product.status === 'active') await assertSellable(tx, product.id);
+      const collections = product.status === 'active' ? await rebuildAutomaticCollections(tx) : [];
+      await audit(tx, {
+        ...auditBase(actor),
+        action: 'product.variants_generate',
+        entity: 'product',
+        entityId: product.id,
+        before: { variants: before.length, options: beforeOptions.map((o) => o.name) },
+        after: {
+          variants: totalNow,
+          created: plan.create.length,
+          removed,
+          archived,
+          options: requested.map((o) => ({ name: o.name, values: o.values.map((v) => v.slug) })),
+          defaults: {
+            priceMinor: price,
+            compareAtMinor: compareAt,
+            weightG: input.defaults.weightG,
+            skuPrefix: input.defaults.skuPrefix,
+          },
+          createdSkus,
+          removedSkus,
+          archivedSkus,
+          reactivatedSkus,
         },
-        createdSkus,
-        removedSkus,
-        archivedSkus,
-        reactivatedSkus,
-      },
-    });
-    return {
-      data: { created: plan.create.length, removed, archived, total: totalNow },
-      tags: catalogTags({ products: [product.id], collections }),
-    };
-  });
+      });
+      return {
+        data: { created: plan.create.length, removed, archived, total: totalNow },
+        tags: catalogTags({ products: [product.id], collections }),
+      };
+    },
+    { timeout: 60_000, maxWait: 15_000 },
+  );
 }
 
 export async function updateVariants(
@@ -863,106 +876,109 @@ export async function updateVariants(
     throw new DomainError('VALIDATION', 'Some SKUs are repeated.', { fieldErrors: errors });
   }
 
-  return db.$transaction(async (tx) => {
-    const product = await repo.findProductForUpdate(tx, input.productId);
-    if (!product) throw notFound('Product');
-    const current = await repo.findVariantsByIds(tx, product.id, ids);
-    if (current.length !== ids.length) throw notFound('Variant');
-    const byId = new Map(current.map((v) => [v.id, v]));
+  return db.$transaction(
+    async (tx) => {
+      const product = await repo.findProductForUpdate(tx, input.productId);
+      if (!product) throw notFound('Product');
+      const current = await repo.findVariantsByIds(tx, product.id, ids);
+      if (current.length !== ids.length) throw notFound('Variant');
+      const byId = new Map(current.map((v) => [v.id, v]));
 
-    const problems: FieldErrors = {};
-    const add = (i: number, field: string, message: string) => {
-      (problems[`variants.${i}.${field}`] ??= []).push(message);
-    };
-    const changes: Array<{
-      id: string;
-      data: Prisma.ProductVariantUncheckedUpdateInput;
-      before: unknown;
-      after: unknown;
-    }> = [];
-    for (const [i, row] of input.variants.entries()) {
-      const variant = byId.get(row.id)!;
-      let price = variant.priceMinor;
-      let compareAt = variant.compareAtMinor;
-      try {
-        price = parseMoney(row.price, 'price');
-        compareAt = row.compareAt ? parseMoney(row.compareAt, 'compareAt') : null;
-      } catch {
-        add(i, 'price', 'Enter a valid amount');
-        continue;
-      }
-      if (row.status === 'active' && price <= 0n)
-        add(i, 'price', 'An active variant needs a price above zero');
-      if (compareAt !== null && compareAt <= price)
-        add(i, 'compareAt', 'Must be higher than the price');
-      const data: Prisma.ProductVariantUncheckedUpdateInput = {};
-      const fromSnap: Record<string, unknown> = {
-        sku: variant.sku,
-        barcode: variant.barcode,
-        priceMinor: variant.priceMinor,
-        compareAtMinor: variant.compareAtMinor,
-        weightG: variant.weightG,
-        status: variant.status,
+      const problems: FieldErrors = {};
+      const add = (i: number, field: string, message: string) => {
+        (problems[`variants.${i}.${field}`] ??= []).push(message);
       };
-      const toSnap: Record<string, unknown> = {
-        sku: row.sku,
-        barcode: row.barcode,
-        priceMinor: price,
-        compareAtMinor: compareAt,
-        weightG: row.weightG,
-        status: row.status,
-      };
-      if (row.sku !== variant.sku) data.sku = row.sku;
-      if (row.barcode !== variant.barcode) data.barcode = row.barcode;
-      if (price !== variant.priceMinor) data.priceMinor = price;
-      if (compareAt !== variant.compareAtMinor) data.compareAtMinor = compareAt;
-      if (row.weightG !== variant.weightG) data.weightG = row.weightG;
-      if (row.status !== variant.status) data.status = row.status;
-      if (Object.keys(data).length > 0)
-        changes.push({ id: row.id, data, before: fromSnap, after: toSnap });
-    }
-    if (Object.keys(problems).length > 0) {
-      throw new DomainError('VALIDATION', 'Please check the highlighted fields.', {
-        fieldErrors: problems,
-      });
-    }
-
-    const changedSkus = changes
-      .filter((c) => c.data.sku !== undefined)
-      .map((c) => (c.after as { sku: string }).sku);
-    if (changedSkus.length > 0) {
-      const clash = await repo.existingSkus(tx, changedSkus);
-      for (const sku of clash) {
-        const index = input.variants.findIndex((v) => v.sku === sku);
-        add(index, 'sku', 'This SKU is already used');
+      const changes: Array<{
+        id: string;
+        data: Prisma.ProductVariantUncheckedUpdateInput;
+        before: unknown;
+        after: unknown;
+      }> = [];
+      for (const [i, row] of input.variants.entries()) {
+        const variant = byId.get(row.id)!;
+        let price = variant.priceMinor;
+        let compareAt = variant.compareAtMinor;
+        try {
+          price = parseMoney(row.price, 'price');
+          compareAt = row.compareAt ? parseMoney(row.compareAt, 'compareAt') : null;
+        } catch {
+          add(i, 'price', 'Enter a valid amount');
+          continue;
+        }
+        if (row.status === 'active' && price <= 0n)
+          add(i, 'price', 'An active variant needs a price above zero');
+        if (compareAt !== null && compareAt <= price)
+          add(i, 'compareAt', 'Must be higher than the price');
+        const data: Prisma.ProductVariantUncheckedUpdateInput = {};
+        const fromSnap: Record<string, unknown> = {
+          sku: variant.sku,
+          barcode: variant.barcode,
+          priceMinor: variant.priceMinor,
+          compareAtMinor: variant.compareAtMinor,
+          weightG: variant.weightG,
+          status: variant.status,
+        };
+        const toSnap: Record<string, unknown> = {
+          sku: row.sku,
+          barcode: row.barcode,
+          priceMinor: price,
+          compareAtMinor: compareAt,
+          weightG: row.weightG,
+          status: row.status,
+        };
+        if (row.sku !== variant.sku) data.sku = row.sku;
+        if (row.barcode !== variant.barcode) data.barcode = row.barcode;
+        if (price !== variant.priceMinor) data.priceMinor = price;
+        if (compareAt !== variant.compareAtMinor) data.compareAtMinor = compareAt;
+        if (row.weightG !== variant.weightG) data.weightG = row.weightG;
+        if (row.status !== variant.status) data.status = row.status;
+        if (Object.keys(data).length > 0)
+          changes.push({ id: row.id, data, before: fromSnap, after: toSnap });
       }
       if (Object.keys(problems).length > 0) {
-        throw new DomainError('CONFLICT', 'A SKU is already used.', { fieldErrors: problems });
+        throw new DomainError('VALIDATION', 'Please check the highlighted fields.', {
+          fieldErrors: problems,
+        });
       }
-    }
 
-    for (const change of changes) await repo.updateVariant(tx, change.id, change.data);
+      const changedSkus = changes
+        .filter((c) => c.data.sku !== undefined)
+        .map((c) => (c.after as { sku: string }).sku);
+      if (changedSkus.length > 0) {
+        const clash = await repo.existingSkus(tx, changedSkus);
+        for (const sku of clash) {
+          const index = input.variants.findIndex((v) => v.sku === sku);
+          add(index, 'sku', 'This SKU is already used');
+        }
+        if (Object.keys(problems).length > 0) {
+          throw new DomainError('CONFLICT', 'A SKU is already used.', { fieldErrors: problems });
+        }
+      }
 
-    if (product.status === 'active') await assertSellable(tx, product.id);
-    const collections =
-      changes.length > 0 && product.status === 'active'
-        ? await rebuildAutomaticCollections(tx)
-        : [];
-    if (changes.length > 0) {
-      await audit(tx, {
-        ...auditBase(actor),
-        action: 'product.variants_update',
-        entity: 'product',
-        entityId: product.id,
-        before: changes.map((c) => ({ id: c.id, ...(c.before as object) })),
-        after: changes.map((c) => ({ id: c.id, ...(c.after as object) })),
-      });
-    }
-    return {
-      data: { updated: changes.length },
-      tags: changes.length > 0 ? catalogTags({ products: [product.id], collections }) : [],
-    };
-  });
+      for (const change of changes) await repo.updateVariant(tx, change.id, change.data);
+
+      if (product.status === 'active') await assertSellable(tx, product.id);
+      const collections =
+        changes.length > 0 && product.status === 'active'
+          ? await rebuildAutomaticCollections(tx)
+          : [];
+      if (changes.length > 0) {
+        await audit(tx, {
+          ...auditBase(actor),
+          action: 'product.variants_update',
+          entity: 'product',
+          entityId: product.id,
+          before: changes.map((c) => ({ id: c.id, ...(c.before as object) })),
+          after: changes.map((c) => ({ id: c.id, ...(c.after as object) })),
+        });
+      }
+      return {
+        data: { updated: changes.length },
+        tags: changes.length > 0 ? catalogTags({ products: [product.id], collections }) : [],
+      };
+    },
+    { timeout: 60_000, maxWait: 15_000 },
+  );
 }
 
 // ---------------------------------------------------------------------------------------------

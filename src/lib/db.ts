@@ -30,6 +30,11 @@ function normalizeConnectionString(connectionString: string): {
   }
 }
 
+export const DEFAULT_TRANSACTION_OPTIONS = {
+  maxWait: 10_000,
+  timeout: 30_000,
+} as const;
+
 export function createDbClient(connectionString: string): PrismaClient {
   // The driver sends UTC text without an offset; a local server in another time zone would read it
   // wrongly. The migration pins the roles to UTC (ADR-027); a direct local connection also says so
@@ -42,10 +47,23 @@ export function createDbClient(connectionString: string): PrismaClient {
   };
   const pool = new Pool(poolConfig);
   const adapter = new PrismaPg(pool);
-  return new PrismaClient({
+  const client = new PrismaClient({
     adapter,
     log: env.NODE_ENV === 'development' ? ['warn', 'error'] : ['error'],
   });
+
+  const rawTransaction = client.$transaction.bind(client);
+  client.$transaction = ((arg: unknown, options?: unknown) => {
+    if (typeof arg === 'function') {
+      return rawTransaction(arg as (tx: Prisma.TransactionClient) => Promise<unknown>, {
+        ...DEFAULT_TRANSACTION_OPTIONS,
+        ...(options as object),
+      });
+    }
+    return rawTransaction(arg as Prisma.PrismaPromise<unknown>[], options as object);
+  }) as typeof client.$transaction;
+
+  return client;
 }
 
 // One client per server process; reused across hot reloads in development.

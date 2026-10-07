@@ -270,13 +270,23 @@ export const setDefaultVariant = async (tx: Tx, productId: string): Promise<void
   const variants = await tx.productVariant.findMany({
     where: { productId },
     orderBy: { position: 'asc' },
-    select: { id: true },
+    select: { id: true, isDefault: true, position: true },
   });
-  for (const [index, variant] of variants.entries()) {
-    await tx.productVariant.update({
-      where: { id: variant.id },
-      data: { isDefault: index === 0, position: index },
-    });
+  const updates = variants.flatMap((variant, index) => {
+    const wantedDefault = index === 0;
+    const wantedPosition = index;
+    if (variant.isDefault === wantedDefault && variant.position === wantedPosition) {
+      return [];
+    }
+    return [
+      tx.productVariant.update({
+        where: { id: variant.id },
+        data: { isDefault: wantedDefault, position: wantedPosition },
+      }),
+    ];
+  });
+  if (updates.length > 0) {
+    await Promise.all(updates);
   }
 };
 
