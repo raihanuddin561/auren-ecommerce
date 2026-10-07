@@ -26,6 +26,7 @@ const serverSchema = z.object({
 
   // Core (required everywhere: the app cannot run or build without them)
   APP_URL: z.preprocess(blankToUndefined, z.url().default('http://localhost:3000')),
+  BETTER_AUTH_TRUSTED_ORIGINS: optionalString,
   DATABASE_URL: z
     .url({ message: 'DATABASE_URL must be a postgres connection URL' })
     .refine((v) => /^postgres(ql)?:\/\//.test(v), 'DATABASE_URL must start with postgresql://'),
@@ -177,8 +178,15 @@ export function parseServerEnv(rawSource: Record<string, string | undefined>): S
 
   // On Vercel, populate APP_URL from VERCEL_URL if unset, and ensure TLS on remote DB URLs
   if (source.VERCEL === '1' || source.VERCEL_ENV) {
-    if (!source.APP_URL && source.VERCEL_URL) {
-      source.APP_URL = `https://${source.VERCEL_URL}`;
+    if (!source.APP_URL) {
+      if (source.VERCEL_PROJECT_PRODUCTION_URL) {
+        source.APP_URL = `https://${source.VERCEL_PROJECT_PRODUCTION_URL}`;
+      } else if (source.VERCEL_URL) {
+        source.APP_URL = `https://${source.VERCEL_URL}`;
+      }
+    }
+    if (!source.NEXT_PUBLIC_APP_URL && source.APP_URL) {
+      source.NEXT_PUBLIC_APP_URL = source.APP_URL;
     }
     const appendSsl = (u: string | undefined) => {
       if (!u) return u;

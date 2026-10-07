@@ -25,9 +25,31 @@ async function isStaffUser(userId: string): Promise<boolean> {
   return member !== null;
 }
 
+function buildTrustedOrigins(): string[] {
+  const origins = new Set<string>(['https://aurenbd.vercel.app', 'https://*.vercel.app']);
+  if (env.APP_URL) {
+    try {
+      origins.add(new URL(env.APP_URL).origin);
+    } catch {}
+  }
+  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
+    origins.add(`https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`);
+  }
+  if (process.env.VERCEL_URL) {
+    origins.add(`https://${process.env.VERCEL_URL}`);
+  }
+  if (process.env.BETTER_AUTH_TRUSTED_ORIGINS) {
+    for (const origin of process.env.BETTER_AUTH_TRUSTED_ORIGINS.split(',')) {
+      if (origin.trim()) origins.add(origin.trim());
+    }
+  }
+  return [...origins];
+}
+
 export const auth = betterAuth({
   appName: 'AUREN',
   baseURL: env.APP_URL,
+  trustedOrigins: buildTrustedOrigins(),
   secret: env.BETTER_AUTH_SECRET,
   database: prismaAdapter(db, { provider: 'postgresql' }),
 
