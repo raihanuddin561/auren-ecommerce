@@ -59,15 +59,13 @@ async function FeaturedCollections() {
   );
 }
 
-/** Dynamic customizable hero carousel, then the catalogue sections that have something to show. */
+/** Dynamic customizable hero carousel, then immediate product discovery sections, followed by brand trust. */
 export default function HomePage() {
   return (
     <>
       <Suspense fallback={<HeroCarouselSkeleton />}>
         <Hero />
       </Suspense>
-
-      <BrandPerks />
 
       <Suspense fallback={<CategoriesSkeleton />}>
         <Categories />
@@ -78,6 +76,8 @@ export default function HomePage() {
       <Suspense fallback={<FeaturedCollectionsSkeleton />}>
         <FeaturedCollections />
       </Suspense>
+
+      <BrandPerks />
     </>
   );
 }

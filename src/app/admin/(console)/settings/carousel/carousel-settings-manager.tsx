@@ -101,7 +101,7 @@ export function CarouselSettingsManager({ initialSettings }: CarouselSettingsMan
         imageAlt: product.title,
         overlayOpacity: 25,
         textAlignment: 'left',
-        imageFit: 'contain',
+        imageFit: 'cover',
         active: true,
         sortOrder: slides.length,
       };
@@ -126,7 +126,7 @@ export function CarouselSettingsManager({ initialSettings }: CarouselSettingsMan
       imageAlt: 'Campaign menswear photo',
       overlayOpacity: 25,
       textAlignment: 'left',
-      imageFit: 'contain',
+      imageFit: 'cover',
       active: true,
       sortOrder: slides.length,
     };
@@ -663,33 +663,33 @@ export function CarouselSettingsManager({ initialSettings }: CarouselSettingsMan
 
                       <FormField
                         label="Image Sizing & Fit"
-                        hint="Choose how the photography fits in the slider."
+                        hint="Choose how the photography fits within the 4:5 showcase card."
                       >
                         {() => (
                           <div className="flex border border-line bg-page">
                             <button
                               type="button"
-                              onClick={() => updateSlide(index, { imageFit: 'contain' })}
-                              className={cn(
-                                'flex-1 px-2 py-1.5 text-center type-small transition-colors',
-                                (slide.imageFit ?? 'contain') === 'contain'
-                                  ? 'bg-fg font-medium text-page'
-                                  : 'text-fg-muted hover:text-fg',
-                              )}
-                            >
-                              Fit Entire Image (Showcase)
-                            </button>
-                            <button
-                              type="button"
                               onClick={() => updateSlide(index, { imageFit: 'cover' })}
                               className={cn(
                                 'flex-1 px-2 py-1.5 text-center type-small transition-colors',
-                                slide.imageFit === 'cover'
+                                (slide.imageFit ?? 'cover') === 'cover'
                                   ? 'bg-fg font-medium text-page'
                                   : 'text-fg-muted hover:text-fg',
                               )}
                             >
-                              Full-Bleed Cover
+                              Uniform Frame Fill (Consistent)
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => updateSlide(index, { imageFit: 'contain' })}
+                              className={cn(
+                                'flex-1 px-2 py-1.5 text-center type-small transition-colors',
+                                slide.imageFit === 'contain'
+                                  ? 'bg-fg font-medium text-page'
+                                  : 'text-fg-muted hover:text-fg',
+                              )}
+                            >
+                              Fit Within Frame
                             </button>
                           </div>
                         )}

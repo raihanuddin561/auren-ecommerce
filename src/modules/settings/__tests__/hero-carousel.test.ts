@@ -80,12 +80,12 @@ describe('hero carousel schemas and settings', () => {
     expect(parsed.success).toBe(true);
     if (parsed.success) {
       expect(parsed.data.slides[0]?.textAlignment).toBe('center');
-      expect(parsed.data.slides[0]?.imageFit).toBe('contain');
+      expect(parsed.data.slides[0]?.imageFit).toBe('cover');
       expect(parsed.data.autoplay).toBe(false);
     }
   });
 
-  it('supports imageFit option and defaults to contain', () => {
+  it('supports imageFit option and defaults to cover', () => {
     const slide = {
       id: 'fit-test',
       title: 'Minimal Piece',
@@ -94,7 +94,7 @@ describe('hero carousel schemas and settings', () => {
     const parsed = heroSlideSchema.safeParse(slide);
     expect(parsed.success).toBe(true);
     if (parsed.success) {
-      expect(parsed.data.imageFit).toBe('contain');
+      expect(parsed.data.imageFit).toBe('cover');
     }
 
     const coverSlide = {

@@ -17,7 +17,7 @@ import { SectionHeader } from './section-header';
 export function CategoriesSection({ categories }: { categories: CategoryTileView[] }) {
   if (categories.length === 0) return null;
   return (
-    <section aria-labelledby="home-categories" className="py-20 md:py-32">
+    <section aria-labelledby="home-categories" className="pt-12 pb-20 md:pt-16 md:pb-28">
       <div className="container-page">
         <Reveal>
           <SectionHeader id="home-categories" eyebrow="Categories" title="Shop by category" />
