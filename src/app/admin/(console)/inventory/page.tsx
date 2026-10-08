@@ -3,15 +3,16 @@ import Link from 'next/link';
 import { unstable_rethrow } from 'next/navigation';
 import { PageHeader } from '@/components/admin/page-header';
 import { parseStockParams, stockListHref } from '@/components/admin/inventory/list-params';
+import { NoCostBanner } from '@/components/admin/inventory/no-cost-banner';
 import { StockFilters } from '@/components/admin/inventory/stock-filters';
 import { StockTable } from '@/components/admin/inventory/stock-table';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Pagination } from '@/components/ui/pagination';
-import { hasPermission } from '@/lib/permissions';
+import { canSeeCostOfGoods, hasPermission } from '@/lib/permissions';
 import { requireStaffWith } from '@/lib/staff';
 import { listCategoryOptions } from '@/modules/catalog/queries';
-import { listStockLevels } from '@/modules/inventory/queries';
+import { getVariantsWithoutCostCount, listStockLevels } from '@/modules/inventory/queries';
 
 export const metadata: Metadata = { title: 'Inventory' };
 
@@ -20,13 +21,13 @@ export default async function InventoryPage({ searchParams }: PageProps<'/admin/
   const query = parseStockParams(await searchParams);
   const canAdjust = hasPermission(staff, 'inventory.adjust');
   // Cost of goods is shown only to staff who buy stock or read finance.
-  const canSeeCost =
-    hasPermission(staff, 'purchasing.manage') || hasPermission(staff, 'finance.read');
+  const canSeeCost = canSeeCostOfGoods(staff);
 
   let loaded: Awaited<ReturnType<typeof listStockLevels>> | null = null;
+  let noCostCount = 0;
   let categories: Awaited<ReturnType<typeof listCategoryOptions>> = [];
   try {
-    [loaded, categories] = await Promise.all([
+    [loaded, categories, noCostCount] = await Promise.all([
       listStockLevels({
         ...(query.q ? { q: query.q } : {}),
         status: query.status,
@@ -34,6 +35,7 @@ export default async function InventoryPage({ searchParams }: PageProps<'/admin/
         page: query.page,
       }),
       listCategoryOptions(),
+      getVariantsWithoutCostCount(),
     ]);
   } catch (error) {
     // Next.js control flow (redirects, dynamic rendering signals) must pass through untouched.
@@ -48,7 +50,7 @@ export default async function InventoryPage({ searchParams }: PageProps<'/admin/
     <>
       <PageHeader
         title="Inventory"
-        description="Units on hand, reserved for customers and available to sell, per variant. Stock arrives through purchase orders; use Adjust for counts, damage and finds."
+        description="Units on hand, reserved for customers and available to sell, per variant. Stock and its cost arrive through purchase orders; use Adjust for opening stock, counts, damage and finds. A variant needs a cost before customers can order it."
         actions={
           <>
             <Button asChild variant="secondary" size="sm">
@@ -61,6 +63,12 @@ export default async function InventoryPage({ searchParams }: PageProps<'/admin/
         }
       />
       <div className="flex flex-col gap-6">
+        {query.status === 'no_cost' ? null : (
+          <NoCostBanner
+            count={noCostCount}
+            href={stockListHref({ q: '', status: 'no_cost', page: 1 })}
+          />
+        )}
         <StockFilters
           key={stockListHref(query)}
           query={query}

@@ -22,7 +22,7 @@ import {
   viewForToken,
 } from '@/modules/orders/service';
 import { saveCheckoutSettings } from '@/modules/settings/service';
-import { releaseExpired, findLedgerMismatches } from '@/modules/inventory/service';
+import { releaseExpired, findLedgerMismatches, setCostBasis } from '@/modules/inventory/service';
 import { purgeExpired } from '@/modules/cart/service';
 import { makeStaff } from '../factories';
 import { areaIds, makeSellableVariant, seedDelivery, type MadeVariant } from './commerce-helpers';
@@ -318,6 +318,32 @@ describe('placing an order (4.6)', () => {
     expect(await findLedgerMismatches()).toEqual([]);
   });
 
+  it('tells staff once per hour when a customer hits a variant without a cost, and sells it after a cost is set', async () => {
+    const areas = await areaIds();
+    const noCost = await makeSellableVariant({ stock: 5, costMinor: 0n, title: 'Costless shirt' });
+    const { user } = await makeStaff({ role: 'manager' });
+
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      expect(await errorCode(submit(await bag(noCost), input(areas), { ip: null }))).toMatch(
+        /^CONFLICT: Costless shirt .*cannot be ordered online/,
+      );
+    }
+    const alerts = await db.auditLog.findMany({
+      where: { action: 'checkout.no_cost_refused', entityId: noCost.variantId },
+    });
+    expect(alerts).toHaveLength(1);
+    expect(alerts[0]).toMatchObject({ entityType: 'variant', actorId: null });
+
+    await setCostBasis(
+      { scope: { kind: 'variant', variantId: noCost.variantId }, unitCost: '900' },
+      { userId: user.id },
+    );
+    const placed = await submit(await bag(noCost), input(areas), { ip: null });
+    expect(placed.orderNumber).toBeTruthy();
+    const item = await db.orderItem.findFirstOrThrow({ where: { variantId: noCost.variantId } });
+    expect(item.unitCostMinor).toBe(90000n);
+  });
+
   it('refuses a variant with no cost basis, an unpublished product and sold out stock, leaving no trace', async () => {
     const areas = await areaIds();
     const noCost = await makeSellableVariant({ stock: 5, costMinor: 0n, title: 'No cost shirt' });
@@ -348,30 +374,12 @@ describe('placing an order (4.6)', () => {
     expect(await db.outboxEvent.count({ where: { type: 'order.placed' } })).toBe(0);
   });
 
-  it('refuses an empty bag, a mismatched address and a missing thana', async () => {
+  it('refuses an empty bag and accepts a free-text thana (addresses never block an order)', async () => {
     const areas = await areaIds();
     const variant = await makeSellableVariant({ stock: 5 });
     expect(
       await errorCode(submit({ userId: null, token: null }, input(areas), { ip: null })),
     ).toMatch(/^VALIDATION/);
-    // Cumilla is not in the Dhaka division.
-    const forged = input(areas, {
-      address: {
-        ...input(areas).address,
-        divisionId: areas.dhaka.divisionId,
-        districtId: areas.cumilla.districtId,
-        thanaId: null,
-        thanaName: 'Anywhere',
-      },
-    });
-    expect(await errorCode(submit(await bag(variant), forged, { ip: null }))).toMatch(
-      /^VALIDATION/,
-    );
-    // Dhaka lists thanas, so a free-text one is only needed when the customer's is not listed; here neither is given.
-    const noThana = input(areas, { address: { ...input(areas).address, thanaId: null } });
-    expect(await errorCode(submit(await bag(variant), noThana, { ip: null }))).toMatch(
-      /^VALIDATION.*thana/i,
-    );
     // Free text works when the thana is not listed.
     const typed = input(areas, {
       address: { ...input(areas).address, thanaId: null, thanaName: 'Uttar Badda' },

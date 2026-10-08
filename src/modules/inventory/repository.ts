@@ -401,7 +401,7 @@ export async function listStock(
   tx: Tx,
   params: {
     q?: string | undefined;
-    status: 'all' | 'in_stock' | 'low' | 'out';
+    status: 'all' | 'in_stock' | 'low' | 'out' | 'no_cost';
     categoryId?: string | undefined;
     page: number;
   },
@@ -415,6 +415,7 @@ export async function listStock(
       product_id: string;
       title: string;
       product_status: string;
+      variant_status: string;
       sku: string;
       options_label: string;
       on_hand: number;
@@ -426,7 +427,7 @@ export async function listStock(
     }>
   >`
     WITH stock AS (
-      SELECT v.id AS variant_id, p.id AS product_id, p.title, p.status::text AS product_status, v.sku,
+      SELECT v.id AS variant_id, p.id AS product_id, p.title, p.status::text AS product_status, v.status::text AS variant_status, v.sku,
              v.avg_cost_minor, v.currency, v.position,
              COALESCE((SELECT string_agg(ov.label, ' / ' ORDER BY po.position)
                          FROM variant_option_values vov
@@ -448,6 +449,7 @@ export async function listStock(
              WHEN 'out' THEN on_hand - reserved <= 0
              WHEN 'low' THEN on_hand - reserved > 0 AND on_hand - reserved <= threshold
              WHEN 'in_stock' THEN on_hand - reserved > threshold
+             WHEN 'no_cost' THEN avg_cost_minor <= 0 AND variant_status <> 'archived' AND product_status <> 'archived'
              ELSE TRUE END
      ORDER BY title, position, sku
      LIMIT ${PAGE_SIZE} OFFSET ${offset}`;
@@ -468,6 +470,17 @@ export async function listStock(
       currency: row.currency,
     })),
   };
+}
+
+/** Variants that cannot be ordered for lack of a cost: live products and variants, cost still zero. */
+export async function countVariantsWithoutCost(tx: Tx): Promise<number> {
+  return tx.productVariant.count({
+    where: {
+      avgCostMinor: { lte: 0n },
+      status: { not: 'archived' },
+      product: { deletedAt: null, status: { not: 'archived' } },
+    },
+  });
 }
 
 export interface MovementRow {

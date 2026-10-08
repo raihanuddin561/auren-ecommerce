@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   allocateLandedCosts,
+  averageCostAfterAddition,
   landedUnitCost,
   receiptLandedShare,
   receiptValue,
@@ -187,5 +188,53 @@ describe('landed cost allocation (INV-F3)', () => {
       currency: BDT,
     });
     expect(400n + second + last).toBe(1_500n);
+  });
+});
+
+describe('average cost after a manual addition (opening stock, found stock)', () => {
+  const after = (
+    onHandBefore: number,
+    avgCostBeforeMinor: bigint,
+    addedQuantity: number,
+    unitCostMinor: bigint,
+  ) => averageCostAfterAddition({ onHandBefore, avgCostBeforeMinor, addedQuantity, unitCostMinor });
+
+  it('first addition on a variant with no cost and no stock: the typed cost is the average', () => {
+    // 10 shirts added at 1,250.00.
+    expect(after(0, 0n, 10, 125_000n)).toBe(125_000n);
+  });
+
+  it('no cost basis but units already on hand: the typed cost becomes the basis for all of them', () => {
+    // 6 units sit on hand with unknown cost; adding 4 at 1,000.00 must not dilute to 400.00.
+    expect(after(6, 0n, 4, 100_000n)).toBe(100_000n);
+  });
+
+  it('a later addition at a different cost blends by quantity, like a receipt', () => {
+    // 10 on hand at 1,000.00, then 5 more at 1,300.00: (10 x 1000 + 5 x 1300) / 15 = 1,100.00.
+    expect(after(10, 100_000n, 5, 130_000n)).toBe(110_000n);
+  });
+
+  it('rounds half to even exactly like a goods receipt', () => {
+    // 1 on hand at 0.01 (1 minor), 1 more at 0.02 (2 minor): 3 / 2 = 1.5 -> 2 (even).
+    expect(after(1, 1n, 1, 2n)).toBe(2n);
+    // 2 on hand at 0.01, 1 more at 0.02: 4 / 3 = 1.33 -> 1.
+    expect(after(2, 1n, 1, 2n)).toBe(1n);
+    // 3 on hand at 0.01 (3), 1 more at 0.02 (2): 5 / 4 = 1.25 -> 1; 1,1 -> 1 + 2 = 3 / 2 handled above.
+    expect(after(3, 1n, 1, 2n)).toBe(1n);
+  });
+
+  it('gives the same answer as weightedAverageCost for the same delivery', () => {
+    const viaReceipt = weightedAverageCost({
+      onHandBefore: 7,
+      avgCostBeforeMinor: 123_457n,
+      receivedQuantity: 3,
+      incomingValueMinor: 3n * 98_765n,
+    });
+    expect(after(7, 123_457n, 3, 98_765n)).toBe(viaReceipt);
+  });
+
+  it('refuses a zero or negative unit cost', () => {
+    expect(() => after(0, 0n, 1, 0n)).toThrow();
+    expect(() => after(5, 100n, 1, -1n)).toThrow();
   });
 });

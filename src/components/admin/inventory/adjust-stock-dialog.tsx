@@ -39,6 +39,8 @@ export interface AdjustTarget {
   title: string;
   onHand: number;
   reserved: number;
+  /** Whether the variant already has a cost basis. Without one, adding stock needs a unit cost. */
+  hasCost: boolean;
 }
 
 type Mode = 'delta' | 'set';
@@ -65,7 +67,10 @@ function AdjustForm({ target, onClose }: { target: AdjustTarget; onClose: () => 
   const [pending, startTransition] = useTransition();
   const [mode, setMode] = useState<Mode>('delta');
   const [amount, setAmount] = useState('');
-  const [reason, setReason] = useState<AdjustmentReason>('count_correction');
+  const [reason, setReason] = useState<AdjustmentReason>(
+    target.hasCost ? 'count_correction' : 'opening_stock',
+  );
+  const [unitCost, setUnitCost] = useState('');
   const [note, setNote] = useState('');
   const [password, setPassword] = useState('');
   const [needsStepUp, setNeedsStepUp] = useState(false);
@@ -77,6 +82,8 @@ function AdjustForm({ target, onClose }: { target: AdjustTarget; onClose: () => 
   const resulting = !valid ? null : mode === 'set' ? number : target.onHand + number;
   const writeOff =
     isWriteOffReason(reason) || mode === 'set' || (valid && number !== null && number < 0);
+  const adding = valid && resulting !== null && resulting > target.onHand;
+  const costRequired = adding && !target.hasCost;
 
   function submit(event: FormEvent) {
     event.preventDefault();
@@ -84,6 +91,10 @@ function AdjustForm({ target, onClose }: { target: AdjustTarget; onClose: () => 
     setFormError(null);
     if (!valid) {
       setErrors({ change: ['Enter a whole number.'] });
+      return;
+    }
+    if (costRequired && !unitCost.trim()) {
+      setErrors({ unitCost: ['Enter what one unit cost you.'] });
       return;
     }
     startTransition(async () => {
@@ -104,6 +115,7 @@ function AdjustForm({ target, onClose }: { target: AdjustTarget; onClose: () => 
         reason,
         ...(note.trim() ? { note: note.trim() } : {}),
         change: mode === 'delta' ? { mode, delta: number } : { mode, counted: number },
+        ...(adding && unitCost.trim() ? { unitCost: unitCost.trim() } : {}),
       });
       if (result.ok) {
         toast.success('Stock updated', `${result.data.onHand} on hand now.`);
@@ -181,6 +193,29 @@ function AdjustForm({ target, onClose }: { target: AdjustTarget; onClose: () => 
         <p role="status" className="type-admin text-fg-muted">
           On hand after this: <strong className="text-fg tabular-nums">{resulting}</strong>
         </p>
+      ) : null}
+
+      {adding ? (
+        <FormField
+          label="Unit cost (BDT)"
+          hint={
+            target.hasCost
+              ? 'Optional. What one added unit cost you; the average cost is updated like a purchase receipt.'
+              : 'Required: this variant has no cost yet, and customers cannot order it without one.'
+          }
+          error={firstError(errors, 'unitCost')}
+          required={costRequired}
+        >
+          {(control) => (
+            <Input
+              {...control}
+              inputMode="decimal"
+              value={unitCost}
+              maxLength={13}
+              onChange={(event) => setUnitCost(event.target.value)}
+            />
+          )}
+        </FormField>
       ) : null}
 
       <FormField label="Reason" required>

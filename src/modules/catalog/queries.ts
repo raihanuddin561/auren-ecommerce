@@ -194,6 +194,13 @@ export interface VariantDetail {
   labels: string[];
   optionValueIds: string[];
   onHand: number;
+  reserved: number;
+  /** On hand minus reserved, never negative. */
+  available: number;
+  /** Whether a cost basis exists. A variant without one cannot be ordered. */
+  hasCost: boolean;
+  /** Formatted average cost; null when there is none or the caller may not see cost of goods. */
+  avgCost: string | null;
 }
 
 export interface ProductDetail {
@@ -239,7 +246,10 @@ const attr = (value: unknown, key: string): string => {
   return typeof found === 'string' ? found : '';
 };
 
-export async function getProductForAdmin(id: string): Promise<ProductDetail | null> {
+export async function getProductForAdmin(
+  id: string,
+  options: { includeCost?: boolean } = {},
+): Promise<ProductDetail | null> {
   const p = await repo.findProductDetail(db, id);
   if (!p) return null;
   const optionOrder = p.options.map((o) => o.id);
@@ -280,6 +290,8 @@ export async function getProductForAdmin(id: string): Promise<ProductDetail | nu
       })),
     })),
     variants: p.variants.map((v) => {
+      const onHand = v.inventory.reduce((n, level) => n + level.onHand, 0);
+      const reserved = v.inventory.reduce((n, level) => n + level.reserved, 0);
       const byOption = new Map(
         v.optionValues.map((ov) => [ov.optionValue.optionId, ov.optionValue]),
       );
@@ -296,7 +308,14 @@ export async function getProductForAdmin(id: string): Promise<ProductDetail | nu
         isDefault: v.isDefault,
         labels: optionOrder.map((optionId) => byOption.get(optionId)?.label ?? ''),
         optionValueIds: v.optionValues.map((ov) => ov.optionValueId),
-        onHand: v.inventory.reduce((n, level) => n + level.onHand, 0),
+        onHand,
+        reserved,
+        available: Math.max(0, onHand - reserved),
+        hasCost: v.avgCostMinor > 0n,
+        avgCost:
+          options.includeCost && v.avgCostMinor > 0n
+            ? format(money(v.avgCostMinor, v.currency))
+            : null,
       };
     }),
     media: p.media.map((m) => ({

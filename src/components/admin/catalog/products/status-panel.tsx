@@ -18,6 +18,8 @@ interface StatusPanelProps {
   status: ProductStatus;
   readiness: ReadinessItem[];
   canPublish: boolean;
+  /** Titles of active variants that have no cost (they cannot be ordered). */
+  noCostVariants?: string[];
 }
 
 const CONFIRM: Partial<
@@ -36,7 +38,13 @@ const CONFIRM: Partial<
 };
 
 /** Current status, the publish checklist, and the status buttons (catalog.publish only). */
-export function StatusPanel({ productId, status, readiness, canPublish }: StatusPanelProps) {
+export function StatusPanel({
+  productId,
+  status,
+  readiness,
+  canPublish,
+  noCostVariants = [],
+}: StatusPanelProps) {
   const router = useRouter();
   const [target, setTarget] = useState<ProductStatus | null>(null);
   const [pending, setPending] = useState(false);
@@ -99,6 +107,20 @@ export function StatusPanel({ productId, status, readiness, canPublish }: Status
                 </li>
               ))}
             </ul>
+          </div>
+        ) : null}
+
+        {noCostVariants.length > 0 ? (
+          <div role="note" className="flex flex-col gap-1 border border-warning px-4 py-3">
+            <p className="type-small font-medium text-fg">
+              {status === 'active'
+                ? 'Some variants cannot be ordered'
+                : 'Publishing will not make everything orderable'}
+            </p>
+            <p className="type-small text-fg-muted">
+              These variants have no cost yet, so customers cannot order them. You can still
+              publish; set a cost in inventory first to let them sell: {noCostVariants.join(', ')}.
+            </p>
           </div>
         ) : null}
 

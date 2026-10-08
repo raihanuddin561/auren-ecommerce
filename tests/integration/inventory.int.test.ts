@@ -11,6 +11,9 @@ import {
   releaseReservation,
   reserve,
   sell,
+  countVariantsWithoutCost,
+  previewProductCost,
+  setCostBasis,
 } from '@/modules/inventory/service';
 import { makeStaff } from '../factories';
 import { closeDatabase, resetDatabase } from './helpers';
@@ -170,6 +173,220 @@ describe('manual adjustments', () => {
     );
     expect(code).toBe('APPROVAL_REQUIRED');
     expect(await level(variant.id)).toMatchObject({ onHand: 40 });
+  });
+});
+
+describe('cost basis from manual additions (INV-F3, INV-S3)', () => {
+  const add = (
+    variantId: string,
+    delta: number,
+    unitCost?: string,
+    reason: 'opening_stock' | 'found' = 'opening_stock',
+  ) => ({
+    variantId,
+    reason,
+    change: { mode: 'delta' as const, delta },
+    ...(unitCost ? { unitCost } : {}),
+  });
+  const avg = async (variantId: string) =>
+    (await db.productVariant.findUniqueOrThrow({ where: { id: variantId } })).avgCostMinor;
+
+  it('refuses to add stock to a variant with no cost unless a unit cost is given', async () => {
+    const { variant } = await setup(0, 0n);
+    const staff = await actor();
+    expect(await errorCode(adjustStock(add(variant.id, 5), staff))).toBe('VALIDATION');
+    expect(await db.stockMovement.count({ where: { variantId: variant.id } })).toBe(0);
+    expect(await db.inventoryLevel.count({ where: { variantId: variant.id } })).toBe(0);
+  });
+
+  it('first addition sets the cost, a later one at another cost blends it, one ledger row each', async () => {
+    const { variant } = await setup(0, 0n);
+    const staff = await actor();
+    await adjustStock(add(variant.id, 5, '1000'), staff);
+    expect(await avg(variant.id)).toBe(100000n);
+    // Optional once a cost exists: no cost given leaves the average alone.
+    await adjustStock(add(variant.id, 2, undefined, 'found'), staff);
+    expect(await avg(variant.id)).toBe(100000n);
+    // 7 on hand at 1,000.00, 3 more at 1,300.00: (7 x 1000 + 3 x 1300) / 10 = 1,090.00.
+    await adjustStock(add(variant.id, 3, '1300'), staff);
+    expect(await avg(variant.id)).toBe(109000n);
+
+    const rows = await db.stockMovement.findMany({
+      where: { variantId: variant.id },
+      orderBy: { createdAt: 'asc' },
+    });
+    expect(rows.map((r) => [r.type, r.quantity, r.unitCostMinor])).toEqual([
+      ['adjustment', 5, 100000n],
+      ['adjustment', 2, null],
+      ['adjustment', 3, 130000n],
+    ]);
+    const audit = await db.auditLog.findFirstOrThrow({
+      where: { action: 'stock.adjust', entityId: variant.id },
+      orderBy: { createdAt: 'asc' },
+    });
+    expect(audit.after).toMatchObject({ avgCostMinor: '100000', unitCostMinor: '100000' });
+    expect(await findLedgerMismatches()).toEqual([]);
+  });
+
+  it('the cost base counts units on hand in every location, reserved ones included', async () => {
+    const { variant } = await setup(4, 100000n);
+    await db.$transaction((tx) =>
+      reserve(tx, {
+        referenceType: 'checkout',
+        referenceId: 'c-cost',
+        lines: [{ variantId: variant.id, quantity: 2 }],
+      }),
+    );
+    await adjustStock(add(variant.id, 4, '1200'), await actor());
+    // (4 x 1000 + 4 x 1200) / 8 = 1,100.00
+    expect(await avg(variant.id)).toBe(110000n);
+  });
+
+  it('a variant that holds uncosted stock takes the typed cost as the basis for all units', async () => {
+    const { variant } = await setup(0, 0n);
+    await db.$transaction((tx) =>
+      receive(tx, {
+        variantId: variant.id,
+        quantity: 6,
+        unitCostMinor: 0n,
+        referenceType: 'test',
+        referenceId: 'uncosted',
+      }),
+    );
+    await adjustStock(add(variant.id, 4, '1000'), await actor());
+    expect(await avg(variant.id)).toBe(100000n);
+  });
+
+  it('removals never change the cost and refuse a unit cost', async () => {
+    const { variant } = await setup(10, 100000n);
+    const staff = await actor();
+    await adjustStock(
+      { variantId: variant.id, reason: 'count_correction', change: { mode: 'delta', delta: -2 } },
+      staff,
+    );
+    expect(await avg(variant.id)).toBe(100000n);
+    expect(
+      await errorCode(
+        adjustStock(
+          {
+            variantId: variant.id,
+            reason: 'count_correction',
+            change: { mode: 'delta', delta: -1 },
+            unitCost: '5',
+          },
+          staff,
+        ),
+      ),
+    ).toBe('VALIDATION');
+  });
+
+  it('opening stock must add units', async () => {
+    const { variant } = await setup(5, 100000n);
+    expect(
+      await errorCode(
+        adjustStock(
+          { variantId: variant.id, reason: 'opening_stock', change: { mode: 'delta', delta: -1 } },
+          await actor(),
+        ),
+      ),
+    ).toBe('VALIDATION');
+  });
+
+  it('a big opening stock needs a second approver by its typed cost value', async () => {
+    const { variant } = await setup(0, 0n);
+    // 100 units at 500.00 = 50,000.00, above the 10,000.00 default threshold.
+    expect(await errorCode(adjustStock(add(variant.id, 100, '500'), await actor()))).toBe(
+      'APPROVAL_REQUIRED',
+    );
+    expect(await avg(variant.id)).toBe(0n);
+    expect(await db.stockMovement.count({ where: { variantId: variant.id } })).toBe(0);
+  });
+});
+
+describe('set cost basis (INV-A2, INV-F3)', () => {
+  const makeVariants = async () => {
+    const product = await db.product.create({
+      data: { slug: 'cost-shirt', title: 'Cost shirt', status: 'active' },
+    });
+    const mk = (sku: string, avgCostMinor: bigint, position: number) =>
+      db.productVariant.create({
+        data: {
+          productId: product.id,
+          sku,
+          priceMinor: 100000n,
+          avgCostMinor,
+          position,
+          status: 'active',
+        },
+      });
+    const a = await mk('CS-S', 0n, 0);
+    const b = await mk('CS-M', 0n, 1);
+    const c = await mk('CS-L', 75000n, 2);
+    await db.location.create({ data: { name: 'Main', isDefault: true } });
+    return { product, a, b, c };
+  };
+  const avg = async (id: string) =>
+    (await db.productVariant.findUniqueOrThrow({ where: { id } })).avgCostMinor;
+
+  it('sets the cost of one variant that has none, with an audit row and tags', async () => {
+    const { a, product } = await makeVariants();
+    const staff = await actor();
+    const result = await setCostBasis(
+      { scope: { kind: 'variant', variantId: a.id }, unitCost: '1250.50' },
+      staff,
+    );
+    expect(result).toMatchObject({ updated: 1, skipped: 0 });
+    expect(result.tags).toEqual(
+      expect.arrayContaining([`stock:${a.id}`, `product:${product.id}`, 'products']),
+    );
+    expect(await avg(a.id)).toBe(125050n);
+    const audit = await db.auditLog.findFirstOrThrow({ where: { action: 'stock.set_cost' } });
+    expect(audit).toMatchObject({ entityId: a.id, actorId: staff.userId });
+    expect(audit.before).toMatchObject({ avgCostMinor: '0' });
+    expect(audit.after).toMatchObject({ avgCostMinor: '125050' });
+  });
+
+  it('refuses a variant that already has a cost and leaves it untouched', async () => {
+    const { c } = await makeVariants();
+    expect(
+      await errorCode(
+        setCostBasis({ scope: { kind: 'variant', variantId: c.id }, unitCost: '1' }, await actor()),
+      ),
+    ).toBe('CONFLICT');
+    expect(await avg(c.id)).toBe(75000n);
+    expect(await db.auditLog.count({ where: { action: 'stock.set_cost' } })).toBe(0);
+  });
+
+  it('sets the same cost on every variant of a product that lacks one and skips the rest', async () => {
+    const { product, a, b, c } = await makeVariants();
+    const preview = await previewProductCost(product.id);
+    expect(preview.map((row) => [row.sku, row.hasCost])).toEqual([
+      ['CS-S', false],
+      ['CS-M', false],
+      ['CS-L', true],
+    ]);
+    const result = await setCostBasis(
+      { scope: { kind: 'product', productId: product.id }, unitCost: '900' },
+      await actor(),
+    );
+    expect(result).toMatchObject({ updated: 2, skipped: 1 });
+    expect([await avg(a.id), await avg(b.id), await avg(c.id)]).toEqual([90000n, 90000n, 75000n]);
+    expect(await countVariantsWithoutCost()).toBe(0);
+    expect(
+      await errorCode(
+        setCostBasis(
+          { scope: { kind: 'product', productId: product.id }, unitCost: '1' },
+          await actor(),
+        ),
+      ),
+    ).toBe('CONFLICT');
+  });
+
+  it('counts only live variants without cost', async () => {
+    const { a } = await makeVariants();
+    expect(await countVariantsWithoutCost()).toBe(2);
+    await db.productVariant.update({ where: { id: a.id }, data: { status: 'archived' } });
+    expect(await countVariantsWithoutCost()).toBe(1);
   });
 });
 

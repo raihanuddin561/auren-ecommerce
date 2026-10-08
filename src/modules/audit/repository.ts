@@ -39,6 +39,21 @@ export async function listForEntity(tx: Tx, entityType: string, entityId: string
   });
 }
 
+/** True when an audit row with this action exists for the entity since the given time. */
+export async function actionExistsSince(
+  tx: Tx,
+  entityType: string,
+  entityId: string,
+  action: string,
+  since: Date,
+): Promise<boolean> {
+  const found = await tx.auditLog.findFirst({
+    where: { entityType, entityId, action, createdAt: { gte: since } },
+    select: { id: true },
+  });
+  return found !== null;
+}
+
 // ---------------------------------------------------------------------------------------------
 // Reading for the alert scan (still no updates or deletes of audit rows)
 // ---------------------------------------------------------------------------------------------

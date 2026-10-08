@@ -326,6 +326,7 @@ The second core goal. **Principle: every taka spent or earned is attached to a s
 | Cost | Where captured | When |
 |---|---|---|
 | Product cost (COGS) | `purchase_order_items.unit_cost` + allocated landed costs (freight, duty, customs, inbound transport) → `product_variants.avg_cost_minor` | On goods receipt |
+| Product cost, opening or found stock | Unit cost typed in Adjust stock (required while the variant has no cost, optional later) → same weighted average as a receipt; `stock_movements.unit_cost_minor` keeps the typed cost. "Set cost" fills a missing cost only (audited, step-up); it never overwrites an existing average (ADR-035) | On stock addition / set cost |
 | COGS per sale | `order_items.unit_cost_minor` (**snapshot** of avg cost at order time) | On order placed |
 | Outbound shipping cost | `shipments.cost_minor` (from courier API/invoice) → `order_cost_lines` | On shipment booked / reconciled |
 | Payment gateway fee | `payments.fee_minor` → `order_cost_lines` | On payment success / settlement |

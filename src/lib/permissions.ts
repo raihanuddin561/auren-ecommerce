@@ -119,6 +119,15 @@ export function hasPermission(staff: StaffContext, permission: Permission): bool
   return staff.role === 'owner' || staff.permissions.has(permission);
 }
 
+/**
+ * Who sees what a variant costs: staff who buy stock, read finance, or set the cost themselves
+ * (inventory.adjust). Everyone else sees only whether a cost exists.
+ */
+export const canSeeCostOfGoods = (staff: StaffContext): boolean =>
+  hasPermission(staff, 'purchasing.manage') ||
+  hasPermission(staff, 'finance.read') ||
+  hasPermission(staff, 'inventory.adjust');
+
 /** Throws FORBIDDEN unless the staff member holds the permission. Call it in every admin action. */
 export function assertPermission(staff: StaffContext, permission: Permission): void {
   if (!hasPermission(staff, permission)) {

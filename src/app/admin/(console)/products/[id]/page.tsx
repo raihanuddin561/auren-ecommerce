@@ -10,7 +10,7 @@ import { ProductStatusBadge } from '@/components/admin/catalog/products/status-b
 import { StatusPanel } from '@/components/admin/catalog/products/status-panel';
 import { VariantsSection } from '@/components/admin/catalog/products/variants-section';
 import { Button } from '@/components/ui/button';
-import { hasPermission } from '@/lib/permissions';
+import { canSeeCostOfGoods, hasPermission } from '@/lib/permissions';
 import { requireStaffWith } from '@/lib/staff';
 import {
   getProductForAdmin,
@@ -25,8 +25,10 @@ export default async function EditProductPage({ params }: PageProps<'/admin/prod
   const { id } = await params;
   if (!z.uuid().safeParse(id).success) notFound();
 
+  const canSeeCost = canSeeCostOfGoods(staff);
+  const canSeeStock = hasPermission(staff, 'inventory.read');
   const [product, categories, sizeCharts] = await Promise.all([
-    getProductForAdmin(id),
+    getProductForAdmin(id, { includeCost: canSeeCost }),
     listCategoryOptions(),
     listSizeChartOptions(),
   ]);
@@ -61,12 +63,21 @@ export default async function EditProductPage({ params }: PageProps<'/admin/prod
           sizeCharts={sizeCharts}
           canWrite={canWrite}
         />
-        <VariantsSection product={product} sizeCharts={sizeCharts} canWrite={canWrite} />
+        <VariantsSection
+          product={product}
+          sizeCharts={sizeCharts}
+          canWrite={canWrite}
+          showCost={canSeeCost}
+          canSeeStock={canSeeStock}
+        />
         <MediaSection product={product} canWrite={canWrite} />
         <StatusPanel
           productId={product.id}
           status={product.status}
           readiness={publishReadiness(product)}
+          noCostVariants={product.variants
+            .filter((v) => v.status !== 'archived' && !v.hasCost)
+            .map((v) => v.labels.filter(Boolean).join(' / ') || v.sku)}
           canPublish={canPublish}
         />
       </div>

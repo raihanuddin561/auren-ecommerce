@@ -1,9 +1,11 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useId, useState } from 'react';
 import { updateVariants } from '@/modules/catalog/actions';
 import type { ProductView } from './types';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { FormField } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
@@ -35,13 +37,15 @@ import { isMoneyText } from './variant-preview';
 interface VariantsTableProps {
   product: ProductView;
   canWrite: boolean;
+  showCost: boolean;
+  canSeeStock: boolean;
 }
 
 const th = 'border-b border-line px-3 py-3 text-left type-eyebrow text-fg-muted whitespace-nowrap';
 const td = 'px-2 py-2 align-top';
 
 /** The variant rows with inline editing and one Save. Errors land on the row and cell they belong to. */
-export function VariantsTable({ product, canWrite }: VariantsTableProps) {
+export function VariantsTable({ product, canWrite, showCost, canSeeStock }: VariantsTableProps) {
   const router = useRouter();
   const captionId = useId();
   const [baseline, setBaseline] = useState(() => rowsFromProduct(product.variants));
@@ -53,6 +57,9 @@ export function VariantsTable({ product, canWrite }: VariantsTableProps) {
   const [bulkError, setBulkError] = useState<string | null>(null);
 
   const dirty = rowsChanged(rows, baseline);
+  // Stock and cost are read live from the server data, never from the editable row state, so a
+  // change made in inventory shows up here after a refresh.
+  const live = new Map(product.variants.map((v) => [v.id, v]));
 
   function edit(index: number, field: EditableField, value: string) {
     setRows((current) => current.map((row, i) => (i === index ? { ...row, [field]: value } : row)));
@@ -171,7 +178,7 @@ export function VariantsTable({ product, canWrite }: VariantsTableProps) {
           aria-labelledby={captionId}
           className="overflow-x-auto border border-line bg-raised"
         >
-          <table className="w-full min-w-[60rem] border-collapse type-admin">
+          <table className="w-full min-w-[78rem] border-collapse type-admin">
             <caption id={captionId} className="sr-only">
               Variants of {product.title}
             </caption>
@@ -200,6 +207,17 @@ export function VariantsTable({ product, canWrite }: VariantsTableProps) {
                 </th>
                 <th scope="col" className={`${th} text-right`}>
                   On hand
+                </th>
+                <th scope="col" className={`${th} text-right`}>
+                  Available
+                </th>
+                {showCost ? (
+                  <th scope="col" className={`${th} text-right`}>
+                    Cost
+                  </th>
+                ) : null}
+                <th scope="col" className={th}>
+                  Stock and cost
                 </th>
               </tr>
             </thead>
@@ -243,14 +261,33 @@ export function VariantsTable({ product, canWrite }: VariantsTableProps) {
                       </p>
                     ) : null}
                   </td>
-                  <td className={`${td} pt-4 text-right tabular-nums`}>{row.onHand}</td>
+                  <td className={`${td} pt-4 text-right tabular-nums`}>
+                    {live.get(row.id)?.onHand ?? row.onHand}
+                  </td>
+                  <td className={`${td} pt-4 text-right font-medium tabular-nums`}>
+                    {live.get(row.id)?.available ?? 0}
+                  </td>
+                  {showCost ? (
+                    <td className={`${td} pt-4 text-right tabular-nums`}>
+                      {live.get(row.id)?.avgCost ?? <span className="text-fg-muted">None</span>}
+                    </td>
+                  ) : null}
+                  <td className={`${td} pt-3`}>
+                    <StockCostCell
+                      variantTitle={variantTitle(row)}
+                      sku={row.sku}
+                      hasCost={live.get(row.id)?.hasCost ?? false}
+                      canSeeStock={canSeeStock}
+                    />
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
         <p className="type-small text-fg-muted">
-          On hand is read only: stock changes through inventory. Cost comes from purchasing.
+          On hand, available and cost are read only: stock changes in inventory, and cost comes from
+          purchase receipts or the unit cost entered when adding stock.
         </p>
       </fieldset>
 
@@ -276,6 +313,46 @@ export function VariantsTable({ product, canWrite }: VariantsTableProps) {
             Save variants
           </Button>
         </div>
+      ) : null}
+    </div>
+  );
+}
+
+/** A warning chip when the variant has no cost (it cannot be ordered) and links to fix it in inventory. */
+function StockCostCell({
+  variantTitle,
+  sku,
+  hasCost,
+  canSeeStock,
+}: {
+  variantTitle: string;
+  sku: string;
+  hasCost: boolean;
+  canSeeStock: boolean;
+}) {
+  const href = `/admin/inventory?q=${encodeURIComponent(sku)}`;
+  return (
+    <div className="flex flex-col items-start gap-1.5">
+      {hasCost ? null : <Badge tone="danger">No cost: cannot be ordered</Badge>}
+      {canSeeStock ? (
+        <span className="flex flex-wrap gap-x-3">
+          <Link
+            href={href}
+            aria-label={`Adjust stock for ${variantTitle}`}
+            className="type-small text-fg underline decoration-gold decoration-1 underline-offset-4 hover:decoration-2"
+          >
+            Adjust stock
+          </Link>
+          {hasCost ? null : (
+            <Link
+              href={href}
+              aria-label={`Set cost for ${variantTitle}`}
+              className="type-small text-fg underline decoration-gold decoration-1 underline-offset-4 hover:decoration-2"
+            >
+              Set cost
+            </Link>
+          )}
+        </span>
       ) : null}
     </div>
   );

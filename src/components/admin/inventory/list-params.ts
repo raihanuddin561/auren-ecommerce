@@ -7,6 +7,7 @@ export const STOCK_STATUS_LABELS: Record<StockStatusFilter, string> = {
   in_stock: 'In stock',
   low: 'Low stock',
   out: 'Out of stock',
+  no_cost: 'No cost: cannot be ordered',
 };
 
 export interface StockQuery {

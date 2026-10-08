@@ -20,6 +20,10 @@ export interface VariantView {
   labels: string[];
   optionValueIds: string[];
   onHand: number;
+  reserved: number;
+  available: number;
+  hasCost: boolean;
+  avgCost: string | null;
 }
 
 export interface OptionView {

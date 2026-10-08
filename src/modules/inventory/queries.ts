@@ -5,8 +5,10 @@ import { logger } from '@/lib/logger';
 import { format, money } from '@/lib/money';
 import * as repo from './repository';
 import {
+  countVariantsWithoutCost,
   getAvailability,
   listInStockProductIds,
+  previewProductCost,
   releaseExpired,
   type VariantAvailability,
 } from './service';
@@ -21,7 +23,10 @@ export const getVariantAvailability = (variantIds: readonly string[]) =>
 // Console reads: call them after the staff check (inventory.read).
 
 export interface StockListRow extends Omit<repo.StockRow, 'avgCostMinor'> {
+  /** Formatted cost; the caller blanks it for staff who may not see cost of goods. */
   avgCost: string | null;
+  /** Whether a cost basis exists. Not sensitive: it only says whether the variant can be ordered. */
+  hasCost: boolean;
 }
 
 export async function listStockLevels(params: StockListParams) {
@@ -32,6 +37,7 @@ export async function listStockLevels(params: StockListParams) {
     rows: rows.map<StockListRow>(({ avgCostMinor, ...row }) => ({
       ...row,
       avgCost: avgCostMinor > 0n ? format(money(avgCostMinor, row.currency)) : null,
+      hasCost: avgCostMinor > 0n,
     })),
   };
 }
@@ -54,6 +60,12 @@ export async function listStockMovements(params: MovementListParams) {
     })),
   };
 }
+
+/** Variants that cannot be ordered because they have no cost (inventory.read). */
+export const getVariantsWithoutCostCount = () => countVariantsWithoutCost();
+
+/** The variants of one product and which of them still lack a cost (inventory.read, for the preview). */
+export const getProductCostPreview = (productId: string) => previewProductCost(productId);
 
 /** Live: ids of products with at least one variant that can be sold now. Uncached. */
 export const getInStockProductIds = async (): Promise<Set<string>> =>

@@ -1692,6 +1692,23 @@ export async function setVariantAverageCost(
   await repo.setVariantAvgCost(tx, variantId, avgCostMinor);
 }
 
+/**
+ * Sets the cost basis of a variant that has none. Returns false (and changes nothing) when a cost
+ * already exists: an existing average changes only through receipts and stock additions.
+ */
+export async function setVariantCostIfUnset(
+  tx: Tx,
+  variantId: string,
+  avgCostMinor: bigint,
+): Promise<boolean> {
+  if (avgCostMinor <= 0n) throw new DomainError('VALIDATION', 'Cost must be above zero');
+  return repo.setVariantAvgCostIfUnset(tx, variantId, avgCostMinor);
+}
+
+/** Variants of a product that are not archived, in display order. */
+export const liveVariantIdsOfProduct = (tx: Tx, productId: string) =>
+  repo.listLiveVariantIdsOfProduct(tx, productId);
+
 /** Product ids for variants, so stock writes can invalidate the product tags too. */
 export async function productIdsForVariants(
   tx: Tx,

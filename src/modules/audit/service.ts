@@ -51,6 +51,15 @@ export async function audit(tx: Tx, input: AuditInput): Promise<string> {
   return row.id;
 }
 
+/** Whether this action was already recorded for the entity within the last `withinMs` (rate limiting). */
+export const recentlyRecorded = (
+  tx: Tx,
+  entity: string,
+  entityId: string,
+  action: string,
+  withinMs: number,
+) => repo.actionExistsSince(tx, entity, entityId, action, new Date(Date.now() - withinMs));
+
 /** Newest first. Used by the audit viewer and by entity detail screens. */
 export async function historyFor(tx: Tx, entity: string, entityId: string, limit?: number) {
   return repo.listForEntity(tx, entity, entityId, limit);

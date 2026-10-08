@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/cn';
 import { AdjustStockDialog, type AdjustTarget } from './adjust-stock-dialog';
+import { SetCostDialog, type SetCostTarget } from './set-cost-dialog';
 
 export interface StockTableRow {
   variantId: string;
@@ -18,6 +19,7 @@ export interface StockTableRow {
   available: number;
   lowStockThreshold: number;
   avgCost: string | null;
+  hasCost: boolean;
 }
 
 const head = 'border-b border-line px-4 py-3 text-left type-eyebrow text-fg-muted';
@@ -41,6 +43,7 @@ export function StockTable({
   showCost: boolean;
 }) {
   const [target, setTarget] = useState<AdjustTarget | null>(null);
+  const [costTarget, setCostTarget] = useState<SetCostTarget | null>(null);
   return (
     <>
       <div className="overflow-x-auto border border-line bg-raised">
@@ -104,11 +107,21 @@ export function StockTable({
                   </td>
                   {showCost ? (
                     <td className={cn(cell, 'hidden text-right tabular-nums lg:table-cell')}>
-                      {row.avgCost ?? <span className="text-fg-muted">No cost yet</span>}
+                      {row.hasCost ? (
+                        (row.avgCost ?? <span className="text-fg-muted">Set</span>)
+                      ) : (
+                        <span className="text-fg-muted">No cost yet</span>
+                      )}
                     </td>
                   ) : null}
                   <td className={cell}>
-                    <StockBadge row={row} />
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <StockBadge row={row} />
+                      {row.hasCost ? null : <Badge tone="danger">No cost</Badge>}
+                    </div>
+                    {row.hasCost ? null : (
+                      <p className="mt-1 type-small text-fg-muted">Cannot be ordered</p>
+                    )}
                   </td>
                   <td className={cn(cell, 'text-right whitespace-nowrap')}>
                     <Button asChild variant="ghost" size="sm" className="min-h-11">
@@ -119,6 +132,24 @@ export function StockTable({
                         History
                       </Link>
                     </Button>
+                    {canAdjust && !row.hasCost ? (
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        className="min-h-11"
+                        aria-label={`Set cost for ${title}`}
+                        onClick={() =>
+                          setCostTarget({
+                            variantId: row.variantId,
+                            productId: row.productId,
+                            productTitle: row.productTitle,
+                            title,
+                          })
+                        }
+                      >
+                        Set cost
+                      </Button>
+                    ) : null}
                     {canAdjust ? (
                       <Button
                         variant="secondary"
@@ -131,6 +162,7 @@ export function StockTable({
                             title,
                             onHand: row.onHand,
                             reserved: row.reserved,
+                            hasCost: row.hasCost,
                           })
                         }
                       >
@@ -145,6 +177,7 @@ export function StockTable({
         </table>
       </div>
       <AdjustStockDialog target={target} onClose={() => setTarget(null)} />
+      <SetCostDialog target={costTarget} onClose={() => setCostTarget(null)} />
     </>
   );
 }

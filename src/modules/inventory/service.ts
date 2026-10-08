@@ -1,11 +1,18 @@
 import { db, type Tx } from '@/lib/db';
 import { DomainError } from '@/lib/errors';
-import { multiply, money } from '@/lib/money';
-import { audit } from '@/modules/audit/service';
+import { logger } from '@/lib/logger';
+import { fromDecimalString, multiply, money, format } from '@/lib/money';
+import { audit, recentlyRecorded } from '@/modules/audit/service';
 import { requireApproval } from '@/modules/approvals/service';
 import * as catalog from '@/modules/catalog/service';
+import { averageCostAfterAddition } from '@/modules/purchasing/cost';
 import * as repo from './repository';
-import { isWriteOffReason, type AdjustStockInput } from './schemas';
+import {
+  ADD_ONLY_REASONS,
+  isWriteOffReason,
+  type AdjustStockInput,
+  type SetCostBasisInput,
+} from './schemas';
 import { stockTagsFor } from './tags';
 
 /**
@@ -165,9 +172,9 @@ export async function adjustStock(
     const delta =
       input.change.mode === 'delta' ? input.change.delta : input.change.counted - before.onHand;
     if (delta === 0) throw new DomainError('VALIDATION', 'That is already the quantity on hand.');
-    if (input.reason === 'found' && delta < 0) {
-      throw new DomainError('VALIDATION', 'Found stock must add units.', {
-        fieldErrors: { change: ['Found stock must add units.'] },
+    if (ADD_ONLY_REASONS.includes(input.reason) && delta < 0) {
+      throw new DomainError('VALIDATION', 'This reason must add units.', {
+        fieldErrors: { change: ['This reason must add units.'] },
       });
     }
     if (isWriteOffReason(input.reason) && delta > 0) {
@@ -176,6 +183,23 @@ export async function adjustStock(
       });
     }
 
+    const unitCostMinor =
+      input.unitCost === undefined
+        ? null
+        : fromDecimalString(input.unitCost, variant.currency).minor;
+    if (unitCostMinor !== null && delta < 0) {
+      throw new DomainError('VALIDATION', 'A unit cost applies only when adding stock.', {
+        fieldErrors: { unitCost: ['A unit cost applies only when adding stock.'] },
+      });
+    }
+    if (delta > 0 && unitCostMinor === null && variant.avgCostMinor <= 0n) {
+      throw new DomainError('VALIDATION', 'This variant has no cost yet: enter the unit cost.', {
+        fieldErrors: { unitCost: ['This variant has no cost yet. Enter what one unit cost you.'] },
+      });
+    }
+
+    // Units on hand in every location, read before this change: the cost base of the average.
+    const onHandBeforeAll = await repo.sumOnHandAllLocations(tx, input.variantId);
     let after: repo.LevelAfter;
     if (delta > 0) {
       after = await repo.addOnHand(tx, input.variantId, locationId, delta);
@@ -191,7 +215,11 @@ export async function adjustStock(
       after = removed;
     }
     // A large change either way (writing stock off, or conjuring it up) needs a second person.
-    const value = multiply(money(variant.avgCostMinor, variant.currency), Math.abs(delta));
+    const valuationBasis =
+      unitCostMinor !== null && unitCostMinor > variant.avgCostMinor
+        ? unitCostMinor
+        : variant.avgCostMinor;
+    const value = multiply(money(valuationBasis, variant.currency), Math.abs(delta));
     await requireApproval(tx, {
       kind: 'stock_adjustment',
       subjectType: 'variant',
@@ -206,16 +234,39 @@ export async function adjustStock(
       type: isWriteOffReason(input.reason) ? 'write_off' : 'adjustment',
       quantity: delta,
       referenceType: 'adjustment',
+      unitCostMinor: delta > 0 ? unitCostMinor : null,
       reason: input.note ? `${input.reason}: ${input.note}` : input.reason,
       actorId: actor.userId,
     });
+    // Same weighted average (and rounding) as a goods receipt; removals never change the cost.
+    let avgCostAfter = variant.avgCostMinor;
+    if (delta > 0 && unitCostMinor !== null) {
+      avgCostAfter = averageCostAfterAddition({
+        onHandBefore: onHandBeforeAll,
+        avgCostBeforeMinor: variant.avgCostMinor,
+        addedQuantity: delta,
+        unitCostMinor,
+      });
+      await catalog.setVariantAverageCost(tx, input.variantId, avgCostAfter);
+    }
     await audit(tx, {
       actorId: actor.userId,
       action: 'stock.adjust',
       entity: 'variant',
       entityId: input.variantId,
-      before: { onHand: before.onHand, reserved: before.reserved },
-      after: { onHand: after.onHand, reserved: after.reserved, reason: input.reason, delta },
+      before: {
+        onHand: before.onHand,
+        reserved: before.reserved,
+        avgCostMinor: variant.avgCostMinor.toString(),
+      },
+      after: {
+        onHand: after.onHand,
+        reserved: after.reserved,
+        reason: input.reason,
+        delta,
+        avgCostMinor: avgCostAfter.toString(),
+        ...(unitCostMinor !== null ? { unitCostMinor: unitCostMinor.toString() } : {}),
+      },
       ip: actor.ip ?? null,
       userAgent: actor.userAgent ?? null,
     });
@@ -487,6 +538,147 @@ export async function releaseExpired(
     return { ...effect, released: released.length };
   });
 }
+
+// ---------------------------------------------------------------------------------------------
+// Cost basis for variants that have none
+// ---------------------------------------------------------------------------------------------
+
+export interface CostBasisPreviewRow {
+  variantId: string;
+  label: string;
+  sku: string;
+  onHand: number;
+  hasCost: boolean;
+}
+
+/** The variants of a product with the ones a "set cost" would change (no cost yet) marked. */
+export async function previewProductCost(productId: string): Promise<CostBasisPreviewRow[]> {
+  const ids = await catalog.liveVariantIdsOfProduct(db, productId);
+  if (ids.length === 0) return [];
+  const [costs, labels, stock] = await Promise.all([
+    catalog.lockVariantCosts(db, ids),
+    catalog.variantLabels(db, ids),
+    getAvailability(ids),
+  ]);
+  return ids.flatMap((variantId) => {
+    const cost = costs.get(variantId);
+    if (!cost) return [];
+    const label = labels.get(variantId);
+    return [
+      {
+        variantId,
+        label: label?.optionsLabel || label?.productTitle || variantId,
+        sku: label?.sku ?? '',
+        onHand: stock.get(variantId)?.onHand ?? 0,
+        hasCost: cost.avgCostMinor > 0n,
+      },
+    ];
+  });
+}
+
+export interface SetCostResult {
+  updated: number;
+  skipped: number;
+  tags: string[];
+}
+
+/**
+ * Gives variants that have no cost a cost basis. It never touches a variant that already has one:
+ * an existing average changes only through goods receipts and stock additions, so the cost history
+ * stays true. One variant that already has a cost is refused; for a whole product those are skipped.
+ */
+export async function setCostBasis(
+  input: SetCostBasisInput,
+  actor: StockActor,
+): Promise<SetCostResult> {
+  return db.$transaction(async (tx) => {
+    const ids =
+      input.scope.kind === 'variant'
+        ? [input.scope.variantId]
+        : await catalog.liveVariantIdsOfProduct(tx, input.scope.productId);
+    if (ids.length === 0) throw new DomainError('NOT_FOUND', 'There is nothing to set a cost on.');
+    const costs = await catalog.lockVariantCosts(tx, ids);
+    if (input.scope.kind === 'variant' && !costs.has(input.scope.variantId)) {
+      throw new DomainError('NOT_FOUND', 'That variant does not exist.');
+    }
+    const changed: string[] = [];
+    let skipped = 0;
+    for (const id of [...costs.keys()].sort()) {
+      const variant = costs.get(id);
+      if (!variant) continue;
+      if (variant.avgCostMinor > 0n) {
+        skipped += 1;
+        continue;
+      }
+      const unitCost = fromDecimalString(input.unitCost, variant.currency).minor;
+      if (!(await catalog.setVariantCostIfUnset(tx, id, unitCost))) {
+        skipped += 1;
+        continue;
+      }
+      changed.push(id);
+      await audit(tx, {
+        actorId: actor.userId,
+        action: 'stock.set_cost',
+        entity: 'variant',
+        entityId: id,
+        before: { avgCostMinor: '0' },
+        after: {
+          avgCostMinor: unitCost.toString(),
+          cost: format(money(unitCost, variant.currency)),
+        },
+        ip: actor.ip ?? null,
+        userAgent: actor.userAgent ?? null,
+      });
+    }
+    if (changed.length === 0) {
+      throw new DomainError(
+        'CONFLICT',
+        input.scope.kind === 'variant'
+          ? 'This variant already has a cost. Its cost changes through purchase receipts and stock additions.'
+          : 'Every variant of this product already has a cost.',
+      );
+    }
+    const effect = await effectFor(tx, changed);
+    return { updated: changed.length, skipped, tags: effect.tags };
+  });
+}
+
+const NO_COST_ALERT_ACTION = 'checkout.no_cost_refused';
+const NO_COST_ALERT_WINDOW_MS = 60 * 60 * 1000;
+
+/**
+ * Tells staff that a customer tried to order a variant without a cost basis: one audit row per
+ * variant and hour, so the audit trail shows what is losing sales without flooding it. Runs outside
+ * the (rolled back) checkout transaction and never throws into the customer's request.
+ */
+export async function reportNoCostRefusal(variantIds: readonly string[]): Promise<void> {
+  try {
+    for (const variantId of new Set(variantIds)) {
+      await db.$transaction(async (tx) => {
+        const recent = await recentlyRecorded(
+          tx,
+          'variant',
+          variantId,
+          NO_COST_ALERT_ACTION,
+          NO_COST_ALERT_WINDOW_MS,
+        );
+        if (recent) return;
+        await audit(tx, {
+          actorId: null,
+          action: NO_COST_ALERT_ACTION,
+          entity: 'variant',
+          entityId: variantId,
+          after: { reason: 'no_cost_basis' },
+        });
+      });
+    }
+  } catch (error) {
+    logger.warn({ err: error }, 'could not record a no-cost order refusal');
+  }
+}
+
+/** Variants that cannot be ordered because they have no cost (live products, not archived). */
+export const countVariantsWithoutCost = (): Promise<number> => repo.countVariantsWithoutCost(db);
 
 // ---------------------------------------------------------------------------------------------
 // Reconciliation

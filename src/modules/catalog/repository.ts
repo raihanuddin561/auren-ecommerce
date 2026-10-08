@@ -720,6 +720,28 @@ export async function lockVariantCosts(
 export const setVariantAvgCost = (tx: Tx, id: string, avgCostMinor: bigint) =>
   tx.productVariant.update({ where: { id }, data: { avgCostMinor } });
 
+/** Sets the average cost only while it is still zero. True when a row changed (history comes from receipts). */
+export async function setVariantAvgCostIfUnset(
+  tx: Tx,
+  id: string,
+  avgCostMinor: bigint,
+): Promise<boolean> {
+  const changed = await tx.$executeRaw`
+    UPDATE product_variants SET avg_cost_minor = ${avgCostMinor}, updated_at = now()
+     WHERE id = ${id}::uuid AND avg_cost_minor <= 0`;
+  return changed > 0;
+}
+
+/** Ids of the variants of a product that are not archived, for the "same cost for all sizes" helper. */
+export async function listLiveVariantIdsOfProduct(tx: Tx, productId: string): Promise<string[]> {
+  const rows = await tx.productVariant.findMany({
+    where: { productId, status: { not: 'archived' }, product: { deletedAt: null } },
+    orderBy: [{ position: 'asc' }, { sku: 'asc' }],
+    select: { id: true },
+  });
+  return rows.map((row) => row.id);
+}
+
 export const listVariantProductIds = (tx: Tx, variantIds: readonly string[]) =>
   tx.productVariant.findMany({
     where: { id: { in: [...variantIds] } },

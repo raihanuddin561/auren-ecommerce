@@ -268,6 +268,9 @@ export async function submit(
     customerNote: input.customerNote ?? null,
   };
 
+  // Variants refused for lack of a cost basis. The checkout transaction rolls back, so staff are
+  // told afterwards, outside it (see reportNoCostRefusal).
+  const noCostVariantIds: string[] = [];
   const result = await runIdempotent(
     db,
     { key: input.idempotencyKey, scope: 'checkout.submit', actor, request },
@@ -308,6 +311,7 @@ export async function submit(
         if (variant.avgCostMinor <= 0n) {
           // No cost basis: profit could not be recorded. Purchasing must receive stock first.
           logger.warn({ variantId: variant.id }, 'order refused: variant has no cost basis');
+          noCostVariantIds.push(variant.id);
           throw new DomainError(
             'CONFLICT',
             `${lineLabel(variant)} cannot be ordered online right now. Please message our concierge.`,
@@ -388,7 +392,10 @@ export async function submit(
       await cart.clearCart(tx, bag.cartId);
       return placed;
     },
-  );
+  ).catch(async (error: unknown) => {
+    if (noCostVariantIds.length > 0) await inventory.reportNoCostRefusal(noCostVariantIds);
+    throw error;
+  });
 
   return {
     orderId: result.value.orderId,

@@ -137,3 +137,26 @@ export function weightedAverageCost(input: {
     'half-even',
   );
 }
+
+/**
+ * Average cost after stock is added by hand (opening stock, found stock, a count that goes up) at a
+ * unit cost the owner typed. The maths is the goods-receipt formula, with one rule on top: when the
+ * variant has no cost basis yet (average is zero) the units already on hand have an unknown cost, so
+ * the typed cost becomes the basis for all of them instead of being diluted by units worth "nothing".
+ * Returns the new average, rounded half to even like a receipt.
+ */
+export function averageCostAfterAddition(input: {
+  onHandBefore: number;
+  avgCostBeforeMinor: bigint;
+  addedQuantity: number;
+  unitCostMinor: bigint;
+}): bigint {
+  if (input.unitCostMinor <= 0n) throw new Error('A unit cost must be above zero.');
+  if (input.avgCostBeforeMinor <= 0n) return input.unitCostMinor;
+  return weightedAverageCost({
+    onHandBefore: input.onHandBefore,
+    avgCostBeforeMinor: input.avgCostBeforeMinor,
+    receivedQuantity: input.addedQuantity,
+    incomingValueMinor: BigInt(input.addedQuantity) * input.unitCostMinor,
+  });
+}

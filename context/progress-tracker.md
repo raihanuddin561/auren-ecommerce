@@ -18,6 +18,17 @@
 
 ---
 
+### 2026-10-08 — 3.2, 3.7, 4.6 Cost basis for variants without cost (owner report) — WIP (state checkpoint, results added below when gates finish)
+- Type: enhancement and fix
+- Problem: orders were refused with "variant has no cost basis" because avg cost was set only by goods receipts; admin-created products stocked through Adjust stock had stock but zero cost. The product edit page also showed stale stock because the variants table kept its row state (including On hand) from first mount and its key ignored stock.
+- Changed: purchasing/cost.ts averageCostAfterAddition; inventory schemas (opening_stock reason, unitCost, setCostBasisSchema, costPreviewSchema, no_cost filter), service (adjustStock with cost, setCostBasis, previewProductCost, reportNoCostRefusal, countVariantsWithoutCost), actions (setCostBasis, previewCostBasis), queries, repository; catalog service and repository (setVariantCostIfUnset, liveVariantIdsOfProduct); audit service and repository (recentlyRecorded); checkout service (audit alert after a no-cost refusal, outside the rolled-back transaction); lib/permissions canSeeCostOfGoods; admin: inventory page banner, filter, Set cost dialog (single or whole product with preview), Unit cost field in Adjust stock, product edit page On hand, Available, Cost, chip and links read live, publish warning; docs: ADR-035, ARCHITECTURE 7.1, docs/runbooks/how-cost-works.md, README. No migration.
+- Tests so far: unit (cost worked examples, schemas, actions) green; integration inventory and checkout 62/62 on auren_test (incl. first addition on zero-cost variant, later addition at another cost, set cost refusal and bulk, alert once per hour, orderable after Set cost); Playwright spec tests/e2e/inventory-cost.db.spec.ts written.
+- Decisions: ADR-035. Stale integration assertions about mismatched addresses updated to the owner's manual-address behaviour (commit 8900328).
+- Next: gates (Playwright, reviews, secret scan), then final report.
+- Blockers/risks: none
+
+---
+
 ### 2026-10-05 — 4.1 to 4.8, 5.1, 5.2 order flow (stage 2) — WIP (state checkpoint)
 - Type: new
 - Done so far (uncommitted, in the working tree): migration add_cart_checkout_orders (carts, cart_items, geo_areas, addresses, shipping_zones/rates, orders, order_items, order_events, payments, customer_risk_flags, notification_logs, order_number_seq, INV-O9 CHECK + trigger, append-only triggers, RLS) applied to dev and test DBs; modules shipping (geo data 8 divisions, 64 districts, ~355 thanas; zones, quote, admin actions), settings (checkout protection, COD), cart (service, cookie, actions, view; integration 14/14); storefront cart UI (store, drawer, bag page, header BagButton, wishlist page, PDP and card wired, dead header and footer links removed).

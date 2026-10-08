@@ -64,6 +64,7 @@ Email goes to Mailpit locally (`SMTP_URL`), to Resend in production (`RESEND_API
 - Money is integer minor units through `src/lib/money.ts`. No floats.
 - Every order is verified by staff before it can be confirmed, and the system never cancels an order on its own.
 - Environment variables are validated in `src/lib/env/schema.ts`; `next dev` and `next build` fail with a readable list when `DATABASE_URL` or `BETTER_AUTH_SECRET` is missing.
+- How cost and selling price work, and how to fix variants that cannot be ordered for lack of cost: `docs/runbooks/how-cost-works.md`.
 - CI and branch protection: `docs/runbooks/ci-and-branch-protection.md`.
 
 ## Troubleshooting (Windows)
