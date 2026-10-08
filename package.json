@@ -7,7 +7,7 @@
     "build": "prisma generate && next build",
     "vercel-build": "prisma generate && next build",
     "start": "next start",
-    "lint": "eslint .",
+    "lint": "eslint . --cache --cache-location .eslintcache",
     "typecheck": "cross-env SKIP_ENV_VALIDATION=1 next typegen && tsc --noEmit",
     "prepare": "husky || true",
     "format": "prettier --write .",
@@ -36,7 +36,8 @@
     "test:e2e:run": "cross-env NODE_OPTIONS=--import=./scripts/stub-server-only.mjs playwright test",
     "seed:images": "tsx scripts/generate-seed-images.ts",
     "secrets:scan": "node scripts/secret-scan.mjs --all",
-    "secrets:history": "node scripts/secret-scan.mjs --history"
+    "secrets:history": "node scripts/secret-scan.mjs --history",
+    "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test"
   },
   "dependencies": {
     "@prisma/adapter-pg": "7.10.0",

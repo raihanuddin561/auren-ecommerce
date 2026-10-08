@@ -14,3 +14,4 @@ AGENTS.md
 CLAUDE.md
 .local-media
 scripts/*.local.sql
+.eslintcache

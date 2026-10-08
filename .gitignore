@@ -42,3 +42,6 @@ src/generated/
 # local media storage (ADR-026) and personal copies of the local database setup
 .local-media/
 scripts/*.local.sql
+
+# eslint cache
+.eslintcache

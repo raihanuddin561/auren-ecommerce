@@ -76,3 +76,12 @@ Email goes to Mailpit locally (`SMTP_URL`), to Resend in production (`RESEND_API
   `taskkill /PID <pid> /F` (the PID is printed in the message), then start again.
 - **Database connection errors**: make sure the PostgreSQL Windows service is running (`net start postgresql-x64-18`
   from an administrator terminal), then see `docs/runbooks/local-database.md`.
+
+## Checks and commits
+
+Commits are deliberately fast: the pre-commit hook only runs the secret scan and Prettier on the staged files.
+The slower checks run on demand and in CI:
+
+- `pnpm check`: typecheck, lint (cached), format check and unit tests. Run it before opening a pull request.
+- `pnpm lint`: ESLint with a cache (`.eslintcache`); the first run takes a minute or two, later runs are quick.
+- `pnpm test:integration` and `pnpm test:e2e`: need the local database (see the Quick start).
