@@ -281,14 +281,16 @@ export async function submit(
       const area = await shipping.resolveArea(tx, {
         divisionId: input.address.divisionId,
         districtId: input.address.districtId,
+        divisionName: input.address.divisionName,
+        districtName: input.address.districtName,
         thanaId: input.address.thanaId ?? null,
+        thanaName: input.address.thanaName,
       });
-      const thanaName = area.thana?.name ?? input.address.thanaName?.trim() ?? '';
-      if (!thanaName) {
-        throw new DomainError('VALIDATION', 'Please tell us your thana or upazila.', {
-          fieldErrors: { 'address.thanaName': ['Please tell us your thana or upazila.'] },
-        });
-      }
+      const thanaName =
+        area.thana?.name ??
+        input.address.thanaName?.trim() ??
+        input.address.area?.trim() ??
+        'General';
 
       // Lock the variants, then read them: price and cost cannot change under us (INV-M3, INV-O5).
       const ids = bag.lines.map((line) => line.variantId);

@@ -6,9 +6,12 @@ export interface CheckoutDraft {
   name: string;
   email: string;
   divisionId: string;
+  divisionName?: string;
   districtId: string;
+  districtName?: string;
+  manualAddress?: boolean;
   thanaId: string;
-  /** Typed when the customer's thana or upazila is not in the list. */
+  /** Typed when the customer's thana or upazila is not in the list or in manual mode. */
   thanaName: string;
   area: string;
   line1: string;
@@ -25,7 +28,10 @@ export const EMPTY_DRAFT: Omit<CheckoutDraft, 'idempotencyKey'> = {
   name: '',
   email: '',
   divisionId: '',
+  divisionName: '',
   districtId: '',
+  districtName: '',
+  manualAddress: false,
   thanaId: '',
   thanaName: '',
   area: '',
@@ -88,9 +94,13 @@ export function validateField(
         ? null
         : 'This email address does not look right.';
     case 'divisionId':
-      return draft.divisionId ? null : 'Choose your division.';
+      return draft.divisionId?.trim() || draft.divisionName?.trim()
+        ? null
+        : 'Please enter or choose your division.';
     case 'districtId':
-      return draft.districtId ? null : 'Choose your district.';
+      return draft.districtId?.trim() || draft.districtName?.trim()
+        ? null
+        : 'Please enter or choose your district.';
     case 'thana':
       if (options.thanasListed && !options.notListed) {
         return draft.thanaId ? null : 'Choose your thana or upazila.';
@@ -135,7 +145,9 @@ export function mapServerErrors(fieldErrors: Record<string, string[]> | undefine
     'contact.name': 'name',
     'contact.email': 'email',
     'address.divisionId': 'divisionId',
+    'address.divisionName': 'divisionId',
     'address.districtId': 'districtId',
+    'address.districtName': 'districtId',
     districtId: 'districtId',
     'address.thanaName': 'thana',
     'address.thanaId': 'thana',
@@ -171,7 +183,11 @@ export function parseDraft(raw: string | null): CheckoutDraft | null {
     const draft = { ...EMPTY_DRAFT, idempotencyKey: '' } as CheckoutDraft;
     for (const key of Object.keys(draft) as Array<keyof CheckoutDraft>) {
       const stored = record[key];
-      if (typeof stored === 'string') draft[key] = stored.slice(0, 400);
+      if (key === 'manualAddress') {
+        draft.manualAddress = Boolean(stored);
+      } else if (typeof stored === 'string') {
+        (draft as unknown as Record<string, string>)[key] = stored.slice(0, 400);
+      }
     }
     return draft.idempotencyKey ? draft : null;
   } catch {

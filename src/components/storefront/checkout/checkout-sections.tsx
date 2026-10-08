@@ -129,80 +129,175 @@ export function AddressSection({
   notListed,
   setNotListed,
 }: AddressProps) {
+  const hasOptions = (areas?.divisions?.length ?? 0) > 0;
+  const manualMode = !hasOptions || Boolean(draft.manualAddress);
   const districts = areas.districts.filter((district) => district.divisionId === draft.divisionId);
   const listed = thanas.items.length > 0;
-  const typeIt = notListed || (thanas.status === 'ready' && !listed) || thanas.status === 'error';
+  const typeIt =
+    manualMode || notListed || (thanas.status === 'ready' && !listed) || thanas.status === 'error';
 
   return (
     <Section step={2} title="Delivery address" description="Where should we bring your order?">
-      <div className="grid gap-5 sm:grid-cols-2">
-        <FormField label="Division" required error={errors.divisionId}>
-          {(control) => (
-            <NativeSelect
-              {...control}
-              name="divisionId"
-              autoComplete="address-level1"
-              invalid={Boolean(errors.divisionId)}
-              value={draft.divisionId}
-              onChange={(event) =>
-                change({
-                  divisionId: event.target.value,
-                  districtId: '',
-                  thanaId: '',
-                  thanaName: '',
-                  shippingRateId: '',
-                })
-              }
-              onBlur={() => blur('divisionId')}
-            >
-              <option value="">Choose a division</option>
-              {areas.divisions.map((division) => (
-                <option key={division.id} value={division.id}>
-                  {division.name}
-                </option>
-              ))}
-            </NativeSelect>
-          )}
-        </FormField>
-
-        <FormField label="District" required error={errors.districtId}>
-          {(control) => (
-            <NativeSelect
-              {...control}
-              name="districtId"
-              autoComplete="address-level2"
-              invalid={Boolean(errors.districtId)}
-              disabled={!draft.divisionId}
-              value={draft.districtId}
-              onChange={(event) =>
-                change({
-                  districtId: event.target.value,
-                  thanaId: '',
-                  thanaName: '',
-                  shippingRateId: '',
-                })
-              }
-              onBlur={() => blur('districtId')}
-            >
-              <option value="">
-                {draft.divisionId ? 'Choose a district' : 'Choose a division first'}
-              </option>
-              {districts.map((district) => (
-                <option key={district.id} value={district.id}>
-                  {district.name}
-                </option>
-              ))}
-            </NativeSelect>
-          )}
-        </FormField>
+      <div className="flex items-center justify-between">
+        <span className="type-caption text-fg-subtle">
+          {manualMode
+            ? 'Type your division & district manually'
+            : 'Select your division & district'}
+        </span>
+        {hasOptions ? (
+          <Button
+            type="button"
+            variant="link"
+            size="none"
+            className="text-accent type-small font-medium hover:underline"
+            onClick={() => {
+              const next = !manualMode;
+              change({
+                manualAddress: next,
+                divisionId: '',
+                divisionName: '',
+                districtId: '',
+                districtName: '',
+                thanaId: '',
+                thanaName: '',
+                shippingRateId: '',
+              });
+            }}
+          >
+            {manualMode ? '← Choose from dropdown list' : "Can't find your area? Type manually →"}
+          </Button>
+        ) : (
+          <span className="type-caption text-amber-600 dark:text-amber-400">
+            Manual entry mode enabled
+          </span>
+        )}
       </div>
+
+      {manualMode ? (
+        <div className="grid gap-5 sm:grid-cols-2">
+          <FormField label="Division" required error={errors.divisionId}>
+            {(control) => (
+              <Input
+                {...control}
+                name="divisionName"
+                autoComplete="address-level1"
+                placeholder="e.g. Dhaka, Chittagong, Rajshahi"
+                value={draft.divisionName || draft.divisionId}
+                onChange={(event) => {
+                  const val = event.target.value;
+                  change({
+                    divisionId: val,
+                    divisionName: val,
+                    shippingRateId: '',
+                  });
+                }}
+                onBlur={() => blur('divisionId')}
+              />
+            )}
+          </FormField>
+
+          <FormField label="District" required error={errors.districtId}>
+            {(control) => (
+              <Input
+                {...control}
+                name="districtName"
+                autoComplete="address-level2"
+                placeholder="e.g. Dhaka, Gazipur, Sylhet"
+                value={draft.districtName || draft.districtId}
+                onChange={(event) => {
+                  const val = event.target.value;
+                  change({
+                    districtId: val,
+                    districtName: val,
+                    shippingRateId: '',
+                  });
+                }}
+                onBlur={() => blur('districtId')}
+              />
+            )}
+          </FormField>
+        </div>
+      ) : (
+        <div className="grid gap-5 sm:grid-cols-2">
+          <FormField label="Division" required error={errors.divisionId}>
+            {(control) => (
+              <NativeSelect
+                {...control}
+                name="divisionId"
+                autoComplete="address-level1"
+                invalid={Boolean(errors.divisionId)}
+                value={draft.divisionId}
+                onChange={(event) => {
+                  const val = event.target.value;
+                  const div = areas.divisions.find((d) => d.id === val);
+                  change({
+                    divisionId: val,
+                    divisionName: div?.name ?? '',
+                    districtId: '',
+                    districtName: '',
+                    thanaId: '',
+                    thanaName: '',
+                    shippingRateId: '',
+                  });
+                }}
+                onBlur={() => blur('divisionId')}
+              >
+                <option value="">Choose a division</option>
+                {areas.divisions.map((division) => (
+                  <option key={division.id} value={division.id}>
+                    {division.name}
+                  </option>
+                ))}
+              </NativeSelect>
+            )}
+          </FormField>
+
+          <FormField label="District" required error={errors.districtId}>
+            {(control) => (
+              <NativeSelect
+                {...control}
+                name="districtId"
+                autoComplete="address-level2"
+                invalid={Boolean(errors.districtId)}
+                disabled={!draft.divisionId}
+                value={draft.districtId}
+                onChange={(event) => {
+                  const val = event.target.value;
+                  const dist = districts.find((d) => d.id === val);
+                  change({
+                    districtId: val,
+                    districtName: dist?.name ?? '',
+                    thanaId: '',
+                    thanaName: '',
+                    shippingRateId: '',
+                  });
+                }}
+                onBlur={() => blur('districtId')}
+              >
+                <option value="">
+                  {draft.divisionId ? 'Choose a district' : 'Choose a division first'}
+                </option>
+                {districts.map((district) => (
+                  <option key={district.id} value={district.id}>
+                    {district.name}
+                  </option>
+                ))}
+              </NativeSelect>
+            )}
+          </FormField>
+        </div>
+      )}
 
       {typeIt ? (
         <FormField
           label="Thana or upazila"
           required
           hint={
-            listed ? undefined : 'We have not listed the areas of this district yet. Type yours.'
+            manualMode
+              ? undefined
+              : listed
+                ? undefined
+                : 'We have not listed the areas of this district yet. Type yours.'
           }
           error={errors.thana}
         >
@@ -210,7 +305,8 @@ export function AddressSection({
             <Input
               {...control}
               name="thanaName"
-              disabled={!draft.districtId}
+              placeholder="e.g. Mirpur, Uttara, Sadar"
+              disabled={!manualMode && !draft.districtId}
               value={draft.thanaName}
               onChange={(event) => change({ thanaName: event.target.value, thanaId: '' })}
               onBlur={() => blur('thana')}
@@ -227,7 +323,11 @@ export function AddressSection({
               invalid={Boolean(errors.thana)}
               disabled={!draft.districtId || thanas.status === 'loading'}
               value={draft.thanaId}
-              onChange={(event) => change({ thanaId: event.target.value, thanaName: '' })}
+              onChange={(event) => {
+                const val = event.target.value;
+                const found = thanas.items.find((t) => t.id === val);
+                change({ thanaId: val, thanaName: found?.name ?? '' });
+              }}
               onBlur={() => blur('thana')}
             >
               <option value="">
@@ -246,7 +346,7 @@ export function AddressSection({
           )}
         </FormField>
       )}
-      {listed && draft.districtId ? (
+      {!manualMode && listed && draft.districtId ? (
         <Button
           type="button"
           variant="link"
@@ -420,16 +520,16 @@ export function PaymentSection({
             />
             <div className="mt-2 flex flex-wrap items-center gap-1.5 pl-6">
               <span className="type-caption mr-1 text-fg-muted">Accepted:</span>
-              <span className="rounded bg-surface-raised border border-line px-2 py-0.5 text-[10px] font-medium tracking-wide text-fg/80">
+              <span className="rounded bg-surface-raised type-caption border border-line px-2 py-0.5 font-medium tracking-wide text-fg">
                 Cash
               </span>
-              <span className="rounded border border-[#E2136E]/20 bg-[#E2136E]/10 px-2 py-0.5 text-[10px] font-semibold text-[#E2136E]">
+              <span className="rounded border-accent/30 bg-accent/10 type-caption border px-2 py-0.5 font-semibold text-accent-text">
                 bKash
               </span>
-              <span className="rounded border border-[#F7941D]/20 bg-[#F7941D]/10 px-2 py-0.5 text-[10px] font-semibold text-[#F7941D]">
+              <span className="rounded border-accent/30 bg-accent/10 type-caption border px-2 py-0.5 font-semibold text-accent-text">
                 Nagad
               </span>
-              <span className="rounded bg-surface-raised border border-line px-2 py-0.5 text-[10px] font-medium text-fg/70">
+              <span className="rounded bg-surface-raised type-caption border border-line px-2 py-0.5 font-medium text-fg-muted">
                 Card at Doorstep
               </span>
             </div>

@@ -203,7 +203,7 @@ export function HeroCarousel({ settings, className }: HeroCarouselProps) {
                       </p>
                     ) : null}
 
-                    <h1 className="mt-3 type-display-xl font-display leading-[1.04] tracking-tight text-fg lg:text-[3.25rem]">
+                    <h1 className="mt-3 type-display-xl font-display leading-[1.04] tracking-tight text-fg">
                       {slide.title}
                     </h1>
 
@@ -280,7 +280,7 @@ export function HeroCarousel({ settings, className }: HeroCarouselProps) {
                       )}
 
                       {/* Floating Atelier Badge */}
-                      <div className="absolute top-3.5 right-3.5 rounded-xs border border-line/80 bg-page/90 px-2 py-0.5 text-[10px] font-medium tracking-wider text-accent-text uppercase backdrop-blur-xs">
+                      <div className="type-caption absolute top-3.5 right-3.5 rounded-xs border border-line/80 bg-page/90 px-2 py-0.5 font-medium tracking-wider text-accent-text uppercase backdrop-blur-xs">
                         Auren Atelier
                       </div>
                     </div>

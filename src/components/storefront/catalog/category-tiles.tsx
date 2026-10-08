@@ -34,11 +34,11 @@ export function CategoryTiles({ categories }: { categories: CategoryTileView[] }
                 />
               ) : (
                 <div className="from-surface-raised/80 flex size-full flex-col items-center justify-center bg-gradient-to-b via-sunken to-ink/60 p-6 text-center">
-                  <span className="font-serif text-[11px] tracking-[0.25em] text-accent-text uppercase">
+                  <span className="type-caption font-serif tracking-[0.25em] text-accent-text uppercase">
                     Auren Atelier
                   </span>
                   <span className="mt-2.5 type-h3 font-display text-fg">{category.name}</span>
-                  <span className="mt-4 rounded-xs border border-line/80 px-2.5 py-1 text-[11px] font-medium tracking-wider text-fg-muted uppercase transition-colors group-hover/tile:border-gold/60 group-hover/tile:text-gold">
+                  <span className="type-caption mt-4 rounded-xs border border-line/80 px-2.5 py-1 font-medium tracking-wider text-fg-muted uppercase transition-colors group-hover/tile:border-gold/60 group-hover/tile:text-gold">
                     View Collection
                   </span>
                 </div>

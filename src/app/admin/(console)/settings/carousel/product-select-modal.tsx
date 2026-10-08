@@ -145,7 +145,7 @@ export function ProductSelectModal({
                             loading="lazy"
                           />
                         ) : (
-                          <div className="flex size-full items-center justify-center text-[10px] text-fg-muted">
+                          <div className="type-caption flex size-full items-center justify-center text-fg-muted">
                             No photo
                           </div>
                         )}

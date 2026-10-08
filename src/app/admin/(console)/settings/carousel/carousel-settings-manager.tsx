@@ -486,9 +486,7 @@ export function CarouselSettingsManager({ initialSettings }: CarouselSettingsMan
                                 }
                               />
                               <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-                                <span className="type-caption text-[11px] text-fg-muted">
-                                  Quick presets:
-                                </span>
+                                <span className="type-caption text-fg-muted">Quick presets:</span>
                                 {[
                                   '/shop',
                                   '/shop?sort=newest',
@@ -501,7 +499,7 @@ export function CarouselSettingsManager({ initialSettings }: CarouselSettingsMan
                                     onClick={() =>
                                       updateSlide(index, { primaryCtaLink: quickLink })
                                     }
-                                    className="rounded-xs border border-line bg-page px-1.5 py-0.5 text-[10px] text-fg-muted hover:border-fg hover:text-fg"
+                                    className="type-caption rounded-xs border border-line bg-page px-1.5 py-0.5 text-fg-muted hover:border-fg hover:text-fg"
                                   >
                                     {quickLink}
                                   </button>

@@ -2,12 +2,15 @@ import { z } from 'zod';
 
 const uuid = z.uuid();
 
-/** Which area the customer picked. Ids only: names are looked up on the server. */
+/** Which area the customer picked. Ids or names: resolved on the server. */
 export const areaSelectionSchema = z
   .object({
-    divisionId: uuid,
-    districtId: uuid,
-    thanaId: uuid.nullish(),
+    divisionId: z.string().trim().min(1),
+    districtId: z.string().trim().min(1),
+    thanaId: z.string().trim().nullish(),
+    divisionName: z.string().trim().max(100).optional(),
+    districtName: z.string().trim().max(100).optional(),
+    thanaName: z.string().trim().max(100).optional(),
   })
   .strict();
 

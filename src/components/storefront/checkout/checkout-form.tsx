@@ -70,7 +70,14 @@ const FOCUS_NAME: Record<FieldKey, string> = {
 
 function focusField(form: HTMLFormElement | null, key: FieldKey) {
   if (!form) return;
-  const names = key === 'thana' ? ['thanaId', 'thanaName'] : [FOCUS_NAME[key]];
+  const names =
+    key === 'thana'
+      ? ['thanaId', 'thanaName']
+      : key === 'divisionId'
+        ? ['divisionId', 'divisionName']
+        : key === 'districtId'
+          ? ['districtId', 'districtName']
+          : [FOCUS_NAME[key]];
   for (const name of names) {
     const element = form.querySelector<HTMLElement>(`[name="${name}"]`);
     if (element && !(element as HTMLInputElement).disabled) {
@@ -163,7 +170,9 @@ export function CheckoutForm({ initial, areas }: CheckoutFormProps) {
   // Delivery options, payment availability and totals for the address chosen.
   useEffect(() => {
     if (!restored) return;
-    if (!draft.divisionId || !draft.districtId) {
+    const divisionVal = (draft.divisionId || draft.divisionName || '').trim();
+    const districtVal = (draft.districtId || draft.districtName || '').trim();
+    if (!divisionVal || !districtVal) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- derived from the address choice
       setSummary(initial);
       setQuoteError(null);
@@ -173,9 +182,12 @@ export function CheckoutForm({ initial, areas }: CheckoutFormProps) {
     setQuoting(true);
     setQuoteError(null);
     quoteCheckout({
-      divisionId: draft.divisionId,
-      districtId: draft.districtId,
+      divisionId: divisionVal,
+      districtId: districtVal,
+      ...(draft.divisionName?.trim() ? { divisionName: draft.divisionName.trim() } : {}),
+      ...(draft.districtName?.trim() ? { districtName: draft.districtName.trim() } : {}),
       thanaId: draft.thanaId || null,
+      ...(draft.thanaName?.trim() ? { thanaName: draft.thanaName.trim() } : {}),
       ...(draft.shippingRateId ? { shippingRateId: draft.shippingRateId } : {}),
     })
       .then((result) => {
@@ -204,7 +216,17 @@ export function CheckoutForm({ initial, areas }: CheckoutFormProps) {
     return () => {
       cancelled = true;
     };
-  }, [draft.divisionId, draft.districtId, draft.thanaId, draft.shippingRateId, restored, initial]);
+  }, [
+    draft.divisionId,
+    draft.divisionName,
+    draft.districtId,
+    draft.districtName,
+    draft.thanaId,
+    draft.thanaName,
+    draft.shippingRateId,
+    restored,
+    initial,
+  ]);
 
   const thanasListed = thanas.items.length > 0;
   const rules = { thanasListed, notListed };
@@ -319,7 +341,8 @@ export function CheckoutForm({ initial, areas }: CheckoutFormProps) {
       found.paymentMethod = cod.reason ?? 'Choose another way to pay.';
     if (summary.otpRequired && !otp.verified)
       found.otp = 'Confirm your phone number with the code we send you.';
-    if (!summary.delivery && !found.districtId)
+    const districtChosen = Boolean(draft.districtId || draft.districtName);
+    if (!summary.delivery && !districtChosen)
       found.shippingRateId = 'Choose your district to see delivery options.';
     setErrors(found);
     const first = firstInvalid(found);
@@ -332,6 +355,8 @@ export function CheckoutForm({ initial, areas }: CheckoutFormProps) {
     setSubmitting(true);
     setFormError(null);
     try {
+      const divisionVal = (draft.divisionId || draft.divisionName || '').trim();
+      const districtVal = (draft.districtId || draft.districtName || '').trim();
       const thanaListedChoice = !notListed && draft.thanaId;
       const result = await placeOrder({
         idempotencyKey: draft.idempotencyKey,
@@ -341,8 +366,10 @@ export function CheckoutForm({ initial, areas }: CheckoutFormProps) {
           ...(draft.email.trim() ? { email: draft.email.trim() } : {}),
         },
         address: {
-          divisionId: draft.divisionId,
-          districtId: draft.districtId,
+          divisionId: divisionVal,
+          districtId: districtVal,
+          ...(draft.divisionName?.trim() ? { divisionName: draft.divisionName.trim() } : {}),
+          ...(draft.districtName?.trim() ? { districtName: draft.districtName.trim() } : {}),
           thanaId: thanaListedChoice ? draft.thanaId : null,
           ...(!thanaListedChoice && draft.thanaName.trim()
             ? { thanaName: draft.thanaName.trim() }
@@ -445,7 +472,7 @@ export function CheckoutForm({ initial, areas }: CheckoutFormProps) {
           value={draft.shippingRateId}
           onChange={(rateId) => change({ shippingRateId: rateId })}
           fieldError={errors.shippingRateId}
-          districtChosen={Boolean(draft.districtId)}
+          districtChosen={Boolean(draft.districtId || draft.districtName)}
         />
         <PaymentSection
           summary={summary}

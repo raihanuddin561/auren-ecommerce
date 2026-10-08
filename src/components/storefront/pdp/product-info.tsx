@@ -37,13 +37,11 @@ export function TrustRow() {
         ))}
       </ul>
       <div className="flex flex-wrap items-center gap-2 pt-1">
-        <span className="type-eyebrow text-[10px] tracking-wider text-fg-muted uppercase">
-          Accepted:
-        </span>
+        <span className="type-eyebrow tracking-wider text-fg-muted uppercase">Accepted:</span>
         {['Cash on delivery', 'bKash', 'Nagad', 'Visa', 'Mastercard'].map((mark) => (
           <span
             key={mark}
-            className="rounded-xs border border-line bg-sunken/80 px-2 py-0.5 text-[11px] font-medium text-fg-muted"
+            className="type-caption rounded-xs border border-line bg-sunken/80 px-2 py-0.5 font-medium text-fg-muted"
           >
             {mark}
           </span>

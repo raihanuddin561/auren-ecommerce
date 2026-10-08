@@ -1,6 +1,5 @@
 import { z } from 'zod';
 
-const uuid = z.uuid();
 const text = (min: number, max: number) => z.string().trim().min(min).max(max);
 
 /** Contact. Phone first: it is how our team reaches the customer to confirm the order. */
@@ -15,11 +14,13 @@ export const contactSchema = z
 
 export const addressSchema = z
   .object({
-    divisionId: uuid,
-    districtId: uuid,
+    divisionId: z.string().trim().min(1),
+    districtId: z.string().trim().min(1),
+    divisionName: text(1, 100).optional(),
+    districtName: text(1, 100).optional(),
     /** A listed thana or upazila. When the customer's is not listed, `thanaName` carries it. */
-    thanaId: uuid.nullish(),
-    thanaName: text(2, 60).optional(),
+    thanaId: z.string().trim().nullish(),
+    thanaName: text(1, 60).optional(),
     /** Neighbourhood or locality, free text. */
     area: text(2, 80),
     line1: text(5, 160),
@@ -42,7 +43,7 @@ export const placeOrderSchema = z
     idempotencyKey: z.string().regex(/^[A-Za-z0-9_\-:.]{8,128}$/),
     contact: contactSchema,
     address: addressSchema,
-    shippingRateId: uuid.optional(),
+    shippingRateId: z.string().trim().optional(),
     paymentMethod: z.enum(['cod']),
     customerNote: text(1, 300).optional(),
     turnstileToken: z.string().max(2048).optional(),
@@ -52,10 +53,13 @@ export const placeOrderSchema = z
 /** What the page asks while the customer fills the form: delivery options for an area. */
 export const quoteSchema = z
   .object({
-    divisionId: uuid,
-    districtId: uuid,
-    thanaId: uuid.nullish(),
-    shippingRateId: uuid.optional(),
+    divisionId: z.string().trim().min(1),
+    districtId: z.string().trim().min(1),
+    divisionName: text(1, 100).optional(),
+    districtName: text(1, 100).optional(),
+    thanaId: z.string().trim().nullish(),
+    thanaName: text(1, 100).optional(),
+    shippingRateId: z.string().trim().optional(),
   })
   .strict();
 
