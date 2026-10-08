@@ -44,6 +44,9 @@ const buildConfig = (): NextConfig => ({
   // in lib/media/upload.ts); the default body limit of 1 MB would refuse them.
   experimental: { serverActions: { bodySizeLimit: '11mb' } },
   images: {
+    dangerouslyAllowSVG: true,
+    contentDispositionType: 'attachment',
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
     // Public uploads in production are served from the Vercel Blob store (ADR-026).
     remotePatterns: blobHostname() ? [{ protocol: 'https', hostname: blobHostname()! }] : [],
   },

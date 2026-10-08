@@ -44,6 +44,7 @@ export function CatalogImage({
   onError,
   className,
 }: CatalogImageProps) {
+  const isSvg = src.endsWith('.svg') || src.includes('.svg');
   if (isLocalImage(src)) {
     return (
       <Image
@@ -52,6 +53,7 @@ export function CatalogImage({
         fill
         sizes={sizes}
         priority={priority}
+        unoptimized={isSvg}
         onError={onError}
         {...(isBlurData(blurData) ? { placeholder: 'blur' as const, blurDataURL: blurData } : {})}
         className={cn('object-cover', className)}

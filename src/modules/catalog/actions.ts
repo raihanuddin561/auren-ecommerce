@@ -377,10 +377,17 @@ export async function previewCollectionRules(
 }
 
 /** Product search for the "add products" picker of a manual collection. */
-export async function searchProductsForPicker(
-  input: unknown,
-): Promise<
-  ActionResult<Array<{ id: string; title: string; status: string; imageUrl: string | null }>>
+export async function searchProductsForPicker(input: unknown): Promise<
+  ActionResult<
+    Array<{
+      id: string;
+      title: string;
+      slug: string;
+      subtitle: string | null;
+      status: string;
+      imageUrl: string | null;
+    }>
+  >
 > {
   const parsed = searchPickerSchema.safeParse(input);
   if (!parsed.success) return validationError(parsed.error);

@@ -29,6 +29,7 @@ export function HeroCarousel({ settings, className }: HeroCarouselProps) {
   const touchStartYRef = useRef<number | null>(null);
   const prefersReducedMotion = useReducedMotion();
 
+  const [brokenImages, setBrokenImages] = useState<Record<string, boolean>>({});
   const total = slides.length;
   const activeSlide = slides[currentIndex] ?? slides[0];
 
@@ -128,10 +129,11 @@ export function HeroCarousel({ settings, className }: HeroCarouselProps) {
       )}
     >
       {/* Slides container */}
-      <div className="absolute inset-0 -z-10 overflow-hidden">
+      <div className="absolute inset-0 z-0 overflow-hidden">
         {slides.map((slide, index) => {
           const isActive = index === currentIndex;
           const overlayPct = (slide.overlayOpacity ?? 25) / 100;
+          const isBroken = Boolean(brokenImages[slide.id || index]);
 
           return (
             <div
@@ -152,13 +154,20 @@ export function HeroCarousel({ settings, className }: HeroCarouselProps) {
                   isActive && !prefersReducedMotion ? 'scale-100' : 'scale-105',
                 )}
               >
-                <CatalogImage
-                  src={slide.imageUrl}
-                  alt={slide.imageAlt || slide.title}
-                  sizes="100vw"
-                  priority={index === 0}
-                  className="h-full w-full object-cover"
-                />
+                {!isBroken && slide.imageUrl ? (
+                  <CatalogImage
+                    src={slide.imageUrl}
+                    alt={slide.imageAlt || slide.title}
+                    sizes="100vw"
+                    priority={index === 0}
+                    onError={() =>
+                      setBrokenImages((prev) => ({ ...prev, [slide.id || index]: true }))
+                    }
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <div className="via-neutral-900 h-full w-full bg-gradient-to-br from-stone-800 to-ink" />
+                )}
               </div>
 
               {/* Scrim and dark contrast overlays */}

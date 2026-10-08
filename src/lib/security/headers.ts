@@ -56,7 +56,7 @@ export function buildCsp({ isDev, appUrl, sentryDsn, nonce, turnstile }: CspOpti
     ['default-src', ["'self'"]],
     ['script-src', scriptSrc],
     ['style-src', ["'self'", "'unsafe-inline'"]],
-    ['img-src', ["'self'", 'blob:', 'data:', BLOB_IMAGES]],
+    ['img-src', ["'self'", 'blob:', 'data:', 'https:', BLOB_IMAGES]],
     ['media-src', ["'self'", BLOB_IMAGES]],
     ['font-src', ["'self'"]],
     ['connect-src', connectSrc],

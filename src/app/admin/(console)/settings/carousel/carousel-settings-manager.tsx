@@ -8,6 +8,7 @@ import {
   Plus,
   RotateCcw,
   Settings2,
+  ShoppingBag,
   Trash2,
   Upload,
 } from 'lucide-react';
@@ -34,6 +35,7 @@ import {
   type HeroCarouselSettings,
   type HeroSlide,
 } from '@/modules/settings/schemas';
+import { ProductSelectModal, type SelectedProductData } from './product-select-modal';
 
 interface CarouselSettingsManagerProps {
   initialSettings: HeroCarouselSettings;
@@ -50,6 +52,61 @@ export function CarouselSettingsManager({ initialSettings }: CarouselSettingsMan
     Math.round(initialSettings.autoplayInterval / 1000) || 6,
   );
   const [slides, setSlides] = useState<HeroSlide[]>(initialSettings.slides);
+  const [productModalOpen, setProductModalOpen] = useState(false);
+  const [targetSlideIndex, setTargetSlideIndex] = useState<number | null>(null);
+
+  function openAddFromProduct() {
+    setTargetSlideIndex(null);
+    setProductModalOpen(true);
+  }
+
+  function openPickForSlide(index: number) {
+    setTargetSlideIndex(index);
+    setProductModalOpen(true);
+  }
+
+  function handleProductSelected(product: SelectedProductData) {
+    if (targetSlideIndex !== null) {
+      updateSlide(targetSlideIndex, {
+        imageUrl: product.imageUrl || '/seed/charcoal.svg',
+        imageAlt: product.title,
+        primaryCtaLink: `/products/${product.slug}`,
+        ...(slides[targetSlideIndex]?.title.includes('New Season') ||
+        slides[targetSlideIndex]?.title.includes('Campaign')
+          ? {
+              title: product.title,
+              eyebrow: 'FEATURED PIECE',
+              description:
+                product.subtitle || 'Crafted with premium natural fibers and timeless tailoring.',
+              primaryCtaText: 'Shop this piece',
+            }
+          : {}),
+      });
+      toast.success(`Applied imagery and link for "${product.title}"`);
+      setTargetSlideIndex(null);
+    } else {
+      const newId = `slide-${Date.now()}`;
+      const newSlide: HeroSlide = {
+        id: newId,
+        eyebrow: 'FEATURED PIECE',
+        title: product.title,
+        description:
+          product.subtitle || 'Crafted with premium natural fibers and timeless tailoring.',
+        primaryCtaText: 'Shop this piece',
+        primaryCtaLink: `/products/${product.slug}`,
+        secondaryCtaText: 'View Lookbook',
+        secondaryCtaLink: '/shop',
+        imageUrl: product.imageUrl || '/seed/charcoal.svg',
+        imageAlt: product.title,
+        overlayOpacity: 25,
+        textAlignment: 'left',
+        active: true,
+        sortOrder: slides.length,
+      };
+      setSlides((prev) => [...prev, newSlide]);
+      toast.success(`Added slide for "${product.title}"`);
+    }
+  }
 
   // Slide mutations
   function addSlide() {
@@ -203,9 +260,19 @@ export function CarouselSettingsManager({ initialSettings }: CarouselSettingsMan
             <Icon icon={RotateCcw} size={16} className="mr-1.5" />
             Reset Defaults
           </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={openAddFromProduct}
+            disabled={pending}
+          >
+            <Icon icon={ShoppingBag} size={16} className="mr-1.5" />
+            Add from Product
+          </Button>
           <Button type="button" variant="primary" size="sm" onClick={addSlide} disabled={pending}>
             <Icon icon={Plus} size={16} className="mr-1.5" />
-            Add Slide
+            Add Blank Slide
           </Button>
         </div>
       </div>
@@ -404,16 +471,40 @@ export function CarouselSettingsManager({ initialSettings }: CarouselSettingsMan
                             />
                           )}
                         </FormField>
-                        <FormField label="Primary button link">
+                        <FormField label="Primary button link (Product or Shop URL)">
                           {(control) => (
-                            <Input
-                              {...control}
-                              value={slide.primaryCtaLink}
-                              placeholder="e.g. /shop"
-                              onChange={(e) =>
-                                updateSlide(index, { primaryCtaLink: e.target.value })
-                              }
-                            />
+                            <div className="flex flex-col gap-1.5">
+                              <Input
+                                {...control}
+                                value={slide.primaryCtaLink}
+                                placeholder="e.g. /products/oxford-button-down-shirt or /shop"
+                                onChange={(e) =>
+                                  updateSlide(index, { primaryCtaLink: e.target.value })
+                                }
+                              />
+                              <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                                <span className="type-caption text-[11px] text-fg-muted">
+                                  Quick presets:
+                                </span>
+                                {[
+                                  '/shop',
+                                  '/shop?sort=newest',
+                                  '/collections/the-summer-edit',
+                                  '/collections/winter-layers',
+                                ].map((quickLink) => (
+                                  <button
+                                    key={quickLink}
+                                    type="button"
+                                    onClick={() =>
+                                      updateSlide(index, { primaryCtaLink: quickLink })
+                                    }
+                                    className="rounded-xs border border-line bg-page px-1.5 py-0.5 text-[10px] text-fg-muted hover:border-fg hover:text-fg"
+                                  >
+                                    {quickLink}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
                           )}
                         </FormField>
                       </div>
@@ -468,21 +559,34 @@ export function CarouselSettingsManager({ initialSettings }: CarouselSettingsMan
                           </div>
 
                           <div className="flex flex-1 flex-col justify-center gap-2">
-                            <label className="inline-flex cursor-pointer">
-                              <span className="inline-flex items-center border border-line bg-page px-3 py-1.5 type-small text-fg transition-colors hover:border-fg">
-                                <Icon icon={Upload} size={14} className="mr-1.5" />
-                                {isUploading ? 'Uploading...' : 'Upload Image'}
-                              </span>
-                              <input
-                                type="file"
-                                accept="image/jpeg,image/png,image/webp,image/avif"
-                                onChange={(e) => handleFileUpload(index, e)}
+                            <div className="flex flex-wrap items-center gap-2">
+                              <Button
+                                type="button"
+                                variant="secondary"
+                                size="sm"
+                                onClick={() => openPickForSlide(index)}
                                 disabled={isUploading}
-                                className="sr-only"
-                              />
-                            </label>
+                              >
+                                <Icon icon={ShoppingBag} size={14} className="mr-1.5" />
+                                Pick from Product
+                              </Button>
+                              <label className="inline-flex cursor-pointer">
+                                <span className="inline-flex items-center border border-line bg-page px-3 py-1.5 type-small text-fg transition-colors hover:border-fg">
+                                  <Icon icon={Upload} size={14} className="mr-1.5" />
+                                  {isUploading ? 'Uploading...' : 'Upload Image'}
+                                </span>
+                                <input
+                                  type="file"
+                                  accept="image/jpeg,image/png,image/webp,image/avif"
+                                  onChange={(e) => handleFileUpload(index, e)}
+                                  disabled={isUploading}
+                                  className="sr-only"
+                                />
+                              </label>
+                            </div>
                             <span className="type-small text-fg-muted">
-                              JPEG, PNG, WebP up to 10MB
+                              Select from catalog, upload a file (10MB), or enter an image URL
+                              below.
                             </span>
                           </div>
                         </div>
@@ -582,6 +686,23 @@ export function CarouselSettingsManager({ initialSettings }: CarouselSettingsMan
           </FormActions>
         </div>
       )}
+
+      {/* Product selection modal for recorded catalog pieces */}
+      <ProductSelectModal
+        open={productModalOpen}
+        onOpenChange={setProductModalOpen}
+        onSelectProduct={handleProductSelected}
+        title={
+          targetSlideIndex !== null
+            ? `Select Product for Slide ${targetSlideIndex + 1}`
+            : 'Add Slide from Recorded Product'
+        }
+        description={
+          targetSlideIndex !== null
+            ? 'Choose an existing catalog product to apply its recorded photography and direct product URL to this slide.'
+            : 'Choose an existing catalog product to create a new campaign slide with its photography and shop link.'
+        }
+      />
     </div>
   );
 }

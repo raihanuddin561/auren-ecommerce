@@ -445,16 +445,22 @@ export const searchProductsForPicker = (tx: Tx, q: string, excludeIds: readonly 
   tx.product.findMany({
     where: {
       deletedAt: null,
-      id: { notIn: [...excludeIds] },
-      OR: [
-        { title: { contains: q, mode: 'insensitive' } },
-        { slug: { contains: q, mode: 'insensitive' } },
-        { variants: { some: { sku: { contains: q, mode: 'insensitive' } } } },
-      ],
+      ...(excludeIds.length > 0 ? { id: { notIn: [...excludeIds] } } : {}),
+      ...(q.trim()
+        ? {
+            OR: [
+              { title: { contains: q.trim(), mode: 'insensitive' } },
+              { slug: { contains: q.trim(), mode: 'insensitive' } },
+              { variants: { some: { sku: { contains: q.trim(), mode: 'insensitive' } } } },
+            ],
+          }
+        : {}),
     },
     select: {
       id: true,
       title: true,
+      slug: true,
+      subtitle: true,
       status: true,
       media: { select: { url: true, alt: true }, orderBy: { position: 'asc' }, take: 1 },
     },

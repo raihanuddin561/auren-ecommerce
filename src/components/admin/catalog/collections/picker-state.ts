@@ -5,6 +5,8 @@ export const MAX_PRODUCTS_PER_ADD = 100;
 export interface PickerProduct {
   id: string;
   title: string;
+  slug?: string;
+  subtitle?: string | null;
   status: string;
   imageUrl: string | null;
 }

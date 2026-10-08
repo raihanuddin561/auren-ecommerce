@@ -387,7 +387,10 @@ export const uploadCollectionHeroFieldsSchema = z
   .object({ collectionId: id, alt: altTextSchema })
   .strict();
 export const searchPickerSchema = z
-  .object({ q: z.string().trim().min(1).max(80), excludeIds: z.array(id).max(500) })
+  .object({
+    q: z.string().trim().max(80).default(''),
+    excludeIds: z.array(id).max(500).default([]),
+  })
   .strict();
 export const removeCollectionHeroSchema = z.object({ collectionId: id }).strict();
 

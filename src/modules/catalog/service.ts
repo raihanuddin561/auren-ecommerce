@@ -1277,13 +1277,24 @@ async function matchRules(tx: Tx, rules: CollectionRules, sortOrder: string) {
 export async function searchProductsForPicker(
   q: string,
   excludeIds: readonly string[],
-): Promise<Array<{ id: string; title: string; status: string; imageUrl: string | null }>> {
+): Promise<
+  Array<{
+    id: string;
+    title: string;
+    slug: string;
+    subtitle: string | null;
+    status: string;
+    imageUrl: string | null;
+  }>
+> {
   const rows = await db.$transaction((tx) =>
     repo.searchProductsForPicker(tx, q.trim(), excludeIds),
   );
   return rows.map((p) => ({
     id: p.id,
     title: p.title,
+    slug: p.slug,
+    subtitle: p.subtitle,
     status: p.status,
     imageUrl: p.media[0]?.url ?? null,
   }));
