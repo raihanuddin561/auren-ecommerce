@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { CatalogImage, ImagePlaceholder } from './catalog-image';
+import { CatalogImage } from './catalog-image';
 
 export interface CategoryTileView {
   id: string;
@@ -19,26 +19,41 @@ export function CategoryTiles({ categories }: { categories: CategoryTileView[] }
   return (
     <ul
       aria-label="Categories"
-      className="grid grid-cols-2 gap-x-4 gap-y-10 md:grid-cols-3 md:gap-x-6 xl:grid-cols-4"
+      className="grid grid-cols-2 gap-x-4 gap-y-6 md:grid-cols-3 md:gap-x-6 md:gap-y-8 xl:grid-cols-4"
     >
       {categories.map((category) => (
         <li key={category.id}>
           <Link href={`/shop/${category.path}`} className="group block outline-offset-4">
-            <div className="relative aspect-4/5 overflow-hidden bg-sunken">
+            <div className="group/tile bg-surface-raised/40 hover:shadow-lg relative aspect-4/5 overflow-hidden rounded-xs border border-line/60 transition-all duration-500 hover:border-gold/70">
               {category.image ? (
                 <CatalogImage
                   src={category.image}
                   alt={category.imageAlt ?? ''}
                   sizes={TILE_SIZES}
-                  className="img-zoom"
+                  className="size-full object-cover transition-transform duration-700 ease-auren group-hover/tile:scale-105"
                 />
               ) : (
-                <ImagePlaceholder label={category.name} className="border border-line" />
+                <div className="from-surface-raised/80 flex size-full flex-col items-center justify-center bg-gradient-to-b via-sunken to-ink/60 p-6 text-center">
+                  <span className="font-serif text-[11px] tracking-[0.25em] text-accent-text uppercase">
+                    Auren Atelier
+                  </span>
+                  <span className="mt-2.5 type-h3 font-display text-fg">{category.name}</span>
+                  <span className="mt-4 rounded-xs border border-line/80 px-2.5 py-1 text-[11px] font-medium tracking-wider text-fg-muted uppercase transition-colors group-hover/tile:border-gold/60 group-hover/tile:text-gold">
+                    View Collection
+                  </span>
+                </div>
               )}
+              {/* Soft bottom scrim for contrast */}
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-page/80 to-transparent opacity-0 transition-opacity duration-300 group-hover/tile:opacity-100" />
             </div>
-            <p className="mt-4 type-h3 text-fg underline decoration-transparent decoration-1 underline-offset-4 transition-auren-fast group-hover:decoration-gold">
-              {category.name}
-            </p>
+            <div className="mt-3 flex items-center justify-between">
+              <p className="type-h3 text-fg transition-colors duration-200 group-hover:text-gold">
+                {category.name}
+              </p>
+              <span className="flex -translate-x-1.5 items-center gap-1 text-xs font-medium tracking-wider text-accent-text uppercase opacity-0 transition-all duration-300 group-hover:translate-x-0 group-hover:opacity-100">
+                Explore <span>&rarr;</span>
+              </span>
+            </div>
           </Link>
         </li>
       ))}
@@ -48,11 +63,11 @@ export function CategoryTiles({ categories }: { categories: CategoryTileView[] }
 
 export function CategoryTilesSkeleton({ count = 4 }: { count?: number }) {
   return (
-    <div className="grid grid-cols-2 gap-x-4 gap-y-10 md:grid-cols-3 md:gap-x-6 xl:grid-cols-4">
+    <div className="grid grid-cols-2 gap-x-4 gap-y-6 md:grid-cols-3 md:gap-x-6 md:gap-y-8 xl:grid-cols-4">
       {Array.from({ length: count }, (_, index) => (
         <div key={index} aria-hidden="true">
-          <div className="aspect-4/5 animate-skeleton bg-skeleton" />
-          <div className="mt-4 h-6 w-1/2 animate-skeleton bg-skeleton" />
+          <div className="aspect-4/5 animate-skeleton rounded-xs bg-skeleton" />
+          <div className="mt-3 h-5 w-1/2 animate-skeleton bg-skeleton" />
         </div>
       ))}
     </div>

@@ -30,10 +30,10 @@ export function BrandPerks() {
   return (
     <section
       aria-label="The AUREN Standard"
-      className="border-y border-line bg-raised/40 py-16 md:py-20"
+      className="border-y border-line bg-raised/40 py-12 md:py-16"
     >
       <div className="container-page">
-        <div className="mx-auto mb-12 max-w-xl text-center md:mb-16">
+        <div className="mx-auto mb-8 max-w-xl text-center md:mb-12">
           <p className="type-eyebrow font-medium tracking-eyebrow text-accent-text uppercase">
             The AUREN Standard
           </p>

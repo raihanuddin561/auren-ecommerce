@@ -17,10 +17,15 @@ import { SectionHeader } from './section-header';
 export function CategoriesSection({ categories }: { categories: CategoryTileView[] }) {
   if (categories.length === 0) return null;
   return (
-    <section aria-labelledby="home-categories" className="pt-12 pb-20 md:pt-16 md:pb-28">
+    <section aria-labelledby="home-categories" className="pt-8 pb-3 md:pt-10 md:pb-4">
       <div className="container-page">
         <Reveal>
-          <SectionHeader id="home-categories" eyebrow="Categories" title="Shop by category" />
+          <SectionHeader
+            id="home-categories"
+            eyebrow="Categories"
+            title="Shop by category"
+            className="mb-5 md:mb-7"
+          />
         </Reveal>
         <Reveal>
           <CategoryTiles categories={categories} />
@@ -33,13 +38,16 @@ export function CategoriesSection({ categories }: { categories: CategoryTileView
 export function NewArrivalsSection({ products }: { products: ProductCardView[] }) {
   if (products.length === 0) return null;
   return (
-    <section aria-labelledby="home-new-arrivals" className="py-20 md:py-32">
+    <section aria-labelledby="home-new-arrivals" className="pt-4 pb-14 md:pt-6 md:pb-20">
       <div className="container-page">
+        {/* Subtle architectural divider bridge */}
+        <div className="mb-6 border-t border-line/50 md:mb-8" />
         <Reveal>
           <SectionHeader
             id="home-new-arrivals"
             eyebrow="Just in"
             title="New arrivals"
+            className="mb-5 md:mb-7"
             action={
               <Button asChild variant="link">
                 <Link href="/shop">Shop all</Link>
@@ -72,13 +80,21 @@ export function FeaturedCollectionsSection({ collections }: { collections: Colle
 }
 
 /** Skeletons keep each section's final height, so nothing moves when the data arrives. */
-function SectionSkeleton({ label, children }: { label: string; children: React.ReactNode }) {
+function SectionSkeleton({
+  label,
+  className = 'py-12 md:py-16',
+  children,
+}: {
+  label: string;
+  className?: string;
+  children: React.ReactNode;
+}) {
   return (
-    <SkeletonRegion label={label} className="py-20 md:py-32">
+    <SkeletonRegion label={label} className={className}>
       <div className="container-page">
-        <div className="mb-10 md:mb-14" aria-hidden="true">
+        <div className="mb-5 md:mb-7" aria-hidden="true">
           <div className="h-3 w-20 animate-skeleton bg-skeleton" />
-          <div className="mt-4 h-10 w-64 max-w-full animate-skeleton bg-skeleton" />
+          <div className="mt-3 h-9 w-64 max-w-full animate-skeleton bg-skeleton" />
         </div>
         {children}
       </div>
@@ -88,7 +104,7 @@ function SectionSkeleton({ label, children }: { label: string; children: React.R
 
 export function CategoriesSkeleton() {
   return (
-    <SectionSkeleton label="Loading categories">
+    <SectionSkeleton label="Loading categories" className="pt-8 pb-3 md:pt-10 md:pb-4">
       <CategoryTilesSkeleton />
     </SectionSkeleton>
   );
@@ -96,7 +112,7 @@ export function CategoriesSkeleton() {
 
 export function NewArrivalsSkeleton() {
   return (
-    <SectionSkeleton label="Loading new arrivals">
+    <SectionSkeleton label="Loading new arrivals" className="pt-4 pb-14 md:pt-6 md:pb-20">
       <ProductGridSkeleton count={4} />
     </SectionSkeleton>
   );
@@ -104,7 +120,7 @@ export function NewArrivalsSkeleton() {
 
 export function FeaturedCollectionsSkeleton() {
   return (
-    <SectionSkeleton label="Loading collections">
+    <SectionSkeleton label="Loading collections" className="py-12 md:py-18">
       <ProductGridSkeleton count={4} />
     </SectionSkeleton>
   );

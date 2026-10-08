@@ -26,7 +26,7 @@ export function CollectionRail({
   headingId: string;
 }) {
   return (
-    <section aria-labelledby={headingId} className="py-20 md:py-32">
+    <section aria-labelledby={headingId} className="py-12 md:py-16">
       <div className="container-page">
         {collection.hero ? (
           <div className="relative mb-10 aspect-4/3 overflow-hidden bg-sunken md:mb-14 md:aspect-21/9">
