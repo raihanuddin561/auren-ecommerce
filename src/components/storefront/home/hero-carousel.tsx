@@ -1,6 +1,14 @@
 'use client';
 
-import { ChevronLeft, ChevronRight, Pause, Play } from 'lucide-react';
+import {
+  ChevronLeft,
+  ChevronRight,
+  Pause,
+  Play,
+  ShieldCheck,
+  Truck,
+  RefreshCw,
+} from 'lucide-react';
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useReducedMotion } from '@/components/motion/use-reduced-motion';
@@ -17,8 +25,11 @@ interface HeroCarouselProps {
 
 /**
  * Modern, luxury storefront hero carousel.
- * Meets AUREN's editorial menswear aesthetic: fluid slide transitions, touch swipe support,
- * animated progress bar, responsive layouts, keyboard navigation, and full accessibility.
+ * Meets AUREN's editorial menswear aesthetic:
+ * - Compatible with all image aspect ratios (portrait garments, square pieces, panoramic campaigns).
+ * - "contain" (default): features garments uncropped in an atelier gallery pedestal frame with ambient reflection.
+ * - "cover": full-bleed panoramic campaign photography.
+ * - Touch swipe gestures, keyboard navigation, animated progress bar, and full accessibility.
  */
 export function HeroCarousel({ settings, className }: HeroCarouselProps) {
   const slides: HeroSlide[] = settings.slides.length > 0 ? settings.slides : [];
@@ -124,139 +135,240 @@ export function HeroCarousel({ settings, className }: HeroCarouselProps) {
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
       className={cn(
-        'group relative flex min-h-svh w-full flex-col justify-end overflow-hidden bg-page pt-(--header-height) text-fg outline-none select-none focus-visible:ring-1 focus-visible:ring-gold/60',
+        'group relative flex min-h-[calc(100svh-var(--header-height))] w-full flex-col justify-between overflow-hidden bg-page pt-(--header-height) text-fg outline-none select-none focus-visible:ring-1 focus-visible:ring-gold/60',
         className,
       )}
     >
-      {/* Slides container */}
-      <div className="absolute inset-0 z-0 overflow-hidden">
+      {/* Background ambient container */}
+      <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden bg-page">
         {slides.map((slide, index) => {
           const isActive = index === currentIndex;
-          const overlayPct = (slide.overlayOpacity ?? 25) / 100;
           const isBroken = Boolean(brokenImages[slide.id || index]);
+          const isCover = slide.imageFit === 'cover';
+          const overlayPct = (slide.overlayOpacity ?? 25) / 100;
 
           return (
             <div
-              key={slide.id || index}
-              role="group"
-              aria-roledescription="slide"
-              aria-label={`Slide ${index + 1} of ${total}: ${slide.title}`}
+              key={`bg-${slide.id || index}`}
               aria-hidden={!isActive}
               className={cn(
                 'absolute inset-0 transition-opacity duration-1000 ease-out',
-                isActive ? 'opacity-100' : 'pointer-events-none opacity-0',
+                isActive ? 'opacity-100' : 'opacity-0',
               )}
             >
-              {/* Background photography */}
-              <div
-                className={cn(
-                  'absolute inset-0 transition-transform duration-10000 ease-out',
-                  isActive && !prefersReducedMotion ? 'scale-100' : 'scale-105',
-                )}
-              >
-                {!isBroken && slide.imageUrl ? (
-                  <CatalogImage
-                    src={slide.imageUrl}
-                    alt={slide.imageAlt || slide.title}
-                    sizes="100vw"
-                    priority={index === 0}
-                    onError={() =>
-                      setBrokenImages((prev) => ({ ...prev, [slide.id || index]: true }))
-                    }
-                    className="h-full w-full object-cover"
+              {isCover ? (
+                // Full-bleed mode: panoramic backdrop
+                <div className="absolute inset-0">
+                  {!isBroken && slide.imageUrl ? (
+                    <CatalogImage
+                      src={slide.imageUrl}
+                      alt=""
+                      sizes="100vw"
+                      priority={index === 0}
+                      onError={() =>
+                        setBrokenImages((prev) => ({ ...prev, [slide.id || index]: true }))
+                      }
+                      className="size-full object-cover"
+                    />
+                  ) : (
+                    <div className="via-neutral-900 size-full bg-gradient-to-br from-stone-900 to-ink" />
+                  )}
+                  <div
+                    className="absolute inset-0"
+                    style={{ backgroundColor: `rgba(15, 15, 15, ${overlayPct})` }}
                   />
-                ) : (
-                  <div className="via-neutral-900 h-full w-full bg-gradient-to-br from-stone-800 to-ink" />
-                )}
-              </div>
-
-              {/* Scrim and dark contrast overlays */}
-              <div
-                className="absolute inset-0"
-                style={{ backgroundColor: `rgba(15, 15, 15, ${overlayPct})` }}
-              />
-              <div
-                aria-hidden="true"
-                className="absolute inset-0 bg-gradient-to-t from-ink via-ink/40 to-transparent"
-              />
-              <div
-                aria-hidden="true"
-                className="absolute inset-0 bg-gradient-to-r from-ink/70 via-ink/20 to-transparent"
-              />
+                  <div
+                    aria-hidden="true"
+                    className="absolute inset-0 bg-gradient-to-t from-page via-page/40 to-transparent"
+                  />
+                </div>
+              ) : (
+                // Showcase mode: ambient luminous reflection behind the pedestal
+                <div className="absolute inset-0">
+                  {!isBroken && slide.imageUrl ? (
+                    <div className="absolute inset-0 scale-125 opacity-25 blur-3xl transition-opacity duration-1000">
+                      <CatalogImage
+                        src={slide.imageUrl}
+                        alt=""
+                        sizes="100vw"
+                        className="size-full object-cover"
+                      />
+                    </div>
+                  ) : null}
+                  <div className="absolute inset-0 bg-radial from-stone-900/40 via-page/80 to-page" />
+                </div>
+              )}
             </div>
           );
         })}
       </div>
 
-      {/* Slide editorial content */}
-      <div className="relative z-10 container-page grid min-h-[calc(100svh-var(--header-height))] items-end pb-24 md:pb-32">
-        {slides.map((slide, index) => {
-          const isActive = index === currentIndex;
-          const alignClass =
-            slide.textAlignment === 'center'
-              ? 'items-center text-center mx-auto'
-              : slide.textAlignment === 'right'
-                ? 'items-end text-right ml-auto'
-                : 'items-start text-left';
+      {/* Main Slide Content Stage */}
+      <div className="relative z-10 container-page flex flex-1 flex-col justify-center py-8 md:py-12">
+        <div className="grid w-full items-center">
+          {slides.map((slide, index) => {
+            const isActive = index === currentIndex;
+            const isBroken = Boolean(brokenImages[slide.id || index]);
+            const isCover = slide.imageFit === 'cover';
 
-          return (
-            <div
-              key={`content-${slide.id || index}`}
-              className={cn(
-                'col-start-1 row-start-1 flex flex-col transition-all duration-700 ease-out',
-                alignClass,
-                isActive
-                  ? 'translate-y-0 opacity-100'
-                  : 'pointer-events-none translate-y-4 opacity-0',
-              )}
-            >
-              {slide.eyebrow ? (
-                <p className="type-eyebrow font-medium tracking-eyebrow text-accent-text uppercase">
-                  {slide.eyebrow}
-                </p>
-              ) : null}
+            return (
+              <div
+                key={`slide-${slide.id || index}`}
+                role="group"
+                aria-roledescription="slide"
+                aria-label={`Slide ${index + 1} of ${total}: ${slide.title}`}
+                aria-hidden={!isActive}
+                className={cn(
+                  'col-start-1 row-start-1 transition-all duration-700 ease-out',
+                  isActive
+                    ? 'translate-y-0 opacity-100'
+                    : 'pointer-events-none translate-y-4 opacity-0',
+                )}
+              >
+                {isCover ? (
+                  // Full-Bleed Layout
+                  <div className="flex max-w-4xl flex-col items-start pb-16 text-left md:pb-20">
+                    {slide.eyebrow ? (
+                      <p className="type-eyebrow font-medium tracking-eyebrow text-accent-text uppercase">
+                        {slide.eyebrow}
+                      </p>
+                    ) : null}
 
-              <h1 className="mt-4 max-w-4xl type-display-xl font-display leading-[1.02] font-normal tracking-[-0.02em] text-fg">
-                {slide.title}
-              </h1>
+                    <h1 className="mt-4 type-display-xl font-display leading-[1.02] tracking-tight text-fg">
+                      {slide.title}
+                    </h1>
 
-              {slide.description ? (
-                <p className="mt-5 max-w-xl type-body text-pretty text-fg-muted">
-                  {slide.description}
-                </p>
-              ) : null}
+                    {slide.description ? (
+                      <p className="mt-5 max-w-xl type-body text-pretty text-fg-muted">
+                        {slide.description}
+                      </p>
+                    ) : null}
 
-              <div className="mt-8 flex flex-wrap items-center gap-4 md:mt-10">
-                {slide.primaryCtaText && slide.primaryCtaLink ? (
-                  <Button asChild variant="primary" size="lg">
-                    <Link href={slide.primaryCtaLink} tabIndex={isActive ? 0 : -1}>
-                      {slide.primaryCtaText}
-                    </Link>
-                  </Button>
-                ) : null}
+                    <div className="mt-8 flex flex-wrap items-center gap-4 md:mt-10">
+                      {slide.primaryCtaText && slide.primaryCtaLink ? (
+                        <Button asChild variant="primary" size="lg">
+                          <Link href={slide.primaryCtaLink} tabIndex={isActive ? 0 : -1}>
+                            {slide.primaryCtaText}
+                          </Link>
+                        </Button>
+                      ) : null}
 
-                {slide.secondaryCtaText && slide.secondaryCtaLink ? (
-                  <Button
-                    asChild
-                    variant="secondary"
-                    size="lg"
-                    className="border border-line/70 bg-ink/30 text-fg backdrop-blur-xs hover:border-fg hover:bg-fg/10"
-                  >
-                    <Link href={slide.secondaryCtaLink} tabIndex={isActive ? 0 : -1}>
-                      {slide.secondaryCtaText}
-                    </Link>
-                  </Button>
-                ) : null}
+                      {slide.secondaryCtaText && slide.secondaryCtaLink ? (
+                        <Button
+                          asChild
+                          variant="secondary"
+                          size="lg"
+                          className="border border-line/70 bg-ink/30 text-fg backdrop-blur-xs hover:border-fg hover:bg-fg/10"
+                        >
+                          <Link href={slide.secondaryCtaLink} tabIndex={isActive ? 0 : -1}>
+                            {slide.secondaryCtaText}
+                          </Link>
+                        </Button>
+                      ) : null}
+                    </div>
+                  </div>
+                ) : (
+                  // Editorial Showcase Split Layout (Default for Products - Full Uncropped View)
+                  <div className="grid items-center gap-8 pb-8 md:pb-12 lg:grid-cols-12 lg:gap-14">
+                    {/* Left Column: Editorial Messaging */}
+                    <div className="order-2 flex flex-col justify-center text-left lg:order-1 lg:col-span-6">
+                      {slide.eyebrow ? (
+                        <p className="type-eyebrow font-medium tracking-eyebrow text-accent-text uppercase">
+                          {slide.eyebrow}
+                        </p>
+                      ) : null}
+
+                      <h1 className="mt-3 type-display-xl font-display leading-[1.04] tracking-tight text-fg lg:text-[3.25rem]">
+                        {slide.title}
+                      </h1>
+
+                      {slide.description ? (
+                        <p className="mt-4 max-w-xl type-body leading-relaxed text-pretty text-fg-muted">
+                          {slide.description}
+                        </p>
+                      ) : null}
+
+                      {/* CTA Buttons */}
+                      <div className="mt-7 flex flex-wrap items-center gap-3.5 md:mt-9">
+                        {slide.primaryCtaText && slide.primaryCtaLink ? (
+                          <Button asChild variant="primary" size="lg" className="tracking-button">
+                            <Link href={slide.primaryCtaLink} tabIndex={isActive ? 0 : -1}>
+                              {slide.primaryCtaText}
+                            </Link>
+                          </Button>
+                        ) : null}
+
+                        {slide.secondaryCtaText && slide.secondaryCtaLink ? (
+                          <Button
+                            asChild
+                            variant="secondary"
+                            size="lg"
+                            className="border border-line-strong hover:border-fg"
+                          >
+                            <Link href={slide.secondaryCtaLink} tabIndex={isActive ? 0 : -1}>
+                              {slide.secondaryCtaText}
+                            </Link>
+                          </Button>
+                        ) : null}
+                      </div>
+
+                      {/* Reassurance pills */}
+                      <div className="mt-8 flex flex-wrap items-center gap-4 border-t border-line/40 pt-4 type-small text-fg-muted">
+                        <span className="inline-flex items-center gap-1.5 text-fg/90">
+                          <Icon icon={Truck} size={15} className="text-accent-text" />
+                          <span>All 64 Districts COD</span>
+                        </span>
+                        <span>·</span>
+                        <span className="inline-flex items-center gap-1.5 text-fg/90">
+                          <Icon icon={ShieldCheck} size={15} className="text-accent-text" />
+                          <span>Doorstep Inspection</span>
+                        </span>
+                        <span>·</span>
+                        <span className="inline-flex items-center gap-1.5 text-fg/90">
+                          <Icon icon={RefreshCw} size={15} className="text-accent-text" />
+                          <span>7-Day Fit Exchange</span>
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Right Column: Full-View Uncropped Atelier Pedestal Frame */}
+                    <div className="order-1 flex items-center justify-center lg:order-2 lg:col-span-6">
+                      <div className="group/frame bg-surface-raised/40 hover:shadow-2xl relative mx-auto flex aspect-[4/5] w-full max-w-[360px] items-center justify-center overflow-hidden rounded-xs border border-line/80 p-4 shadow-float backdrop-blur-xs transition-all duration-500 hover:border-gold/70 sm:max-w-[420px] sm:p-6 lg:max-w-[480px]">
+                        {!isBroken && slide.imageUrl ? (
+                          <CatalogImage
+                            src={slide.imageUrl}
+                            alt={slide.imageAlt || slide.title}
+                            sizes="(max-width: 640px) 80vw, (max-width: 1024px) 420px, 480px"
+                            priority={index === 0}
+                            onError={() =>
+                              setBrokenImages((prev) => ({ ...prev, [slide.id || index]: true }))
+                            }
+                            className="size-full object-contain transition-transform duration-700 ease-auren group-hover/frame:scale-[1.02]"
+                          />
+                        ) : (
+                          <div className="flex size-full items-center justify-center bg-sunken p-6 text-center type-small text-fg-muted">
+                            Photography unavailable
+                          </div>
+                        )}
+
+                        {/* Floating Atelier Badge */}
+                        <div className="absolute top-3.5 right-3.5 rounded-xs border border-line/80 bg-page/90 px-2 py-0.5 text-[10px] font-medium tracking-wider text-accent-text uppercase backdrop-blur-xs">
+                          Auren Atelier
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
 
       {/* Bottom controls: Slide indicator bars, numbering & arrows */}
       {total > 1 ? (
-        <div className="relative z-20 container-page pb-8 md:pb-12">
-          <div className="flex flex-col gap-4 border-t border-line/30 pt-6 sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative z-20 container-page pb-6 md:pb-10">
+          <div className="flex flex-col gap-4 border-t border-line/40 pt-5 sm:flex-row sm:items-center sm:justify-between">
             {/* Interactive slide progress bars & numbers */}
             <div role="tablist" aria-label="Slides" className="flex items-center gap-2 sm:gap-3">
               {slides.map((slide, index) => {
@@ -348,13 +460,22 @@ export function HeroCarouselSkeleton() {
   return (
     <section
       data-tone="ink"
-      className="relative flex min-h-svh w-full flex-col justify-end overflow-hidden bg-page pt-(--header-height) text-fg"
+      aria-hidden="true"
+      className="relative flex min-h-[calc(100svh-var(--header-height))] w-full animate-pulse flex-col justify-center bg-page pt-(--header-height) text-fg"
     >
-      <div className="relative z-10 container-page flex min-h-[calc(100svh-var(--header-height))] flex-col justify-end pb-24 md:pb-32">
-        <div className="h-4 w-28 animate-pulse bg-line/20" />
-        <div className="mt-5 h-16 w-3/4 max-w-2xl animate-pulse bg-line/20" />
-        <div className="mt-6 h-6 w-1/2 max-w-lg animate-pulse bg-line/20" />
-        <div className="mt-10 h-12 w-48 animate-pulse bg-line/30" />
+      <div className="container-page grid items-center gap-8 py-12 lg:grid-cols-12">
+        <div className="flex flex-col gap-5 lg:col-span-6">
+          <div className="h-4 w-32 rounded-xs bg-line/60" />
+          <div className="h-14 w-3/4 rounded-xs bg-line/80" />
+          <div className="h-20 w-full max-w-lg rounded-xs bg-line/40" />
+          <div className="flex gap-4 pt-4">
+            <div className="h-12 w-40 rounded-xs bg-line" />
+            <div className="h-12 w-32 rounded-xs bg-line/50" />
+          </div>
+        </div>
+        <div className="flex justify-center lg:col-span-6">
+          <div className="aspect-[4/5] w-full max-w-[440px] rounded-xs bg-line/40" />
+        </div>
       </div>
     </section>
   );

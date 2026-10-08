@@ -71,6 +71,7 @@ export function CarouselSettingsManager({ initialSettings }: CarouselSettingsMan
         imageUrl: product.imageUrl || '/seed/charcoal.svg',
         imageAlt: product.title,
         primaryCtaLink: `/products/${product.slug}`,
+        imageFit: 'contain',
         ...(slides[targetSlideIndex]?.title.includes('New Season') ||
         slides[targetSlideIndex]?.title.includes('Campaign')
           ? {
@@ -100,6 +101,7 @@ export function CarouselSettingsManager({ initialSettings }: CarouselSettingsMan
         imageAlt: product.title,
         overlayOpacity: 25,
         textAlignment: 'left',
+        imageFit: 'contain',
         active: true,
         sortOrder: slides.length,
       };
@@ -124,6 +126,7 @@ export function CarouselSettingsManager({ initialSettings }: CarouselSettingsMan
       imageAlt: 'Campaign menswear photo',
       overlayOpacity: 25,
       textAlignment: 'left',
+      imageFit: 'contain',
       active: true,
       sortOrder: slides.length,
     };
@@ -657,6 +660,40 @@ export function CarouselSettingsManager({ initialSettings }: CarouselSettingsMan
                           )}
                         </FormField>
                       </div>
+
+                      <FormField
+                        label="Image Sizing & Fit"
+                        hint="Choose how the photography fits in the slider."
+                      >
+                        {() => (
+                          <div className="flex border border-line bg-page">
+                            <button
+                              type="button"
+                              onClick={() => updateSlide(index, { imageFit: 'contain' })}
+                              className={cn(
+                                'flex-1 px-2 py-1.5 text-center type-small transition-colors',
+                                (slide.imageFit ?? 'contain') === 'contain'
+                                  ? 'bg-fg font-medium text-page'
+                                  : 'text-fg-muted hover:text-fg',
+                              )}
+                            >
+                              Fit Entire Image (Showcase)
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => updateSlide(index, { imageFit: 'cover' })}
+                              className={cn(
+                                'flex-1 px-2 py-1.5 text-center type-small transition-colors',
+                                slide.imageFit === 'cover'
+                                  ? 'bg-fg font-medium text-page'
+                                  : 'text-fg-muted hover:text-fg',
+                              )}
+                            >
+                              Full-Bleed Cover
+                            </button>
+                          </div>
+                        )}
+                      </FormField>
 
                       <div className="mt-2 flex items-center justify-between border-t border-line/60 pt-3">
                         <span className="type-small font-medium text-fg">Active on Storefront</span>

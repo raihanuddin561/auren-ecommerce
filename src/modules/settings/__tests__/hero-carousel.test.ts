@@ -80,7 +80,31 @@ describe('hero carousel schemas and settings', () => {
     expect(parsed.success).toBe(true);
     if (parsed.success) {
       expect(parsed.data.slides[0]?.textAlignment).toBe('center');
+      expect(parsed.data.slides[0]?.imageFit).toBe('contain');
       expect(parsed.data.autoplay).toBe(false);
+    }
+  });
+
+  it('supports imageFit option and defaults to contain', () => {
+    const slide = {
+      id: 'fit-test',
+      title: 'Minimal Piece',
+      imageUrl: '/images/product.jpg',
+    };
+    const parsed = heroSlideSchema.safeParse(slide);
+    expect(parsed.success).toBe(true);
+    if (parsed.success) {
+      expect(parsed.data.imageFit).toBe('contain');
+    }
+
+    const coverSlide = {
+      ...slide,
+      imageFit: 'cover',
+    };
+    const coverParsed = heroSlideSchema.safeParse(coverSlide);
+    expect(coverParsed.success).toBe(true);
+    if (coverParsed.success) {
+      expect(coverParsed.data.imageFit).toBe('cover');
     }
   });
 });
