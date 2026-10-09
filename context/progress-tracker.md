@@ -16,6 +16,28 @@
 - Blockers/risks: <none | details>
 ```
 
+### 2026-10-09 — 9.1, 9.2, 9.3 Search and Discovery, Search Overlay & Results Page — Done
+- Type: new and enhancement
+- Scope: Implemented full search engine infrastructure, fast debounced live suggestions, luxury slide-down search overlay in storefront header, and complete results page with live inventory availability and curated fallback signatures.
+- Changed:
+  - Search Module (`src/modules/search/`):
+    - `types.ts`: Defined `SearchProductSuggestion`, `CategorySuggestion`, `SearchSuggestionsResult`, and `SearchResultsData`.
+    - `schemas.ts`: Strict Zod validation schemas (`searchInputSchema`, `suggestionsInputSchema`).
+    - `repository.ts`: Multi-word weighted search query matching title, subtitle, description, material, productType, tags, category name, and variant SKU with typed `searchCardInclude` payload.
+    - `service.ts`: Business logic for live typeahead suggestions, fallback curated signatures, and `toCardSource` transformation.
+    - `queries.ts`: Server queries `getSearchResults` and `getSearchSuggestions`.
+    - `actions.ts`: Storefront Server Action `getSearchSuggestionsAction` for client overlay integration.
+    - `__tests__/search.test.ts`: Unit tests validating search schemas, trimming, length caps, and popular search curation.
+  - Storefront Search UI:
+    - `src/components/storefront/search/search-overlay.tsx`: Luxury modal overlay with debounced search suggestions, product thumbnails, matching categories, and popular query chips ("Linen Shirt", "Pleated Trousers", "Cashmere Polo", etc.).
+    - `src/components/storefront/header.tsx`: Connected Search icon to trigger `SearchOverlay`.
+    - `src/app/(storefront)/search/page.tsx`: Transformed stand-in into full search results page with live stock integration (`withLiveStock`), `ProductGrid` rendering, zero-results curated signature alternatives, quick search input, and `noindex` robots tag per spec.
+- Tests: `pnpm check` passed cleanly (0 typecheck errors, 0 lint errors, 100% Prettier formatting, 99 test files and 1,231 unit tests passed).
+- Review: Module boundaries respected (components import actions; app routes import queries), zero arbitrary CSS classes, and SEO `noindex` applied to internal search.
+- Decisions: Architecture section 9 search indexing and crawler isolation rules strictly followed.
+- Next: Module 10 (Promotions and Pricing) or Module 8.1 (Section-block page builder).
+- Blockers/risks: none.
+
 ### 2026-10-09 — 7.8 Admin Customer Management, Lifetime Metrics & Access Controls — Done
 - Type: new and enhancement
 - Scope: Built complete admin customer directory and detail management, lifetime value (LTV) and average order value (AOV) metrics, order history timeline, saved delivery addresses, and audited block/unblock controls.

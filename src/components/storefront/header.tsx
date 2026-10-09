@@ -10,6 +10,7 @@ import { hasHeroHeader, PRIMARY_NAV } from '@/lib/site';
 import { MegaMenu } from './mega-menu';
 import { MobileMenu } from './mobile-menu';
 import { BagButton } from './cart/bag-button';
+import { SearchOverlay } from './search/search-overlay';
 import { Wordmark } from './wordmark';
 
 /** Scroll distance after which a transparent header turns solid. */
@@ -39,60 +40,72 @@ export function Header() {
   const pathname = usePathname();
   const scrolled = useScrolledPast(HEADER_SOLID_AFTER_PX);
   const [openPanel, setOpenPanel] = useState<string | null>(null);
+  const [searchOpen, setSearchOpen] = useState(false);
 
   const overHero = hasHeroHeader(pathname);
   const transparent = overHero && !scrolled && openPanel === null;
 
   return (
-    <header
-      data-tone={transparent ? 'ink' : undefined}
-      data-transparent={transparent}
-      className={cn(
-        'sticky top-0 z-40 h-(--header-height) text-fg transition-auren',
-        overHero && '-mb-(--header-height)',
-        transparent ? 'border-b border-transparent bg-transparent' : 'border-b border-line bg-page',
-      )}
-    >
-      {openPanel ? (
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-x-0 top-full -z-10 h-dvh animate-fade-in bg-ink/30"
-        />
-      ) : null}
-      <div className="container-page grid h-full grid-cols-[1fr_auto_1fr] items-center">
-        <div className="flex items-center">
-          <MobileMenu items={PRIMARY_NAV} />
-          <MegaMenu
-            items={PRIMARY_NAV}
-            pathname={pathname}
-            openLabel={openPanel}
-            onOpenChange={setOpenPanel}
+    <>
+      <header
+        data-tone={transparent ? 'ink' : undefined}
+        data-transparent={transparent}
+        className={cn(
+          'sticky top-0 z-40 h-(--header-height) text-fg transition-auren',
+          overHero && '-mb-(--header-height)',
+          transparent
+            ? 'border-b border-transparent bg-transparent'
+            : 'border-b border-line bg-page',
+        )}
+      >
+        {openPanel ? (
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-x-0 top-full -z-10 h-dvh animate-fade-in bg-ink/30"
           />
-        </div>
+        ) : null}
+        <div className="container-page grid h-full grid-cols-[1fr_auto_1fr] items-center">
+          <div className="flex items-center">
+            <MobileMenu items={PRIMARY_NAV} />
+            <MegaMenu
+              items={PRIMARY_NAV}
+              pathname={pathname}
+              openLabel={openPanel}
+              onOpenChange={setOpenPanel}
+            />
+          </div>
 
-        <Wordmark />
+          <Wordmark />
 
-        <div className="flex items-center justify-end">
-          <Link href="/search" aria-label="Search" className={iconLink}>
-            <Icon icon={Search} />
-          </Link>
-          <Link
-            href="/account"
-            aria-label="Account"
-            className={cn(iconLink, 'hidden sm:inline-flex')}
-          >
-            <Icon icon={User} />
-          </Link>
-          <Link
-            href="/wishlist"
-            aria-label="Wishlist"
-            className={cn(iconLink, 'hidden sm:inline-flex')}
-          >
-            <Icon icon={Heart} />
-          </Link>
-          <BagButton className={iconLink} />
+          <div className="flex items-center justify-end">
+            <button
+              type="button"
+              onClick={() => setSearchOpen(true)}
+              aria-label="Search collection"
+              className={iconLink}
+            >
+              <Icon icon={Search} />
+            </button>
+            <Link
+              href="/account"
+              aria-label="Account"
+              className={cn(iconLink, 'hidden sm:inline-flex')}
+            >
+              <Icon icon={User} />
+            </Link>
+            <Link
+              href="/wishlist"
+              aria-label="Wishlist"
+              className={cn(iconLink, 'hidden sm:inline-flex')}
+            >
+              <Icon icon={Heart} />
+            </Link>
+            <BagButton className={iconLink} />
+          </div>
         </div>
-      </div>
-    </header>
+      </header>
+
+      <SearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} />
+    </>
   );
 }

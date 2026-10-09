@@ -150,9 +150,9 @@
 
 | ID | Sub-feature | Pri | BE | API | UT | FE | E2E | CR | Overall | Notes |
 |---|---|---|---|---|---|---|---|---|---|---|
-| 9.1 | Search index | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 9.2 | Search overlay | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 9.3 | Search results page | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
+| 9.1 | Search index | P0 | Done | Done | Done | Done | Done | Done | Done | new. Multi-word weighted search query matching title, subtitle, description, material, productType, tags, category, and SKU variants with typed CardSource mapping. |
+| 9.2 | Search overlay | P0 | Done | Done | Done | Done | Done | Done | Done | new. Luxury slide-down search overlay in storefront header with debounced suggestions, product thumbnails, matching categories, and trending search term chips. |
+| 9.3 | Search results page | P0 | Done | Done | Done | Done | Done | Done | Done | new. Complete /search page with live inventory availability, ProductGrid cards, zero-results curated fallback signatures, quick filters, and robots noindex tag. |
 | 9.4 | Facet counts | P1 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
 | 9.5 | Recommendations | P1 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
 | 9.6 | Search analytics | P2 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
