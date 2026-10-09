@@ -119,6 +119,32 @@
 - Next: Module 7.8 (Admin customer management) and Module 8.1 (Section-block page builder).
 - Blockers/risks: none.
 
+### 2026-10-09 — 10.1, 10.2, 10.5 Promotions Engine, Checkout Discounts, Sale Badges & Admin Console — Done
+- Type: new and enhancement
+- Scope: Implemented production discount engine, checkout promo codes, line-level discount allocations, compare-at sale displays, and full admin promotion management.
+- Changed:
+  - Database & Migrations:
+    - Added tables `discounts` and `discount_redemptions`, plus `carts.discount_code` column with index (`20261009100000_add_promotions_and_discounts`).
+  - Promotions Module (`src/modules/promotions/`):
+    - `types.ts`, `schemas.ts`, `repository.ts`, `service.ts`, `queries.ts`, `actions.ts`.
+    - Enforced INV-D1: atomic conditional `usage_count` increment (`usage_count < usage_limit`), ledger recording in `discount_redemptions`, and automatic redemption release on order cancellation.
+    - Proportional line-item allocation using `allocate()` to guarantee line-item rounding exactness (INV-M4).
+    - Generic enumeration-resistant error message: `"Invalid or expired discount code"`.
+    - Fail-closed rate limiting via `couponApply`.
+  - Storefront Integration:
+    - `src/modules/checkout/service.ts`: Evaluates and applies discount coupons to checkout quotes and orders.
+    - `src/components/storefront/checkout/checkout-form.tsx` & `order-summary.tsx`: Live promo code input field, apply/remove actions, discount line display, and error toasts.
+    - `src/modules/catalog/card.ts` & `product-card.tsx`: Activated `sale` oxblood badge and strike-through pricing for items with `compareAt`.
+  - Admin Console:
+    - `src/app/admin/(console)/promotions/page.tsx`: Promotions management console with status filtering and search.
+    - `src/components/admin/promotions/create-discount-dialog.tsx`: Dialog for creating percentage/fixed/free-shipping discounts with usage limits, minimum subtotals, and schedule dates.
+    - `src/components/admin/promotions/discounts-table.tsx`: Promotions listing with active/inactive status toggle and usage counters.
+    - `src/lib/admin-nav.ts`: Set Promotions nav item to `ready: true`.
+- Tests: `pnpm check` passed cleanly (100 test files, 1,241 unit tests, 0 TS errors, 0 ESLint errors, 100% Prettier formatted).
+- Next: Module 11 (Finance and Cost Tracking) or remaining P0 items.
+
+---
+
 ### 2026-10-09 — 8.2, 8.3, 8.4, 8.7, 8.8 Storefront Luxury Aesthetics, Editorial Sections & Client Care Pages — Done
 - Type: new and enhancement
 - Scope: Elevated AUREN digital storefront into a world-class luxury menswear brand experience with rich editorial content, atelier storytelling, client concierge services, complete static/legal infrastructure, and cookie consent preferences.

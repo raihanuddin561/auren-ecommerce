@@ -33,6 +33,7 @@ const BADGE_TONE = {
   'sold-out': 'ink',
   'low-stock': 'warning',
   limited: 'oxblood',
+  sale: 'oxblood',
   new: 'gold',
 } as const;
 

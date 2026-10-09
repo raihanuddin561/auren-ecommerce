@@ -3,7 +3,7 @@ import { DomainError } from '@/lib/errors';
 import { runIdempotent } from '@/lib/idempotency';
 import { newId } from '@/lib/ids';
 import { logger } from '@/lib/logger';
-import { add, money, serialize, zero } from '@/lib/money';
+import { add, money, serialize, subtract, zero } from '@/lib/money';
 import { hmacHex } from '@/lib/order-secret';
 import { normalizeBdPhone, maskPhone } from '@/lib/phone';
 import { SmsUnavailableError, sendSms } from '@/integrations/sms';
@@ -15,6 +15,7 @@ import * as orders from '@/modules/orders/service';
 import { safeEqual } from '@/modules/orders/tracking';
 import type { ShippingAddressSnapshot } from '@/modules/orders/types';
 import * as payments from '@/modules/payments/service';
+import * as promotions from '@/modules/promotions/service';
 import { formatEta, type DeliveryOption } from '@/modules/shipping/quote';
 import * as shipping from '@/modules/shipping/service';
 import * as settings from '@/modules/settings/service';
@@ -69,32 +70,87 @@ export async function summarize(
   const view = await cart.getView(identity);
   const protection = await settings.getCheckoutProtection(db);
   const subtotal = money(BigInt(view.subtotal.minor), view.currency);
+
+  const couponCode =
+    selection?.discountCode?.trim() || (await promotions.getCartDiscountCode(identity));
+
+  let discountMinor = 0n;
+  let discountView: CheckoutSummary['discount'] = null;
+  let isFreeShipping = false;
+
+  if (couponCode) {
+    const linesForDiscount = view.lines.map((l) => ({
+      variantId: l.variantId,
+      productId: l.productId,
+      unitPriceMinor: BigInt(l.unitPrice.minor),
+      quantity: l.quantity,
+      currency: view.currency,
+    }));
+
+    const evaluated = await promotions.findAndEvaluateDiscount(couponCode, linesForDiscount, {
+      userId: identity.userId,
+    });
+
+    if (evaluated) {
+      discountMinor = evaluated.discountMinor;
+      isFreeShipping = evaluated.freeShipping;
+      discountView = {
+        code: evaluated.code ?? couponCode,
+        title: evaluated.title,
+        amount: serialize(money(discountMinor, view.currency)),
+        freeShipping: evaluated.freeShipping,
+      };
+    }
+  }
+
+  const discountAmount = money(discountMinor, view.currency);
+  const subtotalAfterDiscount = subtract(subtotal, discountAmount);
+
   if (!selection) {
     return {
       cart: view,
       delivery: null,
-      methods: await payments.availableMethods(db, { total: subtotal, deliveryAllowsCod: true }),
-      totals: { subtotal: view.subtotal, shipping: null, total: null },
+      methods: await payments.availableMethods(db, {
+        total: subtotalAfterDiscount,
+        deliveryAllowsCod: true,
+      }),
+      totals: {
+        subtotal: view.subtotal,
+        discount: discountMinor > 0n ? serialize(discountAmount) : null,
+        shipping: null,
+        total: null,
+      },
+      discount: discountView,
       otpRequired: protection.otpRequired,
     };
   }
   const area = await shipping.resolveArea(db, selection);
-  const quote = await shipping.quoteDelivery(db, area, subtotal);
+  const quote = await shipping.quoteDelivery(db, area, subtotalAfterDiscount);
   const option = chooseOption(quote.options, selection.shippingRateId);
-  const total = add(subtotal, option.charge);
+  const effectiveCharge = isFreeShipping ? zero(view.currency) : option.charge;
+  const total = add(subtotalAfterDiscount, effectiveCharge);
   return {
     cart: view,
     delivery: {
       zoneName: quote.zoneName,
-      options: quote.options.map(optionView),
+      options: quote.options.map((opt) => ({
+        ...optionView(opt),
+        charge: isFreeShipping ? serialize(zero(view.currency)) : optionView(opt).charge,
+        free: isFreeShipping || opt.free,
+      })),
       selectedRateId: option.rateId,
     },
-    methods: await payments.availableMethods(db, { total, deliveryAllowsCod: option.codAllowed }),
+    methods: await payments.availableMethods(db, {
+      total,
+      deliveryAllowsCod: option.codAllowed,
+    }),
     totals: {
       subtotal: view.subtotal,
-      shipping: serialize(option.charge),
+      discount: discountMinor > 0n ? serialize(discountAmount) : null,
+      shipping: serialize(effectiveCharge),
       total: serialize(total),
     },
+    discount: discountView,
     otpRequired: protection.otpRequired,
   };
 }
@@ -264,6 +320,7 @@ export async function submit(
     contact: { name: input.contact.name, phone, email: contactEmail },
     address: input.address,
     shippingRateId: input.shippingRateId ?? null,
+    discountCode: input.discountCode ?? null,
     paymentMethod: input.paymentMethod,
     customerNote: input.customerNote ?? null,
   };
@@ -306,7 +363,43 @@ export async function submit(
       const subtotal = orders.totalsFor(lines, bag.currency, zero(bag.currency)).subtotal;
       const quote = await shipping.quoteDelivery(tx, area, subtotal);
       const option = chooseOption(quote.options, input.shippingRateId);
-      const total = add(subtotal, option.charge);
+
+      const couponCode =
+        input.discountCode?.trim() || (await promotions.getCartDiscountCode(identity));
+
+      let discountMinor = 0n;
+      let discountCodes: string[] = [];
+      let lineDiscounts = new Map<string, bigint>();
+      let effectiveCharge = option.charge;
+
+      if (couponCode) {
+        const linesForDiscount = lines.map((l) => ({
+          variantId: l.variant.id,
+          productId: l.variant.productId,
+          unitPriceMinor: l.variant.priceMinor,
+          quantity: l.quantity,
+          currency: bag.currency,
+        }));
+
+        const evaluated = await promotions.claimAndRecordRedemptionInTx(tx, {
+          discountCode: couponCode,
+          orderId,
+          lines: linesForDiscount,
+          shippingChargeMinor: option.charge.minor,
+          userId: identity.userId,
+          phone,
+        });
+
+        discountMinor = evaluated.discountMinor;
+        discountCodes = [evaluated.code ?? couponCode];
+        lineDiscounts = new Map(evaluated.lines.map((l) => [l.variantId, l.discountMinor]));
+
+        if (evaluated.freeShipping) {
+          effectiveCharge = zero(bag.currency);
+        }
+      }
+
+      const total = add(subtract(subtotal, money(discountMinor, bag.currency)), effectiveCharge);
       const { providerId, plan } = await payments.planPlacement(tx, input.paymentMethod, {
         total,
         deliveryAllowsCod: option.codAllowed,
@@ -358,7 +451,14 @@ export async function submit(
         customerNote: input.customerNote ?? null,
         lines,
         currency: bag.currency,
-        delivery: { zoneId: quote.zoneId, zoneName: quote.zoneName, option },
+        delivery: {
+          zoneId: quote.zoneId,
+          zoneName: quote.zoneName,
+          option: { ...option, charge: effectiveCharge },
+        },
+        discountMinor,
+        discountCodes,
+        lineDiscounts,
         providerId,
         plan,
         risk,

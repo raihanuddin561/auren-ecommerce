@@ -239,23 +239,25 @@ export const variantIdsOf = (cards: readonly ProductCardData[]): string[] =>
   cards.flatMap((card) => card.variants.map((variant) => variant.id));
 
 export interface CardBadge {
-  key: 'sold-out' | 'low-stock' | 'limited' | 'new';
+  key: 'sold-out' | 'low-stock' | 'limited' | 'new' | 'sale';
   label: string;
 }
 
 /**
- * Badges for a card, most important first and at most two: Sold out, Low stock, Limited (only for
- * products tagged `limited`), New (published in the last 30 days). Stock badges need the live
- * stock; without it (null) only New and Limited can show.
+ * Badges for a card, most important first and at most two: Sold out, Low stock, Sale, Limited
+ * (only for products tagged `limited`), New (published in the last 30 days). Stock badges need the live
+ * stock; without it (null) only New, Limited and Sale can show.
  */
 export function cardBadges(card: {
   stock?: StockState | null;
   isNew?: boolean;
   limited?: boolean;
+  compareAt?: unknown | null;
 }): CardBadge[] {
   const badges: CardBadge[] = [];
   if (card.stock === 'out') badges.push({ key: 'sold-out', label: 'Sold out' });
   else if (card.stock === 'low') badges.push({ key: 'low-stock', label: 'Low stock' });
+  if (card.compareAt) badges.push({ key: 'sale', label: 'Sale' });
   if (card.limited) badges.push({ key: 'limited', label: 'Limited' });
   if (card.isNew) badges.push({ key: 'new', label: 'New' });
   return badges.slice(0, 2);

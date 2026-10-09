@@ -6,7 +6,7 @@ import { enqueueEvent } from '@/lib/outbox';
 import { maskEmail } from '@/lib/phone';
 import { formatPriceText } from '@/lib/price-format';
 import { env } from '@/lib/env';
-import { add, money, multiply, serialize, sum, type Money } from '@/lib/money';
+import { add, money, multiply, serialize, subtract, sum, zero, type Money } from '@/lib/money';
 import { logger } from '@/lib/logger';
 import { renderOrderReceivedEmail } from '@/emails/order-received';
 import * as inventory from '@/modules/inventory/service';
@@ -63,10 +63,14 @@ export interface PlaceOrderCommand {
   providerId: PaymentProviderId;
   plan: PlacementPlan;
   risk: { score: number; flags: string[] };
+  discountMinor?: bigint;
+  discountCodes?: string[];
+  lineDiscounts?: ReadonlyMap<string, bigint>;
 }
 
 export interface OrderTotals {
   subtotal: Money;
+  discount: Money;
   shipping: Money;
   total: Money;
 }
@@ -79,6 +83,7 @@ export function totalsFor(
   }>,
   currency: string,
   shipping: Money,
+  discount: Money = zero(currency),
 ): OrderTotals {
   const subtotal = sum(
     lines.map((line) =>
@@ -86,7 +91,9 @@ export function totalsFor(
     ),
     currency,
   );
-  return { subtotal, shipping, total: add(subtotal, shipping) };
+  const effectiveDiscount = discount.minor > subtotal.minor ? subtotal : discount;
+  const total = add(subtract(subtotal, effectiveDiscount), shipping);
+  return { subtotal, discount: effectiveDiscount, shipping, total };
 }
 
 /**
@@ -98,7 +105,8 @@ export function totalsFor(
  * can confirm, and nothing ever cancels it (ADR-015, INV-O1, INV-O2).
  */
 export async function createPlaced(tx: Tx, cmd: PlaceOrderCommand): Promise<PlacedOrder> {
-  const totals = totalsFor(cmd.lines, cmd.currency, cmd.delivery.option.charge);
+  const discount = money(cmd.discountMinor ?? 0n, cmd.currency);
+  const totals = totalsFor(cmd.lines, cmd.currency, cmd.delivery.option.charge, discount);
 
   let effectTags: string[] = [];
   if (cmd.plan.stock === 'commit_on_place') {
@@ -144,12 +152,13 @@ export async function createPlaced(tx: Tx, cmd: PlaceOrderCommand): Promise<Plac
     createdBy: cmd.createdBy ?? null,
     currency: cmd.currency,
     subtotalMinor: totals.subtotal.minor,
-    discountMinor: 0n,
+    discountMinor: totals.discount.minor,
     shippingChargedMinor: totals.shipping.minor,
     taxMinor: 0n,
     totalMinor: totals.total.minor,
     shippingAddress: cmd.address as unknown as Prisma.InputJsonValue,
     shippingMethod: method as unknown as Prisma.InputJsonValue,
+    discountCodes: cmd.discountCodes ?? [],
     customerNote: cmd.customerNote,
     riskScore: cmd.risk.score,
     riskFlags: cmd.risk.flags,
@@ -162,6 +171,9 @@ export async function createPlaced(tx: Tx, cmd: PlaceOrderCommand): Promise<Plac
     tx,
     cmd.lines.map(({ variant, quantity }) => {
       const unit = money(variant.priceMinor, variant.currency);
+      const lineSubtotal = multiply(unit, quantity).minor;
+      const lineDiscount = cmd.lineDiscounts?.get(variant.id) ?? 0n;
+      const totalMinor = lineSubtotal - lineDiscount;
       return {
         orderId: cmd.orderId,
         variantId: variant.id,
@@ -175,9 +187,9 @@ export async function createPlaced(tx: Tx, cmd: PlaceOrderCommand): Promise<Plac
         compareAtMinor: variant.compareAtMinor,
         unitCostMinor: variant.avgCostMinor,
         quantity,
-        discountMinor: 0n,
+        discountMinor: lineDiscount,
         taxMinor: 0n,
-        totalMinor: multiply(unit, quantity).minor,
+        totalMinor: totalMinor < 0n ? 0n : totalMinor,
       };
     }),
   );

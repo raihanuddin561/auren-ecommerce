@@ -19,6 +19,7 @@ export interface CheckoutDraft {
   postalCode: string;
   note: string;
   shippingRateId: string;
+  discountCode?: string;
   /** Generated when the form first opens; the same value is sent on every retry (idempotency). */
   idempotencyKey: string;
 }
@@ -40,6 +41,7 @@ export const EMPTY_DRAFT: Omit<CheckoutDraft, 'idempotencyKey'> = {
   postalCode: '',
   note: '',
   shippingRateId: '',
+  discountCode: '',
 };
 
 export type FieldKey =

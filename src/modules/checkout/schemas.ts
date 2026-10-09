@@ -46,6 +46,7 @@ export const placeOrderSchema = z
     shippingRateId: z.string().trim().optional(),
     paymentMethod: z.enum(['cod']),
     customerNote: text(1, 300).optional(),
+    discountCode: text(2, 50).optional(),
     turnstileToken: z.string().max(2048).optional(),
   })
   .strict();
@@ -60,6 +61,7 @@ export const quoteSchema = z
     thanaId: z.string().trim().nullish(),
     thanaName: text(1, 100).optional(),
     shippingRateId: z.string().trim().optional(),
+    discountCode: text(2, 50).optional(),
   })
   .strict();
 

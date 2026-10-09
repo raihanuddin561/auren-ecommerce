@@ -1,14 +1,68 @@
+'use client';
+
+import { Loader2, Tag, X } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
 import { formatPrice } from '@/components/ui/price';
 import { deserialize } from '@/lib/money';
+import { applyDiscountCodeAction, removeDiscountCodeAction } from '@/modules/promotions/actions';
 import type { CheckoutSummary } from '@/modules/checkout/types';
 
-/** Items and the totals breakdown. Delivery shows "Choose your district" until an address is known. */
-export function OrderSummaryBody({ summary }: { summary: CheckoutSummary }) {
-  const { cart, totals, delivery } = summary;
+interface OrderSummaryBodyProps {
+  summary: CheckoutSummary;
+  onCouponChange?: () => void;
+}
+
+/** Items and the totals breakdown with interactive discount coupon support. */
+export function OrderSummaryBody({ summary, onCouponChange }: OrderSummaryBodyProps) {
+  const router = useRouter();
+  const { cart, totals, delivery, discount } = summary;
   const shipping = totals.shipping ? deserialize(totals.shipping) : null;
   const total = totals.total ? deserialize(totals.total) : null;
+  const discountAmount = totals.discount ? deserialize(totals.discount) : null;
+
+  const [code, setCode] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleApply(event: React.FormEvent) {
+    event.preventDefault();
+    const clean = code.trim().toUpperCase();
+    if (!clean) return;
+
+    setLoading(true);
+    setError(null);
+
+    const result = await applyDiscountCodeAction({ code: clean });
+    setLoading(false);
+
+    if (result.ok) {
+      setCode('');
+      onCouponChange?.();
+      router.refresh();
+    } else {
+      setError(result.error.message ?? 'Invalid or expired discount code');
+    }
+  }
+
+  async function handleRemove() {
+    setLoading(true);
+    setError(null);
+
+    const result = await removeDiscountCodeAction();
+    setLoading(false);
+
+    if (result.ok) {
+      onCouponChange?.();
+      router.refresh();
+    } else {
+      setError(result.error.message ?? 'Failed to remove discount');
+    }
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <ul className="divide-y divide-line">
@@ -44,6 +98,67 @@ export function OrderSummaryBody({ summary }: { summary: CheckoutSummary }) {
         ))}
       </ul>
 
+      {/* Coupon Application / Active Promo Section */}
+      <div className="border-t border-line pt-4">
+        {discount ? (
+          <div className="rounded border-accent/40 bg-accent/5 flex items-center justify-between border p-3">
+            <div className="flex items-center gap-2">
+              <Tag className="h-4 w-4 text-accent-text" />
+              <div>
+                <p className="type-small font-medium tracking-wider text-fg uppercase">
+                  {discount.code}
+                </p>
+                <p className="type-eyebrow text-fg-muted">{discount.title}</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleRemove}
+              disabled={loading}
+              className="inline-flex items-center gap-1 text-xs text-fg-muted transition-colors hover:text-danger disabled:opacity-50"
+              aria-label={`Remove discount code ${discount.code}`}
+            >
+              {loading ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <X className="h-3.5 w-3.5" />
+              )}
+              <span>Remove</span>
+            </button>
+          </div>
+        ) : (
+          <form onSubmit={handleApply} className="flex flex-col gap-2">
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={code}
+                onChange={(e) => {
+                  setCode(e.target.value.toUpperCase());
+                  setError(null);
+                }}
+                placeholder="Promo code"
+                maxLength={30}
+                className="rounded h-9 min-w-0 flex-1 border border-line bg-page px-3 text-xs text-fg uppercase placeholder:text-fg-muted placeholder:normal-case focus:border-gold focus:outline-none"
+              />
+              <Button
+                type="submit"
+                size="sm"
+                variant="secondary"
+                disabled={!code.trim() || loading}
+                loading={loading}
+              >
+                Apply
+              </Button>
+            </div>
+            {error ? (
+              <p role="alert" className="type-eyebrow text-danger-text">
+                {error}
+              </p>
+            ) : null}
+          </form>
+        )}
+      </div>
+
       <dl className="flex flex-col gap-2 border-t border-line pt-5">
         <div className="flex items-baseline justify-between gap-4">
           <dt className="type-small text-fg-muted">Subtotal</dt>
@@ -51,6 +166,14 @@ export function OrderSummaryBody({ summary }: { summary: CheckoutSummary }) {
             {formatPrice(deserialize(totals.subtotal))}
           </dd>
         </div>
+
+        {discount && discountAmount && discountAmount.minor > 0n ? (
+          <div className="flex items-baseline justify-between gap-4 text-accent-text">
+            <dt className="type-small">Discount ({discount.code})</dt>
+            <dd className="type-small font-medium tabular-nums">-{formatPrice(discountAmount)}</dd>
+          </div>
+        ) : null}
+
         <div className="flex items-baseline justify-between gap-4">
           <dt className="type-small text-fg-muted">
             Delivery{delivery ? ` (${delivery.zoneName})` : ''}
@@ -63,6 +186,7 @@ export function OrderSummaryBody({ summary }: { summary: CheckoutSummary }) {
                 : formatPrice(shipping)}
           </dd>
         </div>
+
         <div className="mt-2 flex items-baseline justify-between gap-4 border-t border-line pt-4">
           <dt className="type-body text-fg">Total</dt>
           <dd className="type-price text-h3 text-fg tabular-nums" data-testid="order-total">

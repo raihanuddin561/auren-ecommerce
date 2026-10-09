@@ -98,6 +98,12 @@ export function CheckoutForm({ initial, areas }: CheckoutFormProps) {
   const [draft, setDraft] = useState<CheckoutDraft>({ ...EMPTY_DRAFT, idempotencyKey: '' });
   const [restored, setRestored] = useState(false);
   const [summary, setSummary] = useState<CheckoutSummary>(initial);
+  const [quoteVersion, setQuoteVersion] = useState(0);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sync state when initial server quote changes
+    setSummary(initial);
+  }, [initial]);
   const [thanas, setThanas] = useState<Thanas>({ status: 'idle', items: [] });
   const [notListed, setNotListed] = useState(false);
   const [quoting, setQuoting] = useState(false);
@@ -189,6 +195,7 @@ export function CheckoutForm({ initial, areas }: CheckoutFormProps) {
       thanaId: draft.thanaId || null,
       ...(draft.thanaName?.trim() ? { thanaName: draft.thanaName.trim() } : {}),
       ...(draft.shippingRateId ? { shippingRateId: draft.shippingRateId } : {}),
+      ...(summary.discount?.code ? { discountCode: summary.discount.code } : {}),
     })
       .then((result) => {
         if (cancelled) return;
@@ -226,6 +233,8 @@ export function CheckoutForm({ initial, areas }: CheckoutFormProps) {
     draft.shippingRateId,
     restored,
     initial,
+    quoteVersion,
+    summary.discount?.code,
   ]);
 
   const thanasListed = thanas.items.length > 0;
@@ -382,6 +391,7 @@ export function CheckoutForm({ initial, areas }: CheckoutFormProps) {
         ...(draft.shippingRateId ? { shippingRateId: draft.shippingRateId } : {}),
         paymentMethod: 'cod',
         ...(draft.note.trim() ? { customerNote: draft.note.trim() } : {}),
+        ...(summary.discount?.code ? { discountCode: summary.discount.code } : {}),
         ...(token ? { turnstileToken: token } : {}),
       });
       if (result.ok) {
@@ -443,7 +453,13 @@ export function CheckoutForm({ initial, areas }: CheckoutFormProps) {
           <span className="type-price tabular-nums">{formatPrice(total)}</span>
         </summary>
         <div className="border-t border-line px-4 py-5">
-          <OrderSummaryBody summary={summary} />
+          <OrderSummaryBody
+            summary={summary}
+            onCouponChange={() => {
+              setQuoteVersion((v) => v + 1);
+              router.refresh();
+            }}
+          />
         </div>
       </details>
 
@@ -526,7 +542,13 @@ export function CheckoutForm({ initial, areas }: CheckoutFormProps) {
         className="hidden self-start border border-line bg-raised p-8 lg:sticky lg:top-8 lg:col-span-5 lg:block"
       >
         <h2 className="mb-6 type-h3 text-fg">Order summary</h2>
-        <OrderSummaryBody summary={summary} />
+        <OrderSummaryBody
+          summary={summary}
+          onCouponChange={() => {
+            setQuoteVersion((v) => v + 1);
+            router.refresh();
+          }}
+        />
       </aside>
     </div>
   );

@@ -18,9 +18,16 @@ export interface CheckoutSummary {
   methods: PaymentMethodOption[];
   totals: {
     subtotal: SerializedMoney;
+    discount?: SerializedMoney | null;
     shipping: SerializedMoney | null;
     total: SerializedMoney | null;
   };
+  discount?: {
+    code: string;
+    title: string;
+    amount: SerializedMoney;
+    freeShipping: boolean;
+  } | null;
   /** True when a phone code is required before an order can be placed. */
   otpRequired: boolean;
 }

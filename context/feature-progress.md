@@ -161,11 +161,11 @@
 
 | ID | Sub-feature | Pri | BE | API | UT | FE | E2E | CR | Overall | Notes |
 |---|---|---|---|---|---|---|---|---|---|---|
-| 10.1 | Discount engine | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 10.2 | Discount codes at checkout | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
+| 10.1 | Discount engine | P0 | Done | Done | Done | Done | Done | Done | Done | new. Percentage (with optional cap), fixed BDT amount, and free shipping discounts. Proportional line allocation via allocate(), INV-D1 atomic conditional usage increment and ledger recording. |
+| 10.2 | Discount codes at checkout | P0 | Done | Done | Done | Done | Done | Done | Done | new. Coupon code input at checkout and cart with couponApply fail-closed rate limiting, generic enumeration-resistant error messages, and line-item discount breakdown. |
 | 10.3 | Automatic promotions | P1 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
 | 10.4 | Buy X Get Y | P2 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 10.5 | Compare-at / sale display | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
+| 10.5 | Compare-at / sale display | P0 | Done | Done | Done | Done | Done | Done | Done | new. Oxblood sale badge and strikethrough compare-at pricing activated across product cards and PDP with correct price-difference display. |
 | 10.6 | Gift cards | P2 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
 | 10.7 | Store credit | P1 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
 

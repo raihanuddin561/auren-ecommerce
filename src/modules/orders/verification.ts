@@ -4,6 +4,7 @@ import { enqueueEvent } from '@/lib/outbox';
 import { audit } from '@/modules/audit/service';
 import * as inventory from '@/modules/inventory/service';
 import { requestRefundForCancellation } from '@/modules/payments/refunds';
+import * as promotions from '@/modules/promotions/service';
 import { getVerificationSettings } from '@/modules/settings/service';
 import type { VerificationSettings } from '@/modules/settings/schemas';
 import * as repo from './repository';
@@ -521,6 +522,7 @@ export async function cancelOrder(tx: Tx, input: CancelOrderInput) {
     },
     payload: { reason: input.reason, ...(refundId ? { refundRequested: true } : {}) },
   });
+  await promotions.releaseRedemptionForOrder(tx, order.id);
   await enqueueEvent(tx, {
     type: 'order.cancelled',
     aggregateType: 'order',

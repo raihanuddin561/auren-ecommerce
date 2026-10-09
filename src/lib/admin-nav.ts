@@ -169,7 +169,7 @@ export const ADMIN_NAV: AdminNavGroup[] = [
         href: '/admin/promotions',
         icon: Tag,
         permission: 'promotions.manage',
-        ready: false,
+        ready: true,
         keywords: ['discount', 'coupon'],
       },
       {
