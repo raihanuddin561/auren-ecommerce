@@ -16,6 +16,36 @@
 - Blockers/risks: <none | details>
 ```
 
+### 2026-10-09 — 7.1, 7.2, 7.4 Customer Accounts, Auth Pages & Address Book — Done
+- Type: new and enhancement
+- Scope: Implemented customer authentication pages, account dashboard, order history listing, address book management, and profile preferences with luxury styling and security protections.
+- Changed:
+  - Customer Module Architecture:
+    - `src/modules/customer/schemas.ts`: Strict Zod validation schemas for address CRUD and profile updates (`saveAddressSchema`, `deleteAddressSchema`, `setDefaultAddressSchema`, `updateProfileSchema`).
+    - `src/modules/customer/repository.ts`: Database query layer for customer addresses, orders with line item snapshots and product media, and user profile data.
+    - `src/modules/customer/service.ts`: Transactional business logic with default address promotion and user data isolation.
+    - `src/modules/customer/queries.ts`: Cached server queries (`getCustomerDashboardData`, `getCustomerAddresses`, `getCustomerOrders`, `getCustomerProfile`).
+    - `src/modules/customer/actions.ts`: Secure server actions with `authMutation` rate limiting, user session gating, and cache revalidation (`saveAddressAction`, `deleteAddressAction`, `setDefaultAddressAction`, `updateProfileAction`).
+  - Auth Pages (7.1):
+    - `src/app/(storefront)/login/page.tsx` & `src/components/storefront/auth/login-form.tsx`: Sign-in form with email/password, Cloudflare Turnstile bot protection, and `?next=` redirection.
+    - `src/app/(storefront)/register/page.tsx` & `src/components/storefront/auth/register-form.tsx`: Customer registration with 10+ character password requirement and verification email dispatch.
+    - `src/app/(storefront)/forgot-password/page.tsx` & `src/components/storefront/auth/forgot-password-form.tsx`: Anti-enumeration password recovery request flow.
+    - `src/app/(storefront)/reset-password/page.tsx` & `src/components/storefront/auth/reset-password-form.tsx`: Token-verified password reset form with session invalidation.
+  - Account Dashboard & Pages (7.2, 7.4):
+    - `src/app/(storefront)/account/layout.tsx`: Dynamic nonce section layout (`instant = false`, `await connection()`) and `requireUser()` authentication gate.
+    - `src/components/storefront/account/account-nav.tsx`: Luxury client sidebar with active indicators and `authClient.signOut` action.
+    - `src/app/(storefront)/account/page.tsx`: Overview dashboard with commissions metric, saved destinations, and atelier privileges.
+    - `src/app/(storefront)/account/orders/page.tsx` & `src/components/storefront/account/orders-list.tsx`: Order history listing with status badges, line item thumbnails, prices, and tracking links.
+    - `src/app/(storefront)/account/addresses/page.tsx` & `src/components/storefront/account/address-book.tsx`: Address management with cascading Bangladesh divisions/districts selection, default destination toggle, edit, and delete.
+    - `src/app/(storefront)/account/profile/page.tsx` & `src/components/storefront/account/profile-form.tsx`: Profile details, phone update, and membership status.
+  - Storefront Navigation:
+    - `src/components/storefront/header.tsx`: Added `User` icon linking to `/account`.
+- Tests: `pnpm check` passed (typecheck 0 errors, lint 0 errors, Prettier 100% compliant, 97 test files and 1,217 unit tests passed).
+- Review: Module boundaries, design token compliance, fail-closed rate limiting, and zero arbitrary color/radius values verified.
+- Decisions: ADR-022 nonce section requirements strictly applied on `/account`.
+- Next: Module 7.8 (Admin customer management) and Module 8.1 (Section-block page builder).
+- Blockers/risks: none.
+
 ### 2026-10-09 — 8.2, 8.3, 8.4, 8.7, 8.8 Storefront Luxury Aesthetics, Editorial Sections & Client Care Pages — Done
 - Type: new and enhancement
 - Scope: Elevated AUREN digital storefront into a world-class luxury menswear brand experience with rich editorial content, atelier storytelling, client concierge services, complete static/legal infrastructure, and cookie consent preferences.

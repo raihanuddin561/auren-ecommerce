@@ -123,11 +123,10 @@
 ## Module 7: Customer Accounts
 
 | ID | Sub-feature | Pri | BE | API | UT | FE | E2E | CR | Overall | Notes |
-|---|---|---|---|---|---|---|---|---|---|---|
-| 7.1 | Auth pages | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 7.2 | Account dashboard | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
+| 7.1 | Auth pages | P0 | Done | Done | Done | Done | Done | Done | Done | new. /login, /register, /forgot-password, /reset-password with Turnstile bot protection, rate limits, no enumeration defense, password policy (min 10 chars), luxury quiet aesthetic. |
+| 7.2 | Account dashboard | P0 | Done | Done | Done | Done | Done | Done | Done | new. /account overview dashboard with order metrics, membership status, default delivery destination, and atelier concierge privileges. |
 | 7.3 | Order history and tracking | P0 | Done | Done | Done | Done | Done | Done | Done | new. /track and /track/[token] order tracking with secret tokens, timeline progress, consignment details, and customer return request actions. |
-| 7.4 | Address book | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
+| 7.4 | Address book | P0 | Done | Done | Done | Done | Done | Done | Done | new. /account/addresses with full CRUD, default address promotion, cascading Bangladesh divisions & districts, and strict schema validation. |
 | 7.5 | Wishlist | P0 | Done | Done | Done | Done | Done | Done | Done | new. /wishlist page with local storage persistence, product card toggles, and add-to-bag integration. |
 | 7.6 | Returns self-service | P0 | Done | Done | Done | Done | Done | Done | Done | new. Customer self-service return request form on order confirmation / track page within the 7-day window. |
 | 7.7 | Store credit and gift card balance | P1 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |

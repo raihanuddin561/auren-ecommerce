@@ -1,6 +1,6 @@
 'use client';
 
-import { Heart, Search } from 'lucide-react';
+import { Heart, Search, User } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useSyncExternalStore } from 'react';
@@ -75,6 +75,13 @@ export function Header() {
         <div className="flex items-center justify-end">
           <Link href="/search" aria-label="Search" className={iconLink}>
             <Icon icon={Search} />
+          </Link>
+          <Link
+            href="/account"
+            aria-label="Account"
+            className={cn(iconLink, 'hidden sm:inline-flex')}
+          >
+            <Icon icon={User} />
           </Link>
           <Link
             href="/wishlist"
