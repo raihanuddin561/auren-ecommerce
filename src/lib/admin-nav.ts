@@ -206,8 +206,8 @@ export const ADMIN_NAV: AdminNavGroup[] = [
         href: '/admin/finance',
         icon: Wallet,
         permission: 'finance.read',
-        ready: false,
-        keywords: ['profit', 'expenses'],
+        ready: true,
+        keywords: ['profit', 'expenses', 'pnl', 'cogs', 'roas', 'campaigns'],
       },
       {
         label: 'Analytics',

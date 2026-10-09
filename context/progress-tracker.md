@@ -16,6 +16,46 @@
 - Blockers/risks: <none | details>
 ```
 
+### 2026-10-10 — 11.1–11.4, 11.7–11.10, 11.13 Finance and Cost Tracking — Done
+- Type: new and enhancement
+- Scope: Implemented end-to-end atelier finance tracking, cost center categorization, operational expense recording with audit logging, recurring commitments scheduling, marketing campaign ROI & ROAS tracking, product margin contribution matrix, and comprehensive executive Profit & Loss statement with Delivered vs Placed revenue recognition modes.
+- Changed:
+  - Database & Migrations:
+    - `prisma/migrations/20261010100000_add_finance_expenses_and_campaigns/migration.sql`: Created tables `expense_categories`, `marketing_campaigns`, `recurring_expenses`, `expenses`, `daily_financial_summaries`, seeded 12 default atelier cost centers, applied RLS with `public.auren_secure_table()`.
+    - `prisma/schema.prisma`: Added models `ExpenseCategory`, `MarketingCampaign`, `RecurringExpense`, `Expense`, `DailyFinancialSummary` with relations to `StaffMember`, `OrderCostLine`.
+  - Finance Module Core (`src/modules/finance/`):
+    - `types.ts`: Defined `ExpenseCategoryItem`, `MarketingCampaignItem`, `RecurringExpenseItem`, `ExpenseListItem`, `ExpenseFilterParams`, `ProfitAndLossReport`, `ProductProfitabilityRow`, `FinanceOverviewMetrics`.
+    - `schemas.ts`: Strict Zod validation schemas with positive BigInt money, date formatting, and enum constraints.
+    - `repository.ts`: Database queries and aggregations for expenses, recurring OpEx, marketing spend & ROAS, raw SQL daily rollups, and product profitability matrix.
+    - `service.ts`: Business logic, transactional audit logging for expense creation/modification, and CSV generators for expenses log and P&L statements.
+    - `queries.ts`: Server queries `getFinanceOverview`, `getProfitAndLossReport`, `listExpenses`, `listExpenseCategories`, `listMarketingCampaigns`, `listRecurringExpenses`, `getProductProfitability` guarded by `finance.read`.
+    - `actions.ts`: Server Actions for CRUD operations and CSV exports guarded by `finance.write` using `ok`, `fail`, `validationError`, and `toActionError`.
+    - `__tests__/finance-schemas.test.ts`: Unit tests validating all finance input schemas and enum validations.
+  - Admin Finance Console UI (`src/components/admin/finance/`):
+    - `finance-nav.tsx`: Sub-navigation tabs with active path highlighting across P&L, Expenses, Categories, Campaigns, Recurring, and Profitability.
+    - `finance-overview-strip.tsx`: 4-metric executive KPI bar with Net Sales, Gross Profit, Total OpEx, and Net Operating Income.
+    - `pnl-view.tsx`: Financial statement table with quick period selectors (Today, 7D, MTD, Last Month), Delivered (Accrual) vs Placed (Pipeline) toggle, and CSV export.
+    - `create-expense-dialog.tsx`: Record Expense modal with category selection, campaign association, and BDT input parsing via `fromDecimalString`.
+    - `expenses-table.tsx`: Filterable expense ledger with search, category filtering, delete action, and CSV export.
+    - `categories-table.tsx`: Cost center categories table with Direct COGS vs Operating OpEx classification badges.
+    - `campaigns-table.tsx`: Marketing campaigns table with budget vs spend, attributed revenue, orders count, and ROAS performance badges.
+    - `recurring-table.tsx`: Recurring commitments table with monthly/weekly/yearly cadence, day of period, active/pause toggle, and removal.
+    - `product-profitability-table.tsx`: Garment margin matrix ranking catalog pieces by revenue, unit volume, landed COGS, return rate %, and gross margin %.
+  - Admin App Routes & Navigation:
+    - `src/app/admin/(console)/finance/layout.tsx`: Layout guarded by `requireStaffWith('finance.read')`.
+    - `src/app/admin/(console)/finance/page.tsx`: Overview & P&L page.
+    - `src/app/admin/(console)/finance/expenses/page.tsx`: Expenses log page.
+    - `src/app/admin/(console)/finance/categories/page.tsx`: Cost centers page.
+    - `src/app/admin/(console)/finance/campaigns/page.tsx`: Marketing campaigns page.
+    - `src/app/admin/(console)/finance/recurring/page.tsx`: Recurring commitments page.
+    - `src/app/admin/(console)/finance/profitability/page.tsx`: Product profitability page.
+    - `src/lib/admin-nav.ts`: Activated Finance (`/admin/finance`) navigation item with `ready: true`.
+- Tests: `pnpm typecheck`, `pnpm lint`, `pnpm format`, and Vitest test suites (finance schemas, profit calculation, design tokens) all green (70 tests passing).
+- Review: Enforced INV-M1 (no floats, `fromDecimalString` parsing), RBAC permissions (`finance.read`, `finance.write`), semantic design tokens only, zero arbitrary CSS brackets.
+- Decisions: ADR-015, ADR-023, ADR-025 preserved.
+- Next: Module 8.1 Section-block page builder (P0).
+- Blockers/risks: none.
+
 ### 2026-10-10 — 15.5, 15.6 Audit Log Viewer & System Health Diagnostics — Done
 - Type: new and enhancement
 - Scope: Implemented admin audit trail inspector with filtered tabular view, actor joins, pagination, and JSON diff modal. Built real-time system health dashboard probing database round-trip latency, outbox event pipeline queues and poison states, idempotency key locks, and external infrastructure integrations.

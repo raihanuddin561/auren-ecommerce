@@ -173,19 +173,19 @@
 
 | ID | Sub-feature | Pri | BE | API | UT | FE | E2E | CR | Overall | Notes |
 |---|---|---|---|---|---|---|---|---|---|---|
-| 11.1 | Expense categories | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 11.2 | Expense entry | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 11.3 | Recurring expenses | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 11.4 | Marketing campaigns | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
+| 11.1 | Expense categories | P0 | Done | Done | Done | Done | N/A | Done | Done | new. expense_categories table, COGS vs OpEx classification, 12 default atelier cost centers seeded, CRUD actions and management view at /admin/finance/categories. |
+| 11.2 | Expense entry | P0 | Done | Done | Done | Done | N/A | Done | Done | new. expenses table with audit log integration, filterable expenses log at /admin/finance/expenses, create expense modal dialog with vendor/method/reference, CSV export. |
+| 11.3 | Recurring expenses | P0 | Done | Done | Done | Done | N/A | Done | Done | new. recurring_expenses table, monthly/weekly/yearly commitments, day-of-period scheduling, activate/pause toggle, and tracking table at /admin/finance/recurring. |
+| 11.4 | Marketing campaigns | P0 | Done | Done | Done | Done | N/A | Done | Done | new. marketing_campaigns table, UTM tag attribution, channel tagging (meta, google, influencer, offline), budget vs spend tracking at /admin/finance/campaigns. |
 | 11.5 | Order cost lines | P0 | Done | Done | Done | Done | Done | Done | Done | new. order_cost_lines table with packaging, gateway, courier, and manual cost lines. Add-cost form and reversals supported. |
 | 11.6 | Order profit breakdown | P0 | Done | Done | Done | Done | Done | Done | Done | new. Contribution margin calculation in modules/finance/profit.ts and profit-panel.tsx on admin order details. |
-| 11.7 | Daily financial rollups | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 11.8 | Profit & Loss report | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 11.9 | Product profitability | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 11.10 | Campaign ROAS and CAC | P1 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
+| 11.7 | Daily financial rollups | P0 | Done | Done | Done | Done | N/A | Done | Done | new. daily_financial_summaries table with revenue, COGS, discounts, returns, and operating expenses rollups for accelerated reporting. |
+| 11.8 | Profit & Loss report | P0 | Done | Done | Done | Done | N/A | Done | Done | new. Executive P&L statement at /admin/finance with Delivered (Accrual) vs Placed (Pipeline) recognition mode toggle, period filters, contribution margin %, and CSV export. |
+| 11.9 | Product profitability | P0 | Done | Done | Done | Done | N/A | Done | Done | new. Garment margin matrix at /admin/finance/profitability ranking collections and pieces by revenue, unit sales, landed COGS, and return rate %. |
+| 11.10 | Campaign ROAS and CAC | P1 | Done | Done | Done | Done | N/A | Done | Done | new. ROAS badges, attributed revenue, and CAC calculations live on marketing campaigns table. |
 | 11.11 | Expense analytics | P1 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
 | 11.12 | Cash-flow view | P2 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 11.13 | Finance permissions | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
+| 11.13 | Finance permissions | P0 | Done | Done | Done | Done | N/A | Done | Done | Done | new. finance.read and finance.write permissions enforced in server queries, actions, layout gate (requireStaffWith), and admin navigation. |
 
 ## Module 12: Reviews and Social Proof
 

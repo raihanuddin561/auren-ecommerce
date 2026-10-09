@@ -173,6 +173,7 @@ model StaffMember {
   cancelledOrders Order[]                    @relation("OrderCancelledBy")
   createdOrders   Order[]                    @relation("OrderCreatedBy")
   attempts        OrderVerificationAttempt[]
+  expenses        Expense[]
 
   @@index([role])
   @@map("staff_members")
@@ -1653,5 +1654,150 @@ model DiscountRedemption {
   @@index([userId])
   @@index([phone])
   @@map("discount_redemptions")
+}
+
+// ---------------------------------------------------------------------------------------------
+// Finance, expenses, and marketing campaigns (ARCHITECTURE section 7, DATA-MODEL section 9)
+// ---------------------------------------------------------------------------------------------
+
+enum ExpenseCategoryType {
+  marketing
+  payroll
+  rent
+  utilities
+  software
+  photography
+  packaging_stock
+  logistics
+  professional_fees
+  bank_charges
+  misc
+
+  @@map("expense_category_type")
+}
+
+enum MarketingCampaignChannel {
+  meta
+  google
+  tiktok
+  influencer
+  email
+  offline
+
+  @@map("marketing_campaign_channel")
+}
+
+enum RecurringExpenseCadence {
+  monthly
+  weekly
+  yearly
+
+  @@map("recurring_expense_cadence")
+}
+
+model ExpenseCategory {
+  id          String              @id @default(uuid(7)) @db.Uuid
+  name        String
+  type        ExpenseCategoryType
+  isCogs      Boolean             @default(false) @map("is_cogs")
+  description String?
+  createdAt   DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime            @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  expenses          Expense[]
+  recurringExpenses RecurringExpense[]
+
+  @@index([type])
+  @@map("expense_categories")
+}
+
+model MarketingCampaign {
+  name        String
+  id          String                   @id @default(uuid(7)) @db.Uuid
+  channel     MarketingCampaignChannel
+  utmCampaign String?                  @map("utm_campaign")
+  startsOn    DateTime                 @map("starts_on") @db.Date
+  endsOn      DateTime?                @map("ends_on") @db.Date
+  budgetMinor BigInt                   @default(0) @map("budget_minor")
+  createdAt   DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime                 @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  expenses Expense[]
+
+  @@index([utmCampaign])
+  @@map("marketing_campaigns")
+}
+
+model RecurringExpense {
+  id          String                  @id @default(uuid(7)) @db.Uuid
+  categoryId  String                  @map("category_id") @db.Uuid
+  vendor      String
+  amountMinor BigInt                  @map("amount_minor")
+  currency    String                  @default("BDT") @db.Char(3)
+  cadence     RecurringExpenseCadence @default(monthly)
+  dayOfPeriod Int                     @default(1) @map("day_of_period")
+  startsOn    DateTime                @map("starts_on") @db.Date
+  endsOn      DateTime?               @map("ends_on") @db.Date
+  isActive    Boolean                 @default(true) @map("is_active")
+  createdAt   DateTime                @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime                @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  category ExpenseCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  expenses Expense[]
+
+  @@index([isActive])
+  @@map("recurring_expenses")
+}
+
+model Expense {
+  id                 String    @id @default(uuid(7)) @db.Uuid
+  expenseDate        DateTime  @map("expense_date") @db.Date
+  categoryId         String    @map("category_id") @db.Uuid
+  campaignId         String?   @map("campaign_id") @db.Uuid
+  recurringExpenseId String?   @map("recurring_expense_id") @db.Uuid
+  vendor             String
+  description        String
+  amountMinor        BigInt    @map("amount_minor")
+  currency           String    @default("BDT") @db.Char(3)
+  paymentMethod      String    @default("bank_transfer") @map("payment_method")
+  reference          String?
+  attachmentUrl      String?   @map("attachment_url")
+  createdBy          String?   @map("created_by") @db.Uuid
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  category         ExpenseCategory    @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  campaign         MarketingCampaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  recurringExpense RecurringExpense?  @relation(fields: [recurringExpenseId], references: [id], onDelete: SetNull)
+  creator          StaffMember?       @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+
+  @@index([expenseDate(sort: Desc)])
+  @@index([categoryId, expenseDate])
+  @@index([campaignId])
+  @@map("expenses")
+}
+
+model DailyFinancialSummary {
+  date                 DateTime @id @db.Date
+  ordersCount          Int      @default(0) @map("orders_count")
+  unitsSold            Int      @default(0) @map("units_sold")
+  grossSalesMinor      BigInt   @default(0) @map("gross_sales_minor")
+  discountsMinor       BigInt   @default(0) @map("discounts_minor")
+  refundsMinor         BigInt   @default(0) @map("refunds_minor")
+  netSalesMinor        BigInt   @default(0) @map("net_sales_minor")
+  cogsMinor            BigInt   @default(0) @map("cogs_minor")
+  shippingChargedMinor BigInt   @default(0) @map("shipping_charged_minor")
+  shippingCostMinor    BigInt   @default(0) @map("shipping_cost_minor")
+  gatewayFeesMinor     BigInt   @default(0) @map("gateway_fees_minor")
+  codFeesMinor         BigInt   @default(0) @map("cod_fees_minor")
+  packagingMinor       BigInt   @default(0) @map("packaging_minor")
+  returnsCostMinor     BigInt   @default(0) @map("returns_cost_minor")
+  marketingMinor       BigInt   @default(0) @map("marketing_minor")
+  opexMinor            BigInt   @default(0) @map("opex_minor")
+  grossProfitMinor     BigInt   @default(0) @map("gross_profit_minor")
+  netProfitMinor       BigInt   @default(0) @map("net_profit_minor")
+  recomputedAt         DateTime @default(now()) @map("recomputed_at") @db.Timestamptz(6)
+
+  @@map("daily_financial_summaries")
 }
 
