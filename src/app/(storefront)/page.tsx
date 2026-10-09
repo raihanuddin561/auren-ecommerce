@@ -9,8 +9,12 @@ import {
   NewArrivalsSection,
   NewArrivalsSkeleton,
 } from '@/components/storefront/catalog/home-sections';
-import { HeroCarousel, HeroCarouselSkeleton } from '@/components/storefront/home/hero-carousel';
 import { BrandPerks } from '@/components/storefront/home/brand-perks';
+import { AtelierStory } from '@/components/storefront/home/atelier-story';
+import { LookbookCuration } from '@/components/storefront/home/lookbook-curation';
+import { ConciergeBanner } from '@/components/storefront/home/concierge-banner';
+import { NewsletterSection } from '@/components/storefront/home/newsletter-section';
+import { HeroCarousel, HeroCarouselSkeleton } from '@/components/storefront/home/hero-carousel';
 import { withLiveStock } from './_listing/load';
 import {
   getFeaturedCollections,
@@ -20,7 +24,9 @@ import {
 import { getHeroCarouselForStorefront } from '@/modules/settings/queries';
 
 export const metadata: Metadata = {
-  title: { absolute: 'AUREN | Modern, refined menswear' },
+  title: { absolute: 'AUREN | Modern, Refined Menswear & Tailoring' },
+  description:
+    'Modern, refined menswear house in Dhaka. Impeccable natural fibers, architectural drape, and quiet luxury tailoring for discerning men.',
   alternates: { canonical: '/' },
 };
 
@@ -59,7 +65,7 @@ async function FeaturedCollections() {
   );
 }
 
-/** Dynamic customizable hero carousel, then immediate product discovery sections, followed by brand trust. */
+/** Complete luxury menswear landing experience: hero, catalog discovery, atelier story, curated lookbook, concierge client care, brand perks, and inner circle newsletter. */
 export default function HomePage() {
   return (
     <>
@@ -70,14 +76,24 @@ export default function HomePage() {
       <Suspense fallback={<CategoriesSkeleton />}>
         <Categories />
       </Suspense>
+
       <Suspense fallback={<NewArrivalsSkeleton />}>
         <NewArrivals />
       </Suspense>
+
+      <AtelierStory />
+
       <Suspense fallback={<FeaturedCollectionsSkeleton />}>
         <FeaturedCollections />
       </Suspense>
 
+      <LookbookCuration />
+
+      <ConciergeBanner />
+
       <BrandPerks />
+
+      <NewsletterSection />
     </>
   );
 }

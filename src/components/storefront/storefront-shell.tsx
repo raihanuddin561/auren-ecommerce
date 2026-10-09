@@ -3,6 +3,7 @@ import { ANNOUNCEMENTS } from '@/lib/site';
 import { AnnouncementBar } from './announcement-bar';
 import { CartDrawer } from './cart/cart-drawer';
 import { ConciergeButton } from './concierge-button';
+import { CookieConsent } from './cookie-consent';
 import { Footer } from './footer';
 import { Header } from './header';
 
@@ -48,6 +49,7 @@ export function StorefrontShell({
       <Suspense fallback={null}>
         <ConciergeButton />
       </Suspense>
+      <CookieConsent />
     </>
   );
 }

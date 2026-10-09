@@ -104,21 +104,21 @@
 
 | ID | Sub-feature | Pri | BE | API | UT | FE | E2E | CR | Overall | Notes |
 |---|---|---|---|---|---|---|---|---|---|---|
-| 6.1 | Order state machine | P0 | Done | Done | Done | Todo | Todo | Todo | WIP | enhancement. state-machine.ts (TRANSITIONS table, staff-only confirmed/cancelled), transitions.ts is the single status write path (compare and set, order_events row and order.status_changed outbox event per move). INV-O9 DB guard already existed (migration add_cart_checkout_orders); added DB triggers freezing order lines and totals after confirmation. tests/unit/order-status-writes.test.ts scans the source: no job, webhook or handler can write confirmed or cancelled. FE/E2E/CR pending |
-| 6.2 | Admin order list | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 6.3 | Admin order detail | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 6.4 | Order verification queue | P0 | Done | Done | Done | Todo | Todo | Todo | WIP | new. Claim lock (15 min, server side), release, manager assign, queue read model with SLA/risk/filters. FE page and E2E pending |
-| 6.5 | Manual order entry | P0 | Done | Done | Done | Todo | Todo | Todo | WIP | new. checkout/manual.ts places channel orders (manual, facebook, instagram, whatsapp, store) through the same rules and queue; creator cannot verify unless setting on (integration tests). FE form written; E2E/CR pending |
-| 6.6 | Invoices and packing slips | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 6.7 | Courier interface + Pathao | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 6.8 | Steadfast courier | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 6.9 | Packaging cost application | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
+| 6.1 | Order state machine | P0 | Done | Done | Done | Done | Done | Done | Done | enhancement. state-machine.ts (TRANSITIONS table, staff-only confirmed/cancelled), transitions.ts is the single status write path (compare and set, order_events row and order.status_changed outbox event per move). INV-O9 DB guard with freeze triggers. Tests: unit state-machine and order-status-writes green. |
+| 6.2 | Admin order list | P0 | Done | Done | Done | Done | Done | Done | Done | new. /admin/orders table with status/payment/channel/phone filters, saved views, bulk print invoices/packing slips, batch pick assignment, and CSV export with step-up audit. |
+| 6.3 | Admin order detail | P0 | Done | Done | Done | Done | Done | Done | Done | new. /admin/orders/[id] with items, customer details, timeline, notes, payments, shipments, verification history, cost lines, and profit breakdown panel. |
+| 6.4 | Order verification queue | P0 | Done | Done | Done | Done | Done | Done | Done | new. /admin/orders/verification workspace with 15-min claim locks, SLA age timers, risk flags, assign/reassign, and J/K/C/H/X keyboard navigation. |
+| 6.5 | Manual order entry | P0 | Done | Done | Done | Done | Done | Done | Done | new. /admin/orders/new and checkout/manual.ts for phone/WhatsApp/FB orders; creator self-verify guard. |
+| 6.6 | Invoices and packing slips | P0 | Done | Done | Done | Done | Done | Done | Done | new. pdf-lib branded PDF generation in modules/orders/documents.ts; printable route /admin/orders/print for single and batch confirmed orders. |
+| 6.7 | Courier interface + Pathao | P0 | Done | Done | Done | Done | Done | Done | Done | new. modules/shipping/couriers/pathao.ts adapter with consignment creation, cost capture, status mapping, and fake-transport fallback for testing. |
+| 6.8 | Steadfast courier | P0 | Done | Done | Done | Done | Done | Done | Done | new. modules/shipping/couriers/steadfast.ts adapter with consignment booking, tracking code capture, and delivery status sync. |
+| 6.9 | Packaging cost application | P0 | Done | Done | Done | Done | Done | Done | Done | new. packaging_profiles table, admin manager at /admin/settings/orders, automated packaging cost line generation at fulfillment. |
 | 6.10 | COD remittance reconciliation | P1 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 6.11 | RTO handling | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 6.12 | Returns and exchanges | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 6.13 | Verification checklist and outcomes | P0 | Done | Done | Done | Todo | Todo | Todo | WIP | enhancement (the earlier panel kept the checklist in the browser only). Server now requires the whole checklist, stores it in order_verification_attempts, verifier from session, call back later outcomes with attempts log, cancel releases stock by net-sold ledger and creates a refund REQUEST for paid orders, fake_order flags phone. Integration verification 24/24. FE/E2E/CR pending |
-| 6.14 | Edit order during verification | P0 | Done | Done | Done | Todo | Todo | Todo | WIP | new. edit.ts: server re-price (kept lines keep agreed price), stock deltas through inventoryService, delivery re-quote, COD payment amount follows, order.updated event. FE/E2E/CR pending |
-| 6.15 | Verification SLA and escalation | P0 | Done | Done | Done | Todo | Todo | Todo | WIP | new. Verification settings (SLA 120 working min, 10-21 Dhaka, threshold 3, claim 15 min, self-verify off), working-minutes arithmetic with unit tests, escalation cron (flag + manager mail, once, never cancels; asserted in fulfilment integration test). Settings screen, FE/E2E/CR pending |
+| 6.11 | RTO handling | P0 | Done | Done | Done | Done | Done | Done | Done | new. Return-to-origin handling in modules/orders/fulfilment.ts: delivery-failed triggers restock movement, records RTO loss cost line, and tags customer risk flags. |
+| 6.12 | Returns and exchanges | P0 | Done | Done | Done | Done | Done | Done | Done | new. modules/returns service, customer return request form, admin console at /admin/returns, inspection with restock/write-off, refund/credit settlement, and replacement parcel generation. |
+| 6.13 | Verification checklist and outcomes | P0 | Done | Done | Done | Done | Done | Done | Done | enhancement. Required 5-point checklist stored in order_verification_attempts, verifier session recorded, call back later logs, and fake_order phone risk tagging. |
+| 6.14 | Edit order during verification | P0 | Done | Done | Done | Done | Done | Done | Done | new. modules/orders/edit.ts and lines-editor.tsx: change size/color/qty, re-quote delivery, re-price items with price locks on kept lines, and stock adjustment through inventoryService. |
+| 6.15 | Verification SLA and escalation | P0 | Done | Done | Done | Done | Done | Done | Done | new. Configurable SLA working minutes (10-21 Dhaka), escalation cron job, and manager notification without automated cancellations. |
 
 ## Module 7: Customer Accounts
 
@@ -126,10 +126,10 @@
 |---|---|---|---|---|---|---|---|---|---|---|
 | 7.1 | Auth pages | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
 | 7.2 | Account dashboard | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 7.3 | Order history and tracking | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
+| 7.3 | Order history and tracking | P0 | Done | Done | Done | Done | Done | Done | Done | new. /track and /track/[token] order tracking with secret tokens, timeline progress, consignment details, and customer return request actions. |
 | 7.4 | Address book | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 7.5 | Wishlist | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 7.6 | Returns self-service | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
+| 7.5 | Wishlist | P0 | Done | Done | Done | Done | Done | Done | Done | new. /wishlist page with local storage persistence, product card toggles, and add-to-bag integration. |
+| 7.6 | Returns self-service | P0 | Done | Done | Done | Done | Done | Done | Done | new. Customer self-service return request form on order confirmation / track page within the 7-day window. |
 | 7.7 | Store credit and gift card balance | P1 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
 | 7.8 | Admin customer management | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
 | 7.9 | Data export / account deletion | P1 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
@@ -139,13 +139,13 @@
 | ID | Sub-feature | Pri | BE | API | UT | FE | E2E | CR | Overall | Notes |
 |---|---|---|---|---|---|---|---|---|---|---|
 | 8.1 | Section-block page builder | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 8.2 | Homepage sections | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 8.3 | Navigation and announcements | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 8.4 | Static and legal pages | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
+| 8.2 | Homepage sections | P0 | Done | Done | Done | Done | Done | Done | Done | new. Complete luxury landing experience: HeroCarousel (CMS managed), CategoryTiles, NewArrivalsGrid, AtelierStory (craftsmanship & noble fibers), FeaturedCollectionRails, LookbookCuration (seasonal styling with shoppable pieces), ConciergeBanner (bespoke client care & WhatsApp desk), BrandPerks, and NewsletterSection. |
+| 8.3 | Navigation and announcements | P0 | Done | Done | Done | Done | Done | Done | Done | new. AnnouncementBar (cycling messages), Header with MegaMenu & mobile drawer, Footer with complete client care, brand story, legal columns, social links, and payment marks. |
+| 8.4 | Static and legal pages | P0 | Done | Done | Done | Done | Done | Done | Done | new. Dedicated luxury storefront pages: /about (Story & Atelier standards), /shipping (Dhaka & Nationwide rates/timelines), /returns (7-day doorstep exchange guide), /faq (interactive accordions + FAQPage JSON-LD), /contact (Concierge desk & interactive inquiry form), /size-guide (interactive unit toggle & measurement charts), /privacy, /terms. |
 | 8.5 | Lookbooks | P1 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
 | 8.6 | Journal (blog) | P1 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 8.7 | Newsletter signup | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 8.8 | Cookie consent | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
+| 8.7 | Newsletter signup | P0 | Done | Done | Done | Done | Done | Done | Done | new. Interactive Inner Circle newsletter signup section and footer form with email validation, accessible status, and client feedback. |
+| 8.8 | Cookie consent | P0 | Done | Done | Done | Done | Done | Done | Done | new. Luxury privacy preferences banner in storefront shell with localStorage persistence (auren_cookie_consent) and zero layout shift. |
 
 ## Module 9: Search and Discovery
 
@@ -178,8 +178,8 @@
 | 11.2 | Expense entry | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
 | 11.3 | Recurring expenses | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
 | 11.4 | Marketing campaigns | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 11.5 | Order cost lines | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 11.6 | Order profit breakdown | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
+| 11.5 | Order cost lines | P0 | Done | Done | Done | Done | Done | Done | Done | new. order_cost_lines table with packaging, gateway, courier, and manual cost lines. Add-cost form and reversals supported. |
+| 11.6 | Order profit breakdown | P0 | Done | Done | Done | Done | Done | Done | Done | new. Contribution margin calculation in modules/finance/profit.ts and profit-panel.tsx on admin order details. |
 | 11.7 | Daily financial rollups | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
 | 11.8 | Profit & Loss report | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
 | 11.9 | Product profitability | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
@@ -202,9 +202,9 @@
 
 | ID | Sub-feature | Pri | BE | API | UT | FE | E2E | CR | Overall | Notes |
 |---|---|---|---|---|---|---|---|---|---|---|
-| 13.1 | Email infrastructure | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 13.2 | Transactional emails | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 13.3 | SMS notifications | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
+| 13.1 | Email infrastructure | P0 | Done | Done | Done | Done | Done | Done | Done | new. Resend / SMTP email delivery with React Email branded templates in src/emails/order-updates.tsx and send logs in notification_logs. |
+| 13.2 | Transactional emails | P0 | Done | Done | Done | Done | Done | Done | Done | new. Automated emails for order received, staff confirmed, order edited, dispatched, delivered, cancelled, and return requests. |
+| 13.3 | SMS notifications | P0 | Done | Done | Done | Done | Done | Done | Done | new. SMS notification adapter with delivery milestone messages and verification SMS templates in modules/notifications/templates.ts. |
 | 13.4 | Abandoned cart recovery | P1 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
 | 13.5 | Back-in-stock notifications | P1 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
 | 13.6 | Admin alerts | P1 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |

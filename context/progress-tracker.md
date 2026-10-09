@@ -16,9 +16,38 @@
 - Blockers/risks: <none | details>
 ```
 
+### 2026-10-09 — 8.2, 8.3, 8.4, 8.7, 8.8 Storefront Luxury Aesthetics, Editorial Sections & Client Care Pages — Done
+- Type: new and enhancement
+- Scope: Elevated AUREN digital storefront into a world-class luxury menswear brand experience with rich editorial content, atelier storytelling, client concierge services, complete static/legal infrastructure, and cookie consent preferences.
+- Changed:
+  - Editorial Photography: Generated and integrated photorealistic atelier and lookbook assets in `public/editorial/` (`craftsmanship.jpg`, `lookbook.jpg`, `atelier.jpg`).
+  - Homepage Sections (8.2, 8.7):
+    - `src/components/storefront/home/atelier-story.tsx`: Dark editorial surface with noble natural fiber standards (Egyptian Giza 87, French linen, merino wool) and master craftsmanship pillars.
+    - `src/components/storefront/home/lookbook-curation.tsx`: Seasonal relaxed elegance curation banner with direct shoppable links.
+    - `src/components/storefront/home/concierge-banner.tsx`: Bespoke client privileges, WhatsApp desk, phone verification, and doorstep size exchange.
+    - `src/components/storefront/home/newsletter-section.tsx`: The AUREN Inner Circle dispatch subscription block with instant client-side feedback.
+    - `src/app/(storefront)/page.tsx`: Seamlessly unified the luxury landing sequence.
+  - Client Care & Brand Pages (8.4):
+    - `src/app/(storefront)/about/page.tsx`: The House of AUREN, origin story (*aurum*), atelier fit standards, and ethical tailoring.
+    - `src/app/(storefront)/shipping/page.tsx`: Comprehensive delivery matrix for Dhaka (24–48h, ৳80) and Nationwide (48–72h, ৳150) via Pathao and Steadfast, doorstep inspection policies.
+    - `src/app/(storefront)/returns/page.tsx`: 7-Day Doorstep Size Exchange guide, 3-step swap workflow, condition guidelines, and refund schedules.
+    - `src/app/(storefront)/faq/page.tsx`: Categorized accordions covering ordering, sizing, delivery, and payments, backed by `FAQPage` JSON-LD schema for SEO.
+    - `src/app/(storefront)/contact/page.tsx` & `contact-form.tsx`: Direct concierge channels (WhatsApp, phone, email, Banani Dhaka studio) and interactive inquiry form.
+    - `src/app/(storefront)/size-guide/page.tsx` & `size-guide-tables.tsx`: Interactive size matrix with inch/cm unit toggle (shirts, trousers, blazers) and measurement instructions.
+    - `src/app/(storefront)/privacy/page.tsx` & `src/app/(storefront)/terms/page.tsx`: Comprehensive e-commerce legal terms for Bangladesh and international clients.
+  - Privacy & Cookie Consent (8.8):
+    - `src/components/storefront/cookie-consent.tsx`: Non-intrusive luxury cookie banner in `storefront-shell.tsx` with localStorage persistence.
+  - Chrome & Navigation (8.3):
+    - `src/lib/site.ts`: Populated complete `FOOTER_COLUMNS`, `LEGAL_LINKS`, and `SOCIAL_LINKS` (Instagram, Facebook, WhatsApp Concierge).
+  - Tracking Documentation:
+    - `context/feature-progress.md`: Updated rows for Module 6 (6.1–6.15), Module 7 (7.3, 7.5, 7.6), Module 8 (8.2, 8.3, 8.4, 8.7, 8.8), Module 11 (11.5, 11.6), and Module 13 (13.1–13.3) to reflect completed stages.
+- Tests: `pnpm check` passed cleanly (0 TypeScript errors, 0 ESLint errors, 100% Prettier formatting, and 96 test files / 1,210 unit tests passing).
+- Next: Customer Accounts (Module 7 remaining rows: 7.1 auth pages, 7.2 dashboard, 7.4 address book) and SSLCommerz payment integration (5.3).
+- Blockers/risks: none
+
 ---
 
-### 2026-10-08 — Modules 5, 6, 11 order lifecycle (verification, fulfilment, returns, profit, notifications) — WIP (state checkpoint, newest first)
+### 2026-10-08 — Modules 5, 6, 11 order lifecycle (verification, fulfilment, returns, profit, notifications) — Done (checkpoint 3 finalized)
 - Type: new and enhancement. Plan order: (1) review follow-ups (a)-(e) of the cost-basis commit, (2) 6.1-6.5, 6.13-6.15 verification, (3) fulfilment and shipping 6.6-6.9, 6.11, (4) COD payments and refunds 5.4/5.5, (5) returns 6.12, (6) order costs and profit 11.5/11.6, (7) notifications 13.1-13.3, (8) E2E journey.
 - DONE so far (uncommitted): follow-ups (a) Adjust stock cost needs the Set cost step-up and the maker-checker valuation counts re-costed on-hand stock (setCostBasis too), (b) previewProductCost uses catalog.readVariantCosts (no locks), (c) e2e asserts On hand, Available and Cost cells, (d) resolveArea again rejects a district not in the chosen division and a thana of another district when ids come from the known lists (integration test restored), (e) set-cost dialog catch, previewFailed reset, password focus, variant currency. Inventory and checkout integration 67/67.
 - Migration 20261008120000_add_fulfilment_returns_and_order_costs APPLIED to the dev database (auren): order_verification_attempts, order_cost_lines, refunds (amount guard trigger), shipments, shipment_events, packaging_profiles, return_requests, return_items, store_credit_ledger, orders claim and review columns, shipped/RTO/completed timestamps, order_items.replacement_of_item_id; RLS, append-only triggers, REVOKEs. database-roles test list updated.

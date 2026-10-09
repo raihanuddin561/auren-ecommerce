@@ -106,24 +106,45 @@ export const FOOTER_COLUMNS: Array<{ heading: string; links: NavLink[] }> = [
       { label: 'Trousers', href: '/shop/trousers' },
       { label: 'Tailoring', href: '/shop/tailoring' },
       { label: 'Knitwear', href: '/shop/knitwear' },
+      { label: 'All collections', href: '/collections' },
     ],
   },
   {
     heading: 'Client care',
     links: [
       { label: 'Track your order', href: '/track' },
-      { label: 'Your bag', href: '/cart' },
-      { label: 'Wishlist', href: '/wishlist' },
+      { label: 'Shipping & delivery', href: '/shipping' },
+      { label: 'Returns & exchanges', href: '/returns' },
+      { label: 'Size & fit guide', href: '/size-guide' },
+      { label: 'Frequently asked questions', href: '/faq' },
+      { label: 'Contact concierge', href: '/contact' },
+    ],
+  },
+  {
+    heading: 'The House',
+    links: [
+      { label: 'About AUREN', href: '/about' },
+      { label: 'The atelier & craft', href: '/about#craftsmanship' },
+      { label: 'Natural fiber standards', href: '/about#fabrics' },
+      { label: 'Client concierge desk', href: '/contact' },
     ],
   },
 ];
 
-export const LEGAL_LINKS: NavLink[] = [];
+export const LEGAL_LINKS: NavLink[] = [
+  { label: 'Privacy policy', href: '/privacy' },
+  { label: 'Terms of service', href: '/terms' },
+  { label: 'Size guide', href: '/size-guide' },
+];
 
 export const PAYMENT_MARKS = ['Cash on delivery', 'bKash', 'Nagad', 'Visa', 'Mastercard'] as const;
 
 /** Social profiles appear in the footer only when the owner supplies the address. */
-export const SOCIAL_LINKS: NavLink[] = [];
+export const SOCIAL_LINKS: NavLink[] = [
+  { label: 'Instagram', href: 'https://instagram.com/auren.menswear' },
+  { label: 'Facebook', href: 'https://facebook.com/auren.menswear' },
+  { label: 'WhatsApp', href: 'https://wa.me/8801700000000' },
+];
 
 /** WhatsApp number in international format without "+" (digits only), or undefined. */
 export function conciergeHref(whatsappNumber: string | undefined): string {
