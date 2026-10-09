@@ -16,6 +16,38 @@
 - Blockers/risks: <none | details>
 ```
 
+### 2026-10-10 — 8.1 Section-Block Page Builder & Landing Page Editor — Done
+- Type: new and enhancement
+- Scope: Implemented dynamic section-block landing page builder with PostgreSQL schema, RLS policies, typed block components, admin drag/reorder editor, and public dynamic storefront route with Draft Mode preview and SEO metadata.
+- Changed:
+  - Database & Migrations:
+    - `prisma/migrations/20261010110000_add_pages_and_page_sections/migration.sql`: Created `pages`, `page_sections`, enum `page_status`, RLS policies via `public.auren_secure_table()`, and seeded sample published pages (`atelier-craftsmanship`, `private-commissions`).
+    - `prisma/schema.prisma`: Added `PageStatus`, `Page`, `PageSection` models with cascade deletion on sections.
+  - Content Domain (`src/modules/content/`):
+    - `types.ts`: Defined `PageStatus`, `BlockType`, typed block props (`HeroBannerProps`, `EditorialQuoteProps`, `BrandPerksProps`, `NewsletterStripProps`, `RichTextProps`, `FeaturedCollectionProps`, `CategoryGridProps`, `LookbookStripProps`, `FaqAccordionProps`, `VideoSpotlightProps`, `SplitBannerProps`), `PageSectionItem`, `PageListItem`, `PageDetail`, `PageFilterParams`.
+    - `schemas.ts`: Strict Zod validation schemas for all section block props (`validateBlockProps`), `createPageSchema`, `updatePageSchema`, `createPageSectionSchema`, `updatePageSectionSchema`, `reorderPageSectionsSchema`, `pageFilterSchema`.
+    - `repository.ts`: CRUD for pages and sections, transaction-based reordering with Prisma client.
+    - `service.ts`: Business logic, audit logging (`page.create`, `page.update`, `page_section.create`, `page_section.reorder`), and cache revalidation tags (`page:${slug}`, `pages`).
+    - `queries.ts`: Server queries `getPagesForAdmin`, `getPageDetailForAdmin` guarded by `content.manage`, `getPublishedPageBySlug`, and `getDraftPageBySlug`.
+    - `actions.ts`: Server Actions for page and section CRUD operations and reordering guarded by `content.manage` using `ok`, `fail`, `validationError`, and `toActionError`.
+    - `__tests__/content-schemas.test.ts`: 15 unit tests covering page slugs, block prop validation, and error cases.
+  - Storefront Components & Routes:
+    - `src/components/content/section-renderer.tsx`: Dynamic section renderer supporting Hero Banner, Editorial Quote, Brand Perks, Newsletter Strip, Rich Text, FAQ Accordions, Split Banner, Lookbook Strip, and Video Spotlight with luxury typography and motion tokens.
+    - `src/app/(storefront)/pages/[slug]/page.tsx`: Dynamic storefront page route with Draft Mode preview detection, `buildPageMetadata` SEO integration, and header/article layout.
+  - Admin Content Console (`src/components/admin/content/` & `src/app/admin/(console)/content/`):
+    - `pages-table.tsx`: Directory table with status filtering, slug preview links, section counts, and deletion.
+    - `create-page-dialog.tsx`: Add page dialog with auto-slug generation.
+    - `section-editor-dialog.tsx`: Dynamic section block editor modal with tailored fields per block type.
+    - `page-editor.tsx`: Comprehensive page editor with metadata settings, Move Up / Move Down visual reordering, visibility toggle, and live preview button.
+    - `src/app/admin/(console)/content/page.tsx`: Admin directory page.
+    - `src/app/admin/(console)/content/[id]/page.tsx`: Admin page editor route.
+    - `src/lib/admin-nav.ts`: Activated Content (`/admin/content`) navigation item with `ready: true`.
+- Tests: `pnpm typecheck`, `pnpm lint`, `pnpm format`, and Vitest test suites (content schemas and design tokens) passing cleanly (62 tests passing, 0 errors).
+- Review: Enforced strict design tokens (no arbitrary CSS brackets or raw hex colors), RBAC permissions (`content.manage`), type safety without `any`, and cache revalidation tags.
+- Decisions: ADR-015, ADR-023, ADR-025 preserved.
+- Next: Module 8.5 Lookbooks (P1) or Module 8.6 Journal / Blog (P1).
+- Blockers/risks: none.
+
 ### 2026-10-10 — 11.1–11.4, 11.7–11.10, 11.13 Finance and Cost Tracking — Done
 - Type: new and enhancement
 - Scope: Implemented end-to-end atelier finance tracking, cost center categorization, operational expense recording with audit logging, recurring commitments scheduling, marketing campaign ROI & ROAS tracking, product margin contribution matrix, and comprehensive executive Profit & Loss statement with Delivered vs Placed revenue recognition modes.

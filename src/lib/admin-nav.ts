@@ -185,8 +185,8 @@ export const ADMIN_NAV: AdminNavGroup[] = [
         href: '/admin/content',
         icon: FileText,
         permission: 'content.manage',
-        ready: false,
-        keywords: ['pages', 'journal'],
+        ready: true,
+        keywords: ['pages', 'journal', 'builder', 'sections', 'blocks'],
       },
       {
         label: 'Marketing',
