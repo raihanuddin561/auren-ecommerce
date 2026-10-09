@@ -16,6 +16,35 @@
 - Blockers/risks: <none | details>
 ```
 
+### 2026-10-09 — 7.8 Admin Customer Management, Lifetime Metrics & Access Controls — Done
+- Type: new and enhancement
+- Scope: Built complete admin customer directory and detail management, lifetime value (LTV) and average order value (AOV) metrics, order history timeline, saved delivery addresses, and audited block/unblock controls.
+- Changed:
+  - Database Query Layer:
+    - `src/modules/customer/repository.ts`: Added `listCustomersForAdmin` (search by name, email, phone; status filter; order count and LTV calculation), `findCustomerDetailForAdmin` (metrics, order lines, addresses), and `setCustomerBlockedStatus` (session revocation upon block).
+  - Validation & Service Layer:
+    - `src/modules/customer/schemas.ts`: Added `blockCustomerSchema` and `unblockCustomerSchema` with strict length and UUID validation.
+    - `src/modules/customer/service.ts`: Added `blockCustomer` and `unblockCustomer` transactional methods with append-only audit logging (`customer.block`, `customer.unblock`).
+    - `src/modules/customer/queries.ts`: Exported `getCustomersForAdmin` and `getCustomerDetailForAdmin`.
+  - Admin Server Actions:
+    - `src/modules/customer/actions.ts`: Added `blockCustomerAction` and `unblockCustomerAction` with `requireStaff()` authentication and `assertPermission(staff, 'customers.write')`.
+  - Admin Console UI & Pages:
+    - `src/components/admin/customers/customer-status-badge.tsx`: Active (success) vs Blocked (danger) luxury status badges.
+    - `src/components/admin/customers/customer-block-dialog.tsx`: Reason input dialog for blocking/unblocking clients with feedback toasts.
+    - `src/components/admin/customers/customers-table.tsx`: Filterable directory table with search, status tabs, LTV formatting, and action links.
+    - `src/app/admin/(console)/customers/page.tsx`: Directory page guarded by `customers.read`.
+    - `src/app/admin/(console)/customers/[id]/page.tsx`: Client detail view with KPI cards (LTV, AOV, order volume), account credentials, saved delivery destinations, and complete order history.
+  - Admin Navigation:
+    - `src/lib/admin-nav.ts`: Set Customers item to `ready: true`.
+  - Unit Tests:
+    - `src/modules/customer/__tests__/schemas.test.ts`: Added test cases for block and unblock schemas.
+    - `src/modules/customer/__tests__/actions.test.ts`: 4 unit tests validating authorization, input schemas, and execution flow.
+- Tests: `pnpm check` passed cleanly (0 typecheck errors, 0 lint errors, 100% Prettier formatting, 98 test files and 1,224 unit tests passed).
+- Review: Admin guard invariants verified (`tests/lint/admin-guards.test.ts`), design token rules followed, and audit log entries generated in-transaction.
+- Decisions: ADR-019 CSV export compatibility, strict role permissions (`customers.read` and `customers.write`).
+- Next: Module 8.1 (Section-block page builder) or Module 9 (Search and Discovery).
+- Blockers/risks: none.
+
 ### 2026-10-09 — 7.1, 7.2, 7.4 Customer Accounts, Auth Pages & Address Book — Done
 - Type: new and enhancement
 - Scope: Implemented customer authentication pages, account dashboard, order history listing, address book management, and profile preferences with luxury styling and security protections.

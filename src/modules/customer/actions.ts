@@ -3,12 +3,16 @@
 import { revalidatePath } from 'next/cache';
 import { fail, ok, toActionError, validationError, type ActionResult } from '@/lib/action-result';
 import { getSession } from '@/lib/auth';
+import { assertPermission } from '@/lib/permissions';
 import { rateLimit } from '@/lib/rate-limit';
 import { getRequestMeta } from '@/lib/request-meta';
+import { requireStaff } from '@/lib/staff';
 import {
+  blockCustomerSchema,
   deleteAddressSchema,
   saveAddressSchema,
   setDefaultAddressSchema,
+  unblockCustomerSchema,
   updateProfileSchema,
 } from './schemas';
 import * as customer from './service';
@@ -106,6 +110,44 @@ export async function updateProfileAction(
     revalidatePath('/account/profile');
     revalidatePath('/account');
     return ok({ id: updated.id, name: updated.name });
+  } catch (error) {
+    return toActionError(error);
+  }
+}
+
+export async function blockCustomerAction(
+  input: unknown,
+): Promise<ActionResult<{ customerId: string }>> {
+  const parsed = blockCustomerSchema.safeParse(input);
+  if (!parsed.success) return validationError(parsed.error);
+
+  try {
+    const staff = await requireStaff();
+    assertPermission(staff, 'customers.write');
+
+    await customer.blockCustomer(staff.userId, parsed.data);
+    revalidatePath('/admin/customers');
+    revalidatePath(`/admin/customers/${parsed.data.customerId}`);
+    return ok({ customerId: parsed.data.customerId });
+  } catch (error) {
+    return toActionError(error);
+  }
+}
+
+export async function unblockCustomerAction(
+  input: unknown,
+): Promise<ActionResult<{ customerId: string }>> {
+  const parsed = unblockCustomerSchema.safeParse(input);
+  if (!parsed.success) return validationError(parsed.error);
+
+  try {
+    const staff = await requireStaff();
+    assertPermission(staff, 'customers.write');
+
+    await customer.unblockCustomer(staff.userId, parsed.data.customerId);
+    revalidatePath('/admin/customers');
+    revalidatePath(`/admin/customers/${parsed.data.customerId}`);
+    return ok({ customerId: parsed.data.customerId });
   } catch (error) {
     return toActionError(error);
   }

@@ -40,3 +40,20 @@ export const updateProfileSchema = z
   .strict();
 
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
+
+export const blockCustomerSchema = z
+  .object({
+    customerId: z.string().uuid(),
+    reason: z.string().trim().min(3, 'A reason of at least 3 characters is required').max(200),
+  })
+  .strict();
+
+export type BlockCustomerInput = z.infer<typeof blockCustomerSchema>;
+
+export const unblockCustomerSchema = z
+  .object({
+    customerId: z.string().uuid(),
+  })
+  .strict();
+
+export type UnblockCustomerInput = z.infer<typeof unblockCustomerSchema>;

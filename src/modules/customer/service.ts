@@ -1,8 +1,9 @@
 import 'server-only';
 import { db } from '@/lib/db';
 import { DomainError } from '@/lib/errors';
+import { audit } from '@/modules/audit/service';
 import * as repo from './repository';
-import type { SaveAddressInput, UpdateProfileInput } from './schemas';
+import type { BlockCustomerInput, SaveAddressInput, UpdateProfileInput } from './schemas';
 
 export async function saveAddress(userId: string, input: SaveAddressInput) {
   return db.$transaction(async (tx) => {
@@ -64,5 +65,55 @@ export async function setDefaultAddress(userId: string, addressId: string) {
 export async function updateProfile(userId: string, input: UpdateProfileInput) {
   return db.$transaction(async (tx) => {
     return repo.updateCustomerProfile(tx, userId, input);
+  });
+}
+
+export async function blockCustomer(staffUserId: string, input: BlockCustomerInput) {
+  return db.$transaction(async (tx) => {
+    const user = await tx.user.findUnique({
+      where: { id: input.customerId },
+      select: { id: true, banned: true },
+    });
+    if (!user) {
+      throw new DomainError('NOT_FOUND', 'Customer not found.');
+    }
+
+    const updated = await repo.setCustomerBlockedStatus(tx, input.customerId, true);
+
+    await audit(tx, {
+      actorId: staffUserId,
+      action: 'customer.block',
+      entity: 'user',
+      entityId: input.customerId,
+      before: { banned: user.banned },
+      after: { banned: true, reason: input.reason },
+    });
+
+    return updated;
+  });
+}
+
+export async function unblockCustomer(staffUserId: string, customerId: string) {
+  return db.$transaction(async (tx) => {
+    const user = await tx.user.findUnique({
+      where: { id: customerId },
+      select: { id: true, banned: true },
+    });
+    if (!user) {
+      throw new DomainError('NOT_FOUND', 'Customer not found.');
+    }
+
+    const updated = await repo.setCustomerBlockedStatus(tx, customerId, false);
+
+    await audit(tx, {
+      actorId: staffUserId,
+      action: 'customer.unblock',
+      entity: 'user',
+      entityId: customerId,
+      before: { banned: user.banned },
+      after: { banned: false },
+    });
+
+    return updated;
   });
 }

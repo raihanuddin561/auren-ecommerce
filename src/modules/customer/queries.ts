@@ -32,3 +32,11 @@ export async function getCustomerDashboardData(userId: string) {
     defaultAddress,
   };
 }
+
+export async function getCustomersForAdmin(params: repo.ListCustomersParams = {}) {
+  return repo.listCustomersForAdmin(db, params);
+}
+
+export async function getCustomerDetailForAdmin(customerId: string) {
+  return repo.findCustomerDetailForAdmin(db, customerId);
+}

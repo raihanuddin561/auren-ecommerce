@@ -135,3 +135,138 @@ export async function updateCustomerProfile(tx: Tx, userId: string, data: Update
     },
   });
 }
+
+export interface ListCustomersParams {
+  search?: string;
+  status?: 'active' | 'blocked';
+  take?: number;
+  skip?: number;
+}
+
+export async function listCustomersForAdmin(tx: Tx, params: ListCustomersParams = {}) {
+  const take = params.take ?? 25;
+  const skip = params.skip ?? 0;
+
+  const where: Record<string, unknown> = {};
+  if (params.status === 'active') {
+    where.banned = false;
+  } else if (params.status === 'blocked') {
+    where.banned = true;
+  }
+
+  if (params.search && params.search.trim()) {
+    const q = params.search.trim();
+    where.OR = [
+      { name: { contains: q, mode: 'insensitive' } },
+      { email: { contains: q, mode: 'insensitive' } },
+      { phone: { contains: q, mode: 'insensitive' } },
+    ];
+  }
+
+  const [total, users] = await Promise.all([
+    tx.user.count({ where }),
+    tx.user.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      take,
+      skip,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        banned: true,
+        createdAt: true,
+        orders: {
+          select: {
+            id: true,
+            status: true,
+            totalMinor: true,
+            currency: true,
+            createdAt: true,
+          },
+        },
+        _count: {
+          select: {
+            orders: true,
+            addresses: true,
+          },
+        },
+      },
+    }),
+  ]);
+
+  const items = users.map((u) => {
+    const validOrders = u.orders.filter((o) => o.status !== 'cancelled');
+    const ltvMinor = validOrders.reduce((sum, o) => sum + o.totalMinor, 0n);
+    const lastOrder = u.orders.length > 0 ? u.orders[0] : null;
+
+    return {
+      id: u.id,
+      name: u.name,
+      email: u.email,
+      phone: u.phone,
+      banned: Boolean(u.banned),
+      createdAt: u.createdAt,
+      ordersCount: u._count.orders,
+      addressesCount: u._count.addresses,
+      ltvMinor,
+      currency: lastOrder?.currency ?? 'BDT',
+      lastOrderAt: lastOrder?.createdAt ?? null,
+    };
+  });
+
+  return { items, total, take, skip };
+}
+
+export async function findCustomerDetailForAdmin(tx: Tx, customerId: string) {
+  const user = await tx.user.findUnique({
+    where: { id: customerId },
+    include: {
+      addresses: {
+        orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }],
+      },
+      orders: {
+        orderBy: { createdAt: 'desc' },
+        include: {
+          items: true,
+        },
+      },
+    },
+  });
+
+  if (!user) return null;
+
+  const validOrders = user.orders.filter((o) => o.status !== 'cancelled');
+  const ltvMinor = validOrders.reduce((sum, o) => sum + o.totalMinor, 0n);
+  const aovMinor = validOrders.length > 0 ? ltvMinor / BigInt(validOrders.length) : 0n;
+
+  return {
+    ...user,
+    banned: Boolean(user.banned),
+    metrics: {
+      ordersCount: user.orders.length,
+      validOrdersCount: validOrders.length,
+      ltvMinor,
+      aovMinor,
+      currency: user.orders[0]?.currency ?? 'BDT',
+      firstOrderAt: user.orders[user.orders.length - 1]?.createdAt ?? null,
+      lastOrderAt: user.orders[0]?.createdAt ?? null,
+    },
+  };
+}
+
+export async function setCustomerBlockedStatus(tx: Tx, customerId: string, banned: boolean) {
+  const user = await tx.user.update({
+    where: { id: customerId },
+    data: { banned },
+  });
+
+  if (banned) {
+    await tx.session.deleteMany({
+      where: { userId: customerId },
+    });
+  }
+
+  return user;
+}

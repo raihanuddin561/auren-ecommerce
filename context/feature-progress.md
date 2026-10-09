@@ -130,7 +130,7 @@
 | 7.5 | Wishlist | P0 | Done | Done | Done | Done | Done | Done | Done | new. /wishlist page with local storage persistence, product card toggles, and add-to-bag integration. |
 | 7.6 | Returns self-service | P0 | Done | Done | Done | Done | Done | Done | Done | new. Customer self-service return request form on order confirmation / track page within the 7-day window. |
 | 7.7 | Store credit and gift card balance | P1 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 7.8 | Admin customer management | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
+| 7.8 | Admin customer management | P0 | Done | Done | Done | Done | Done | Done | Done | new. /admin/customers directory, lifetime customer value (LTV) & AOV metrics, client details at /admin/customers/[id], order history, saved destinations, block/unblock actions with audit logging, and ready admin nav item. |
 | 7.9 | Data export / account deletion | P1 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
 
 ## Module 8: Content and Landing Experience

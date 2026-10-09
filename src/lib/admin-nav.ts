@@ -161,7 +161,8 @@ export const ADMIN_NAV: AdminNavGroup[] = [
         href: '/admin/customers',
         icon: Users,
         permission: 'customers.read',
-        ready: false,
+        ready: true,
+        keywords: ['users', 'clients', 'addresses', 'ltv', 'profiles'],
       },
       {
         label: 'Promotions',

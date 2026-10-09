@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
+  blockCustomerSchema,
   deleteAddressSchema,
   saveAddressSchema,
   setDefaultAddressSchema,
+  unblockCustomerSchema,
   updateProfileSchema,
 } from '../schemas';
 
@@ -83,6 +85,40 @@ describe('customer schemas', () => {
         name: 'A',
       });
       expect(result.success).toBe(false);
+    });
+  });
+
+  describe('blockCustomerSchema and unblockCustomerSchema', () => {
+    it('validates correct block customer input', () => {
+      const result = blockCustomerSchema.safeParse({
+        customerId: uuid,
+        reason: 'Fraudulent activity detected on recent orders',
+      });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.customerId).toBe(uuid);
+        expect(result.data.reason).toBe('Fraudulent activity detected on recent orders');
+      }
+    });
+
+    it('rejects block input with short reason or missing customerId', () => {
+      expect(
+        blockCustomerSchema.safeParse({
+          customerId: uuid,
+          reason: 'no',
+        }).success,
+      ).toBe(false);
+
+      expect(
+        blockCustomerSchema.safeParse({
+          reason: 'Valid reason here',
+        }).success,
+      ).toBe(false);
+    });
+
+    it('validates unblock input', () => {
+      expect(unblockCustomerSchema.safeParse({ customerId: uuid }).success).toBe(true);
+      expect(unblockCustomerSchema.safeParse({ customerId: 'invalid' }).success).toBe(false);
     });
   });
 });
