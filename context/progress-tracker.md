@@ -16,6 +16,38 @@
 - Blockers/risks: <none | details>
 ```
 
+### 2026-10-10 — 15.1, 15.3, 15.4 Store General Settings, Staff Management & Dashboard KPIs — Done
+- Type: new and enhancement
+- Scope: Implemented store general settings configuration, staff directory & RBAC management, and advanced executive dashboard KPIs (AOV, overdue verification SLA countdown, RTO % and order cancellation metrics).
+- Changed:
+  - Store Settings (15.3):
+    - `src/modules/settings/schemas.ts`: Strict Zod schema `storeGeneralSettingsSchema` covering store identity, studio address, BD BIN/VAT registration, VAT rates, currency/timezone, and social handles.
+    - `src/modules/settings/service.ts`: Implemented `getStoreGeneralSettings` and `saveStoreGeneralSettings` with transactional audit logging (`store_general`).
+    - `src/modules/settings/actions.ts`: Server Action `saveStoreGeneralSettingsAction` guarded by `settings.manage` permission.
+    - `src/components/admin/settings/general-settings-form.tsx`: Luxury admin settings form with field validation, number handling, and toast feedback.
+    - `src/app/admin/(console)/settings/general/page.tsx`: Dedicated admin store configuration page.
+    - `src/app/admin/(console)/settings/page.tsx`: Updated hub navigation with direct links to Store Information and Staff Management.
+    - `src/modules/settings/__tests__/store-general-settings.test.ts`: Unit tests validating schema rules and boundary conditions.
+  - Staff Management (15.4):
+    - `src/modules/staff/types.ts` & `schemas.ts`: Defined staff member records, invite input schema, role update schema, and status toggle schema.
+    - `src/modules/staff/repository.ts`: Data access layer for listing staff with Better Auth user details, creating new staff with credentials, and atomic status/role updates.
+    - `src/modules/staff/service.ts`: Business logic enforcing owner-only role escalation, self-deactivation prevention, owner account protection, password hashing via Better Auth hasher, and transactional audit logging (`staff_member`).
+    - `src/modules/staff/actions.ts`: Server Actions `createStaffMemberAction`, `updateStaffRoleAction`, and `toggleStaffStatusAction` guarded by `staff.manage` permission.
+    - `src/components/admin/settings/staff/staff-role-badge.tsx`: Curated role badges with semantic tones.
+    - `src/components/admin/settings/staff/create-staff-dialog.tsx`: Add staff dialog modal with secure one-time temporary password display and clipboard copy.
+    - `src/components/admin/settings/staff/staff-table.tsx`: Management table with role select dropdowns, 2FA status, and activation controls.
+    - `src/app/admin/(console)/settings/staff/page.tsx`: Staff directory page guarded by `staff.manage`.
+    - `src/lib/admin-nav.ts`: Enabled Staff navigation link in admin sidebar.
+    - `src/modules/staff/__tests__/staff-management.test.ts`: Unit tests validating staff schemas and UUID checks.
+  - Dashboard KPIs (15.1):
+    - `src/modules/orders/queries.ts`: Extended `AdminDashboardOrderStats` and `getAdminDashboardOrderStats` to calculate average order value (AOV), overdue verifications (> 120m), return-to-origin (RTO) rate, and cancellation rate.
+    - `src/app/admin/(console)/page.tsx`: Expanded KPI metric strip to 6 responsive cards featuring AOV, Low stock count, and RTO/Cancel rate.
+- Tests: `pnpm check` passed cleanly (0 typecheck errors, 0 lint errors, 100% Prettier formatting, 102 test files and 1,251 tests passed).
+- Review: Module boundaries, RBAC permissions, and design tokens strictly followed without arbitrary styling or unhashed secrets.
+- Decisions: ADR-015, ADR-023, ADR-025 preserved.
+- Next: Module 11 (Finance & Expense Tracking) or Module 14 (SEO & Discovery).
+- Blockers/risks: none.
+
 ### 2026-10-09 — Admin Console Live Dashboard & Customer Account Order Linking — Done
 - Type: enhancement and fix
 - Scope: Activated live dashboard reporting for staff console `/admin` with real metrics (Net sales, Pending confirmations, To ship, Low stock), operations attention queue, and recent orders stream. Linked guest checkout orders by email/phone in customer portal `/account`. Configured `.env.local` to point directly to Supabase production store database.

@@ -73,6 +73,7 @@ export { getOrderForAdmin } from './detail';
 
 export interface AdminDashboardOrderStats {
   pendingConfirmationsCount: number;
+  overdueVerificationCount: number;
   toShipCount: number;
   deliveredCount: number;
   totalOrdersCount: number;
@@ -80,6 +81,11 @@ export interface AdminDashboardOrderStats {
   netSalesFormatted: string;
   deliveredSalesMinor: bigint;
   deliveredSalesFormatted: string;
+  aovMinor: bigint;
+  aovFormatted: string;
+  rtoCount: number;
+  rtoRateFormatted: string;
+  verificationCancelRateFormatted: string;
   attentionOrders: Array<{
     id: string;
     orderNumber: string;
@@ -109,55 +115,76 @@ export interface AdminDashboardOrderStats {
 }
 
 export async function getAdminDashboardOrderStats(): Promise<AdminDashboardOrderStats> {
-  const [counts, netSalesAggregate, deliveredSalesAggregate, attentionRaw, recentRaw] =
-    await Promise.all([
-      repo.statusCounts(db),
-      db.order.aggregate({
-        where: {
-          status: {
-            in: ['confirmed', 'processing', 'shipped', 'delivered', 'completed'],
+  const slaMinutes = 120;
+  const overdueCutoff = new Date(Date.now() - slaMinutes * 60 * 1000);
+
+  const [
+    counts,
+    netSalesAggregate,
+    deliveredSalesAggregate,
+    overdueVerificationCount,
+    rtoCount,
+    attentionRaw,
+    recentRaw,
+  ] = await Promise.all([
+    repo.statusCounts(db),
+    db.order.aggregate({
+      where: {
+        status: {
+          in: ['confirmed', 'processing', 'shipped', 'delivered', 'completed'],
+        },
+      },
+      _sum: { totalMinor: true },
+    }),
+    db.order.aggregate({
+      where: {
+        status: {
+          in: ['delivered', 'completed'],
+        },
+      },
+      _sum: { totalMinor: true },
+    }),
+    db.order.count({
+      where: {
+        status: { in: ['placed', 'under_verification', 'on_hold'] },
+        placedAt: { lte: overdueCutoff },
+      },
+    }),
+    db.order.count({
+      where: {
+        returnedToOriginAt: { not: null },
+      },
+    }),
+    db.order.findMany({
+      where: {
+        status: {
+          in: ['placed', 'under_verification', 'on_hold', 'confirmed'],
+        },
+      },
+      orderBy: { placedAt: 'asc' },
+      take: 6,
+      include: {
+        items: {
+          select: {
+            titleSnapshot: true,
+            quantity: true,
           },
         },
-        _sum: { totalMinor: true },
-      }),
-      db.order.aggregate({
-        where: {
-          status: {
-            in: ['delivered', 'completed'],
+      },
+    }),
+    db.order.findMany({
+      orderBy: { placedAt: 'desc' },
+      take: 8,
+      include: {
+        items: {
+          select: {
+            titleSnapshot: true,
+            quantity: true,
           },
         },
-        _sum: { totalMinor: true },
-      }),
-      db.order.findMany({
-        where: {
-          status: {
-            in: ['placed', 'under_verification', 'on_hold', 'confirmed'],
-          },
-        },
-        orderBy: { placedAt: 'asc' },
-        take: 6,
-        include: {
-          items: {
-            select: {
-              titleSnapshot: true,
-              quantity: true,
-            },
-          },
-        },
-      }),
-      db.order.findMany({
-        orderBy: { placedAt: 'desc' },
-        take: 8,
-        include: {
-          items: {
-            select: {
-              titleSnapshot: true,
-              quantity: true,
-            },
-          },
-        },
-      }),
-    ]);
+      },
+    }),
+  ]);
 
   const byStatus = new Map(counts.map((row) => [row.status as OrderStatus, row._count._all]));
   const pendingConfirmationsCount = (['placed', 'under_verification', 'on_hold'] as const).reduce(
@@ -174,6 +201,17 @@ export async function getAdminDashboardOrderStats(): Promise<AdminDashboardOrder
   );
   const totalOrdersCount = counts.reduce((sum, row) => sum + row._count._all, 0);
 
+  const validOrdersCount = (
+    ['confirmed', 'processing', 'shipped', 'delivered', 'completed'] as const
+  ).reduce((sum, s) => sum + (byStatus.get(s) ?? 0), 0);
+
+  const shippedCount = (['shipped', 'delivered', 'completed'] as const).reduce(
+    (sum, s) => sum + (byStatus.get(s) ?? 0),
+    0,
+  );
+
+  const cancelledCount = byStatus.get('cancelled') ?? 0;
+
   const formatItemSummary = (items: Array<{ titleSnapshot: string; quantity: number }>) => {
     const item0 = items[0];
     if (!item0) return 'No items';
@@ -184,9 +222,16 @@ export async function getAdminDashboardOrderStats(): Promise<AdminDashboardOrder
 
   const netSalesMinor = netSalesAggregate._sum.totalMinor ?? 0n;
   const deliveredSalesMinor = deliveredSalesAggregate._sum.totalMinor ?? 0n;
+  const aovMinor = validOrdersCount > 0 ? netSalesMinor / BigInt(validOrdersCount) : 0n;
+  const aovFormatted = format(money(aovMinor, 'BDT'));
+  const rtoRateFormatted =
+    shippedCount > 0 ? `${((rtoCount / shippedCount) * 100).toFixed(1)}%` : '0.0%';
+  const verificationCancelRateFormatted =
+    totalOrdersCount > 0 ? `${((cancelledCount / totalOrdersCount) * 100).toFixed(1)}%` : '0.0%';
 
   return {
     pendingConfirmationsCount,
+    overdueVerificationCount,
     toShipCount,
     deliveredCount,
     totalOrdersCount,
@@ -194,6 +239,11 @@ export async function getAdminDashboardOrderStats(): Promise<AdminDashboardOrder
     netSalesFormatted: format(money(netSalesMinor, 'BDT')),
     deliveredSalesMinor,
     deliveredSalesFormatted: format(money(deliveredSalesMinor, 'BDT')),
+    aovMinor,
+    aovFormatted,
+    rtoCount,
+    rtoRateFormatted,
+    verificationCancelRateFormatted,
     attentionOrders: attentionRaw.map((o) => ({
       id: o.id,
       orderNumber: o.orderNumber,

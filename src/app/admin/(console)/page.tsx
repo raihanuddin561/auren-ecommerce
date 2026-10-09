@@ -61,20 +61,27 @@ export default async function AdminHomePage() {
       />
 
       {/* KPI Cards Strip */}
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <KpiCard
-          label="Pending confirmations"
+          label="Pending verification"
           value={orderStats.pendingConfirmationsCount}
           state="ready"
           delta={
-            orderStats.pendingConfirmationsCount > 0
+            orderStats.overdueVerificationCount > 0
               ? {
-                  value: `${orderStats.pendingConfirmationsCount} in queue`,
+                  value: `${orderStats.overdueVerificationCount} overdue`,
                   direction: 'up',
                   tone: 'bad',
-                  comparedTo: 'needs call',
+                  comparedTo: 'SLA 2h',
                 }
-              : undefined
+              : orderStats.pendingConfirmationsCount > 0
+                ? {
+                    value: `${orderStats.pendingConfirmationsCount} in queue`,
+                    direction: 'up',
+                    tone: 'neutral',
+                    comparedTo: 'needs call',
+                  }
+                : undefined
           }
           footnote={
             orderStats.pendingConfirmationsCount > 0
@@ -105,27 +112,6 @@ export default async function AdminHomePage() {
         />
 
         <KpiCard
-          label="Low stock"
-          value={lowStockCount}
-          state="ready"
-          delta={
-            lowStockCount > 0
-              ? {
-                  value: `${lowStockCount} items`,
-                  direction: 'up',
-                  tone: 'bad',
-                  comparedTo: 'below buffer',
-                }
-              : undefined
-          }
-          footnote={
-            lowStockCount > 0
-              ? 'Variants requiring inventory reorder'
-              : 'All variant levels healthy'
-          }
-        />
-
-        <KpiCard
           label="Net sales"
           value={hasOrders ? orderStats.netSalesFormatted : ''}
           state={hasOrders ? 'ready' : 'empty'}
@@ -147,6 +133,49 @@ export default async function AdminHomePage() {
                 ? `${orderStats.totalOrdersCount} store orders recorded`
                 : undefined
           }
+        />
+
+        <KpiCard
+          label="Average order value"
+          value={hasOrders ? orderStats.aovFormatted : ''}
+          state={hasOrders ? 'ready' : 'empty'}
+          stateMessage="Calculated once orders are placed."
+          footnote="Revenue per fulfilled order"
+        />
+
+        <KpiCard
+          label="Low stock items"
+          value={lowStockCount}
+          state="ready"
+          delta={
+            lowStockCount > 0
+              ? {
+                  value: `${lowStockCount} items`,
+                  direction: 'up',
+                  tone: 'bad',
+                  comparedTo: 'below buffer',
+                }
+              : undefined
+          }
+          footnote={
+            lowStockCount > 0
+              ? 'Variants requiring inventory reorder'
+              : 'All variant levels healthy'
+          }
+        />
+
+        <KpiCard
+          label="RTO & Cancel rate"
+          value={orderStats.rtoRateFormatted}
+          state={hasOrders ? 'ready' : 'empty'}
+          stateMessage="Tracked on first dispatches."
+          delta={{
+            value: `${orderStats.verificationCancelRateFormatted} cancel`,
+            direction: 'flat',
+            tone: 'neutral',
+            comparedTo: 'all orders',
+          }}
+          footnote={`${orderStats.rtoCount} parcel(s) returned to origin`}
         />
       </div>
 

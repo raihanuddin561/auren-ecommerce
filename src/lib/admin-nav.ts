@@ -240,11 +240,11 @@ export const ADMIN_NAV: AdminNavGroup[] = [
       },
       {
         label: 'Staff',
-        href: '/admin/staff',
+        href: '/admin/settings/staff',
         icon: UserCog,
         permission: 'staff.manage',
-        ready: false,
-        keywords: ['roles', 'team'],
+        ready: true,
+        keywords: ['roles', 'team', 'permissions', 'users'],
       },
       {
         label: 'Audit log',

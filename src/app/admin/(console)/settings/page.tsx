@@ -7,6 +7,18 @@ export const metadata: Metadata = { title: 'Settings' };
 
 const SECTIONS = [
   {
+    href: '/admin/settings/general',
+    title: 'Store Information',
+    description:
+      'Brand identity, concierge email/phone, Dhaka studio location, VAT/BIN configuration, and social channels.',
+  },
+  {
+    href: '/admin/settings/staff',
+    title: 'Staff & Permissions',
+    description:
+      'Manage team members, assign operational roles, send staff invitations, and review account security status.',
+  },
+  {
     href: '/admin/settings/shipping',
     title: 'Delivery and checkout',
     description:

@@ -226,10 +226,10 @@
 
 | ID | Sub-feature | Pri | BE | API | UT | FE | E2E | CR | Overall | Notes |
 |---|---|---|---|---|---|---|---|---|---|---|
-| 15.1 | Dashboard KPIs | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
+| 15.1 | Dashboard KPIs | P0 | Done | Done | Done | Done | N/A | Done | Done | enhancement. Extended admin dashboard KPI metrics: Net Sales, Pending Verifications with overdue countdown, To Ship queue, Low stock count, Average Order Value (AOV) across confirmed/delivered commissions, and Return-to-Origin (RTO) & Cancel rates. |
 | 15.2 | Sales analytics | P1 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 15.3 | Store settings | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 15.4 | Staff management | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
+| 15.3 | Store settings | P0 | Done | Done | Done | Done | N/A | Done | Done | new. General store settings schema, service, actions, and admin page (/admin/settings/general) supporting store name, contact email/phone, Banani studio address, Bangladesh BIN/VAT, default VAT rates, and social channels, saved in store_settings table with full transactional audit logging. |
+| 15.4 | Staff management | P0 | Done | Done | Done | Done | N/A | Done | Done | new. Staff directory, invite flow with temporary password generation, role update dropdown with RBAC elevation checks (owner-only), self-deactivation safeguards, and status toggle at /admin/settings/staff, guarded by staff.manage permission. |
 | 15.5 | Audit log viewer | P1 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
 | 15.6 | System health page | P1 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
 | 15.7 | Verification performance report | P1 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |

@@ -13,11 +13,14 @@ import {
   DEFAULT_COD_SETTINGS,
   DEFAULT_HERO_CAROUSEL_SETTINGS,
   DEFAULT_RETURN_SETTINGS,
+  DEFAULT_STORE_GENERAL_SETTINGS,
   DEFAULT_VERIFICATION_SETTINGS,
   heroCarouselSettingsSchema,
   returnSettingsSchema,
+  storeGeneralSettingsSchema,
   verificationSettingsSchema,
   type ReturnSettings,
+  type StoreGeneralSettings,
   type VerificationSettings,
   SETTING_KEYS,
   type CheckoutProtection,
@@ -63,6 +66,14 @@ export async function getReturnSettings(tx: Tx = db): Promise<ReturnSettings> {
     returnSettingsSchema,
     await repo.readSetting(tx, SETTING_KEYS.returns),
     DEFAULT_RETURN_SETTINGS,
+  );
+}
+
+export async function getStoreGeneralSettings(tx: Tx = db): Promise<StoreGeneralSettings> {
+  return parseSetting(
+    storeGeneralSettingsSchema,
+    await repo.readSetting(tx, SETTING_KEYS.general),
+    DEFAULT_STORE_GENERAL_SETTINGS,
   );
 }
 
@@ -275,4 +286,27 @@ export async function saveOrderRules(
       ...(actor.userAgent ? { userAgent: actor.userAgent } : {}),
     });
   });
+}
+
+/** Saves general store settings. Audited. */
+export async function saveStoreGeneralSettings(
+  input: StoreGeneralSettings,
+  actor: SettingsActor,
+): Promise<StoreGeneralSettings> {
+  const validated = storeGeneralSettingsSchema.parse(input);
+  await db.$transaction(async (tx) => {
+    const before = await getStoreGeneralSettings(tx);
+    await repo.writeSetting(tx, SETTING_KEYS.general, validated, actor.userId);
+    await audit(tx, {
+      actorId: actor.userId,
+      action: 'setting.update',
+      entity: 'setting',
+      entityId: 'store_general',
+      before,
+      after: validated,
+      ...(actor.ip ? { ip: actor.ip } : {}),
+      ...(actor.userAgent ? { userAgent: actor.userAgent } : {}),
+    });
+  });
+  return validated;
 }

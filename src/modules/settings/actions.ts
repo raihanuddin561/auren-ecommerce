@@ -10,6 +10,8 @@ import {
   saveCheckoutSettingsSchema,
   saveOrderRulesSchema,
   saveHeroCarouselSettingsSchema,
+  storeGeneralSettingsSchema,
+  type StoreGeneralSettings,
 } from './schemas';
 import * as settings from './service';
 
@@ -97,6 +99,27 @@ export async function saveOrderRulesAction(input: unknown): Promise<ActionResult
       { userId: staff.userId, ip: meta.ip, userAgent: meta.userAgent },
     );
     return ok({ saved: true });
+  } catch (error) {
+    return toActionError(error);
+  }
+}
+
+/** Saves general store info and business details. Needs settings.manage. */
+export async function saveStoreGeneralSettingsAction(
+  input: unknown,
+): Promise<ActionResult<StoreGeneralSettings>> {
+  const parsed = storeGeneralSettingsSchema.safeParse(input);
+  if (!parsed.success) return validationError(parsed.error);
+  try {
+    const staff = await requireStaff();
+    assertPermission(staff, 'settings.manage');
+    const meta = await getRequestMeta();
+    const result = await settings.saveStoreGeneralSettings(parsed.data, {
+      userId: staff.userId,
+      ip: meta.ip,
+      userAgent: meta.userAgent,
+    });
+    return ok(result);
   } catch (error) {
     return toActionError(error);
   }

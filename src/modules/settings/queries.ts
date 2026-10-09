@@ -7,10 +7,14 @@ import {
   getHeroCarouselSettings,
   getReturnSettings,
   getSavedViews,
+  getStoreGeneralSettings,
   getVerificationSettings,
 } from './service';
 
-export { getReturnSettings, getSavedViews, getVerificationSettings };
+export { getReturnSettings, getSavedViews, getStoreGeneralSettings, getVerificationSettings };
+export async function getStoreGeneralSettingsForAdmin() {
+  return getStoreGeneralSettings();
+}
 import type { CheckoutSettingsView } from './types';
 
 /** Cash on delivery and checkout protection as the settings form shows them. */

@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 /** Keys in `store_settings` that this module owns. */
 export const SETTING_KEYS = {
+  general: 'store.general',
   checkout: 'checkout.protection',
   cod: 'payments.cod',
   heroCarousel: 'storefront.hero_carousel',
@@ -10,6 +11,38 @@ export const SETTING_KEYS = {
 } as const;
 
 export const HERO_CAROUSEL_CACHE_TAG = 'hero-carousel';
+
+export const storeGeneralSettingsSchema = z
+  .object({
+    storeName: z.string().trim().min(1, 'Store name is required').max(100).default('AUREN'),
+    tagline: z.string().trim().max(200).default('Modern, Refined Menswear'),
+    supportEmail: z.string().trim().email('Invalid email address').default('concierge@auren.com'),
+    supportPhone: z
+      .string()
+      .trim()
+      .min(1, 'Support phone is required')
+      .max(30)
+      .default('+880 1700-000000'),
+    whatsappNumber: z.string().trim().max(30).default('+880 1700-000000'),
+    address: z
+      .string()
+      .trim()
+      .max(300)
+      .default('House 12, Road 11, Banani, Dhaka 1213, Bangladesh'),
+    binNumber: z.string().trim().max(50).default('001234567-0101'),
+    vatPercentage: z.number().min(0).max(100).default(5),
+    pricesIncludeVat: z.boolean().default(true),
+    currency: z.literal('BDT').default('BDT'),
+    timezone: z.literal('Asia/Dhaka').default('Asia/Dhaka'),
+    socialInstagram: z.string().trim().max(200).default('https://instagram.com/auren.menswear'),
+    socialFacebook: z.string().trim().max(200).default('https://facebook.com/auren.menswear'),
+    socialYoutube: z.string().trim().max(200).default(''),
+  })
+  .strict();
+
+export type StoreGeneralSettings = z.infer<typeof storeGeneralSettingsSchema>;
+export const DEFAULT_STORE_GENERAL_SETTINGS: StoreGeneralSettings =
+  storeGeneralSettingsSchema.parse({});
 
 const minorText = z.string().regex(/^\d{1,15}$/, 'Whole number of minor units');
 
