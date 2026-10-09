@@ -64,6 +64,12 @@ export async function listStockMovements(params: MovementListParams) {
 /** Variants that cannot be ordered because they have no cost (inventory.read). */
 export const getVariantsWithoutCostCount = () => countVariantsWithoutCost();
 
+/** Count of variants with low stock levels (below threshold). */
+export async function getLowStockVariantCount(): Promise<number> {
+  const { total } = await repo.listStock(db, { status: 'low', page: 1 });
+  return total;
+}
+
 /** The variants of one product and which of them still lack a cost (inventory.read, for the preview). */
 export const getProductCostPreview = (productId: string) => previewProductCost(productId);
 

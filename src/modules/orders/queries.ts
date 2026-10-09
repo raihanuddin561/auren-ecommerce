@@ -4,7 +4,7 @@ import { logger } from '@/lib/logger';
 import { inngest } from '@/lib/jobs/client';
 import { wasProcessed, markProcessed } from '@/lib/inbox';
 import { eventSchemas } from '@/lib/events';
-import { money, serialize } from '@/lib/money';
+import { format, money, serialize } from '@/lib/money';
 import { escalateOverdueOrders } from './escalation';
 import { completeOrdersPastReturnWindow, pollParcels } from './fulfilment';
 import { listWhere } from './list';
@@ -70,6 +70,158 @@ export async function listOrdersForAdmin(params: AdminOrderListParams) {
 }
 
 export { getOrderForAdmin } from './detail';
+
+export interface AdminDashboardOrderStats {
+  pendingConfirmationsCount: number;
+  toShipCount: number;
+  deliveredCount: number;
+  totalOrdersCount: number;
+  netSalesMinor: bigint;
+  netSalesFormatted: string;
+  deliveredSalesMinor: bigint;
+  deliveredSalesFormatted: string;
+  attentionOrders: Array<{
+    id: string;
+    orderNumber: string;
+    customerName: string;
+    phone: string;
+    status: OrderStatus;
+    statusLabel: string;
+    totalFormatted: string;
+    placedAt: string;
+    itemsSummary: string;
+    itemCount: number;
+  }>;
+  recentOrders: Array<{
+    id: string;
+    orderNumber: string;
+    customerName: string;
+    phone: string;
+    status: OrderStatus;
+    statusLabel: string;
+    paymentStatus: string;
+    fulfillmentStatus: string;
+    totalFormatted: string;
+    placedAt: string;
+    itemsSummary: string;
+    itemCount: number;
+  }>;
+}
+
+export async function getAdminDashboardOrderStats(): Promise<AdminDashboardOrderStats> {
+  const [counts, netSalesAggregate, deliveredSalesAggregate, attentionRaw, recentRaw] =
+    await Promise.all([
+      repo.statusCounts(db),
+      db.order.aggregate({
+        where: {
+          status: {
+            in: ['confirmed', 'processing', 'shipped', 'delivered', 'completed'],
+          },
+        },
+        _sum: { totalMinor: true },
+      }),
+      db.order.aggregate({
+        where: {
+          status: {
+            in: ['delivered', 'completed'],
+          },
+        },
+        _sum: { totalMinor: true },
+      }),
+      db.order.findMany({
+        where: {
+          status: {
+            in: ['placed', 'under_verification', 'on_hold', 'confirmed'],
+          },
+        },
+        orderBy: { placedAt: 'asc' },
+        take: 6,
+        include: {
+          items: {
+            select: {
+              titleSnapshot: true,
+              quantity: true,
+            },
+          },
+        },
+      }),
+      db.order.findMany({
+        orderBy: { placedAt: 'desc' },
+        take: 8,
+        include: {
+          items: {
+            select: {
+              titleSnapshot: true,
+              quantity: true,
+            },
+          },
+        },
+      }),
+    ]);
+
+  const byStatus = new Map(counts.map((row) => [row.status as OrderStatus, row._count._all]));
+  const pendingConfirmationsCount = (['placed', 'under_verification', 'on_hold'] as const).reduce(
+    (sum, s) => sum + (byStatus.get(s) ?? 0),
+    0,
+  );
+  const toShipCount = (['confirmed', 'processing'] as const).reduce(
+    (sum, s) => sum + (byStatus.get(s) ?? 0),
+    0,
+  );
+  const deliveredCount = (['delivered', 'completed'] as const).reduce(
+    (sum, s) => sum + (byStatus.get(s) ?? 0),
+    0,
+  );
+  const totalOrdersCount = counts.reduce((sum, row) => sum + row._count._all, 0);
+
+  const formatItemSummary = (items: Array<{ titleSnapshot: string; quantity: number }>) => {
+    const item0 = items[0];
+    if (!item0) return 'No items';
+    const first = `${item0.titleSnapshot} (x${item0.quantity})`;
+    if (items.length === 1) return first;
+    return `${first} + ${items.length - 1} more`;
+  };
+
+  const netSalesMinor = netSalesAggregate._sum.totalMinor ?? 0n;
+  const deliveredSalesMinor = deliveredSalesAggregate._sum.totalMinor ?? 0n;
+
+  return {
+    pendingConfirmationsCount,
+    toShipCount,
+    deliveredCount,
+    totalOrdersCount,
+    netSalesMinor,
+    netSalesFormatted: format(money(netSalesMinor, 'BDT')),
+    deliveredSalesMinor,
+    deliveredSalesFormatted: format(money(deliveredSalesMinor, 'BDT')),
+    attentionOrders: attentionRaw.map((o) => ({
+      id: o.id,
+      orderNumber: o.orderNumber,
+      customerName: o.customerName,
+      phone: o.phone,
+      status: o.status as OrderStatus,
+      statusLabel: STATUS_LABEL[o.status as OrderStatus] ?? o.status,
+      totalFormatted: format(money(o.totalMinor, o.currency)),
+      placedAt: o.placedAt.toISOString(),
+      itemsSummary: formatItemSummary(o.items),
+      itemCount: o.items.reduce((sum, item) => sum + item.quantity, 0),
+    })),
+    recentOrders: recentRaw.map((o) => ({
+      id: o.id,
+      orderNumber: o.orderNumber,
+      customerName: o.customerName,
+      phone: o.phone,
+      status: o.status as OrderStatus,
+      statusLabel: STATUS_LABEL[o.status as OrderStatus] ?? o.status,
+      paymentStatus: o.paymentStatus,
+      fulfillmentStatus: o.fulfillmentStatus,
+      totalFormatted: format(money(o.totalMinor, o.currency)),
+      placedAt: o.placedAt.toISOString(),
+      itemsSummary: formatItemSummary(o.items),
+      itemCount: o.items.reduce((sum, item) => sum + item.quantity, 0),
+    })),
+  };
+}
 
 // ---------------------------------------------------------------------------------------------
 // Background jobs

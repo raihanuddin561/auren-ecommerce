@@ -88,8 +88,17 @@ export async function setDefaultAddress(tx: Tx, userId: string, addressId: strin
 }
 
 export async function findCustomerOrders(tx: Tx, userId: string) {
+  const user = await tx.user.findUnique({
+    where: { id: userId },
+    select: { email: true, phone: true },
+  });
+
+  const orConditions: Array<{ userId?: string; email?: string; phone?: string }> = [{ userId }];
+  if (user?.email) orConditions.push({ email: user.email });
+  if (user?.phone) orConditions.push({ phone: user.phone });
+
   return tx.order.findMany({
-    where: { userId },
+    where: { OR: orConditions },
     orderBy: { createdAt: 'desc' },
     include: {
       items: {

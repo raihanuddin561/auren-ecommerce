@@ -16,6 +16,28 @@
 - Blockers/risks: <none | details>
 ```
 
+### 2026-10-09 — Admin Console Live Dashboard & Customer Account Order Linking — Done
+- Type: enhancement and fix
+- Scope: Activated live dashboard reporting for staff console `/admin` with real metrics (Net sales, Pending confirmations, To ship, Low stock), operations attention queue, and recent orders stream. Linked guest checkout orders by email/phone in customer portal `/account`. Configured `.env.local` to point directly to Supabase production store database.
+- Changed:
+  - Admin Dashboard (`src/app/admin/(console)/page.tsx`):
+    - Transformed empty hardcoded placeholders into live executive dashboard.
+    - Connected 4 live KPI cards: Net sales (`orderStats.netSalesFormatted` + delivered revenue note), Pending confirmations (queue tone warning), To ship (dispatch ready), and Low stock (buffer check).
+    - Added quick operations shortcuts (Verification Queue, Fulfilment, Inventory, Clients).
+    - Rendered interactive "Operations Attention Queue" for orders needing verification or packaging.
+    - Rendered "Recent Commissions" table with live order numbers, client contacts, pieces summary, BDT totals, and status badges.
+  - Query Layer:
+    - `src/modules/orders/queries.ts`: Added `getAdminDashboardOrderStats` query aggregating status counts, net sales, delivered sales, attention orders, and recent commissions.
+    - `src/modules/inventory/queries.ts`: Added `getLowStockVariantCount` query reading variants below reorder threshold.
+    - `src/modules/customer/repository.ts`: Enhanced `findCustomerOrders` to match by `userId`, `email`, or `phone` so orders placed through guest checkout appear in the client's account dashboard.
+  - Environment:
+    - Updated `.env.local` with Supabase connection strings from `.env.supabase.local` so local dev and live store share the real customer orders and product catalog.
+- Tests: `pnpm check` passed cleanly (0 typecheck errors, 0 lint errors, 100% Prettier formatting, 99 test files and 1,231 unit tests passed).
+- Review: Invariants preserved (admin pages call `requireStaff`, no status bypasses, boundaries clean).
+- Decisions: ADR-015 and ADR-025 preserved.
+- Next: Module 10 (Promotions and Pricing) or Module 8.1 (Section-block page builder).
+- Blockers/risks: none.
+
 ### 2026-10-09 — 9.1, 9.2, 9.3 Search and Discovery, Search Overlay & Results Page — Done
 - Type: new and enhancement
 - Scope: Implemented full search engine infrastructure, fast debounced live suggestions, luxury slide-down search overlay in storefront header, and complete results page with live inventory availability and curated fallback signatures.
