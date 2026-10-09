@@ -198,10 +198,13 @@ async function SearchResults({ query }: { query: string }) {
   );
 }
 
-export default async function SearchPage({ searchParams }: SearchPageProps) {
+async function SearchContent({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const resolved = await searchParams;
   const q = resolved.q ?? '';
+  return <SearchResults query={q} />;
+}
 
+export default function SearchPage({ searchParams }: SearchPageProps) {
   return (
     <section className="container-editorial py-12 md:py-16">
       <Suspense
@@ -216,7 +219,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
           </div>
         }
       >
-        <SearchResults query={q} />
+        <SearchContent searchParams={searchParams} />
       </Suspense>
     </section>
   );
