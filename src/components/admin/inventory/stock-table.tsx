@@ -20,6 +20,7 @@ export interface StockTableRow {
   lowStockThreshold: number;
   avgCost: string | null;
   hasCost: boolean;
+  currency: string;
 }
 
 const head = 'border-b border-line px-4 py-3 text-left type-eyebrow text-fg-muted';
@@ -143,6 +144,7 @@ export function StockTable({
                             variantId: row.variantId,
                             productId: row.productId,
                             productTitle: row.productTitle,
+                            currency: row.currency,
                             title,
                           })
                         }
@@ -163,6 +165,7 @@ export function StockTable({
                             onHand: row.onHand,
                             reserved: row.reserved,
                             hasCost: row.hasCost,
+                            currency: row.currency,
                           })
                         }
                       >

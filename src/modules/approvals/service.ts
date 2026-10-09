@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { Tx } from '@/lib/db';
+import { db, type Tx } from '@/lib/db';
 import { DomainError } from '@/lib/errors';
 import { enqueueEvent } from '@/lib/outbox';
 import { assertPermission, type StaffContext } from '@/lib/permissions';
@@ -190,3 +190,9 @@ export async function requireApproval(
 }
 
 export const listPendingApprovals = (tx: Tx) => repo.listPending(tx);
+
+/** A second person decides a request (one transaction). The caller checked the permission and step-up. */
+export const decideApprovalStaff = (
+  staff: StaffContext,
+  input: { id: string; decision: 'approved' | 'rejected'; note?: string },
+) => db.$transaction((tx) => decideApproval(tx, staff, input));

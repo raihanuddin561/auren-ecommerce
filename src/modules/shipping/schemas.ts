@@ -52,3 +52,18 @@ export const saveRateSchema = z
 
 export type SaveZoneInput = z.infer<typeof saveZoneSchema>;
 export type SaveRateInput = z.infer<typeof saveRateSchema>;
+
+const packagingAmount = z
+  .string()
+  .trim()
+  .regex(/^\d{1,9}(\.\d{1,2})?$/, 'Enter an amount such as 35 or 35.50');
+
+export const packagingProfileSchema = z
+  .object({
+    id: z.uuid().optional(),
+    name: z.string().trim().min(2).max(80),
+    cost: packagingAmount,
+    isDefault: z.boolean(),
+    active: z.boolean(),
+  })
+  .strict();

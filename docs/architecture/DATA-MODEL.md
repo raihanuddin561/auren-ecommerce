@@ -189,3 +189,25 @@ erDiagram
 - `expenses(expense_date)`, `expenses(category_id, expense_date)`
 - UNIQUE(`webhook_events.provider`, `webhook_events.event_id`)
 - `outbox_events(status, created_at)` partial index where `status='pending'`
+
+---
+
+## Implemented: verification, fulfilment, refunds, returns, order costs (migrations 20261008120000, 130000, 140000)
+
+What the code has now, where it differs from or adds to the rows above (ADR-036 to ADR-041):
+
+| Table | Added or fixed |
+|---|---|
+| `orders` | `claim_expires_at` (the claim lock; null with `assigned_to` set means a manager assignment), `needs_manager_review`, `escalated_at`, `created_by` (staff who typed a manual order), `shipped_at`, `returned_to_origin_at`, `completed_at`; index on `next_attempt_at`. Trigger `orders_guard_totals`: subtotal, discount, delivery, total and currency are frozen once the order leaves `placed`, `under_verification`, `on_hold`, `pending_payment` |
+| `order_items` | `replacement_of_item_id` (self reference: an exchange line priced 0). Trigger `order_items_guard_edit`: lines change or disappear only while the order is open, except `quantity_returned` and replacement inserts. `auren_app` may DELETE a line again; the trigger is the guard |
+| `order_verification_attempts` | As specified, plus `checklist` jsonb (the five ticks), `next_attempt_at`; outcome `order_edited` added. Append-only |
+| `order_cost_lines` | `actor_id`, `source_type`, `source_id`; unique per (order, type, source) for automatic lines; an amount may be negative (reversing line), never zero. Append-only |
+| `refunds` | `status` (`requested`, `succeeded`, `failed`, `cancelled`), `return_request_id`, `requested_by`, `actor_id`, `processed_at`, `idempotency_key` (unique), `note`. Trigger `refunds_guard_amount`: open and succeeded refunds on a payment never exceed its amount; a succeeded refund needs a succeeded payment |
+| `shipments` | `kind` (`outbound`, `replacement`), `courier_name` (manual courier), `booked_by`; one live outbound parcel per order (partial unique index) |
+| `shipment_events` | `external_id` (the courier's id for the update; unique with the shipment), `actor_id`. Append-only |
+| `packaging_profiles` | As specified; one default (partial unique index), `active` |
+| `return_requests` | `return_number` from `return_number_seq`, `staff_note`, `requested_by`, `decided_by`, `decided_at`, `received_at`, `inspected_at`, `closed_at` |
+| `return_items` | `condition` set at inspection; unique per (return, order line) |
+| `store_credit_ledger` | Signed amount, append-only, balance is the sum |
+
+Settings keys in `store_settings`: `orders.verification` (SLA minutes, working hours, attempt threshold, claim minutes, `manualOrdersSelfVerify`), `orders.returns` (`windowDays`), `views.orders.<user id>` (saved list views).

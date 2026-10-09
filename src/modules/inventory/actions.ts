@@ -35,6 +35,7 @@ export async function adjustStock(
       userId: staff.userId,
       ip: meta.ip,
       userAgent: meta.userAgent,
+      requireSetCostStepUp: () => requireStepUp(staff, SET_COST_STEP_UP),
     });
     for (const tag of result.tags) updateTag(tag);
     const { onHand, reserved, delta } = result.data;

@@ -68,6 +68,7 @@ model User {
   cart        Cart?
   addresses   Address[]
   orders      Order[]
+  storeCredit StoreCreditEntry[]
 
   @@map("users")
 }
@@ -165,10 +166,12 @@ model StaffMember {
   createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  user            User    @relation(fields: [userId], references: [id], onDelete: Restrict)
-  confirmedOrders Order[] @relation("OrderConfirmedBy")
-  assignedOrders  Order[] @relation("OrderAssignedTo")
-  cancelledOrders Order[] @relation("OrderCancelledBy")
+  user            User                       @relation(fields: [userId], references: [id], onDelete: Restrict)
+  confirmedOrders Order[]                    @relation("OrderConfirmedBy")
+  assignedOrders  Order[]                    @relation("OrderAssignedTo")
+  cancelledOrders Order[]                    @relation("OrderCancelledBy")
+  createdOrders   Order[]                    @relation("OrderCreatedBy")
+  attempts        OrderVerificationAttempt[]
 
   @@index([role])
   @@map("staff_members")
@@ -1064,11 +1067,21 @@ model Order {
   placedAt             DateTime               @default(now()) @map("placed_at") @db.Timestamptz(6)
   assignedTo           String?                @map("assigned_to") @db.Uuid
   assignedAt           DateTime?              @map("assigned_at") @db.Timestamptz(6)
+  /// The claim lock on the verification queue: others cannot act until this time passes.
+  claimExpiresAt       DateTime?              @map("claim_expires_at") @db.Timestamptz(6)
+  /// Raised after too many failed contact attempts; it never cancels anything (INV-O2).
+  needsManagerReview   Boolean                @default(false) @map("needs_manager_review")
+  escalatedAt          DateTime?              @map("escalated_at") @db.Timestamptz(6)
+  /// The staff member who typed a manual order in (phone, Facebook, WhatsApp ...).
+  createdBy            String?                @map("created_by") @db.Uuid
   verificationAttempts Int                    @default(0) @map("verification_attempts")
   nextAttemptAt        DateTime?              @map("next_attempt_at") @db.Timestamptz(6)
   confirmedBy          String?                @map("confirmed_by") @db.Uuid
   confirmedAt          DateTime?              @map("confirmed_at") @db.Timestamptz(6)
+  shippedAt            DateTime?              @map("shipped_at") @db.Timestamptz(6)
   deliveredAt          DateTime?              @map("delivered_at") @db.Timestamptz(6)
+  returnedToOriginAt   DateTime?              @map("returned_to_origin_at") @db.Timestamptz(6)
+  completedAt          DateTime?              @map("completed_at") @db.Timestamptz(6)
   cancelledAt          DateTime?              @map("cancelled_at") @db.Timestamptz(6)
   cancelledBy          String?                @map("cancelled_by") @db.Uuid
   cancelReason         String?                @map("cancel_reason")
@@ -1076,13 +1089,19 @@ model Order {
   createdAt            DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt            DateTime               @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  user      User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
-  verifier  StaffMember? @relation("OrderConfirmedBy", fields: [confirmedBy], references: [id], onDelete: Restrict)
-  assignee  StaffMember? @relation("OrderAssignedTo", fields: [assignedTo], references: [id], onDelete: Restrict)
-  canceller StaffMember? @relation("OrderCancelledBy", fields: [cancelledBy], references: [id], onDelete: Restrict)
+  user      User?                      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  verifier  StaffMember?               @relation("OrderConfirmedBy", fields: [confirmedBy], references: [id], onDelete: Restrict)
+  assignee  StaffMember?               @relation("OrderAssignedTo", fields: [assignedTo], references: [id], onDelete: Restrict)
+  canceller StaffMember?               @relation("OrderCancelledBy", fields: [cancelledBy], references: [id], onDelete: Restrict)
+  creator   StaffMember?               @relation("OrderCreatedBy", fields: [createdBy], references: [id], onDelete: Restrict)
   items     OrderItem[]
   events    OrderEvent[]
   payments  Payment[]
+  attempts  OrderVerificationAttempt[]
+  costLines OrderCostLine[]
+  refunds   Refund[]
+  shipments Shipment[]
+  returns   ReturnRequest[]
 
   @@index([status, placedAt])
   @@index([placedAt(sort: Desc)])
@@ -1092,6 +1111,7 @@ model Order {
   @@index([userId])
   @@index([assignedTo, status])
   @@index([deliveredAt])
+  @@index([nextAttemptAt])
   @@map("orders")
 }
 
@@ -1117,10 +1137,15 @@ model OrderItem {
   taxMinor             BigInt   @default(0) @map("tax_minor")
   totalMinor           BigInt   @map("total_minor")
   quantityReturned     Int      @default(0) @map("quantity_returned")
+  /// Set on a replacement line created by an exchange: it points at the line that came back.
+  replacementOfItemId  String?  @map("replacement_of_item_id") @db.Uuid
   createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  order   Order          @relation(fields: [orderId], references: [id], onDelete: Restrict)
-  variant ProductVariant @relation(fields: [variantId], references: [id], onDelete: Restrict)
+  order         Order          @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  variant       ProductVariant @relation(fields: [variantId], references: [id], onDelete: Restrict)
+  returnItems   ReturnItem[]   @relation("ReturnedItem")
+  replacementOf OrderItem?     @relation("Replacement", fields: [replacementOfItemId], references: [id], onDelete: Restrict)
+  replacements  OrderItem[]    @relation("Replacement")
 
   @@index([orderId])
   @@index([variantId])
@@ -1163,7 +1188,8 @@ model Payment {
   createdAt         DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt         DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  order Order @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  order   Order    @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  refunds Refund[]
 
   @@index([orderId])
   @@map("payments")
@@ -1200,4 +1226,349 @@ model NotificationLog {
 
   @@index([relatedType, relatedId])
   @@map("notification_logs")
+}
+
+// ---------------------------------------------------------------------------------------------
+// Verification, fulfilment, refunds, returns, order costs
+// ---------------------------------------------------------------------------------------------
+
+enum VerificationChannel {
+  call
+  sms
+  whatsapp
+  messenger
+
+  @@map("verification_channel")
+}
+
+enum VerificationOutcome {
+  verified
+  no_answer
+  busy
+  wrong_number
+  callback_requested
+  customer_cancelled
+  suspected_fake
+  order_edited
+
+  @@map("verification_outcome")
+}
+
+/// One row per contact attempt or verification decision on an order. Append-only: it drives the
+/// verification queue, the attempt counter and staff performance numbers.
+model OrderVerificationAttempt {
+  id            String              @id @default(uuid(7)) @db.Uuid
+  orderId       String              @map("order_id") @db.Uuid
+  staffId       String              @map("staff_id") @db.Uuid
+  channel       VerificationChannel @default(call)
+  outcome       VerificationOutcome
+  /// The checklist as it stood when the attempt was saved: { genuine, items, address, payment, stock }.
+  checklist     Json                @default("{}")
+  note          String?
+  nextAttemptAt DateTime?           @map("next_attempt_at") @db.Timestamptz(6)
+  createdAt     DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  order Order       @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  staff StaffMember @relation(fields: [staffId], references: [id], onDelete: Restrict)
+
+  @@index([orderId, createdAt])
+  @@index([staffId, createdAt])
+  @@map("order_verification_attempts")
+}
+
+enum OrderCostType {
+  shipping
+  gateway_fee
+  cod_fee
+  packaging
+  return_shipping
+  rto_loss
+  other
+
+  @@map("order_cost_type")
+}
+
+/// Every cost that belongs to one order and is not the cost of goods (that is the line snapshot).
+/// Append-only: a mistake is corrected with a reversing (negative) line of the same type. Automatic lines carry
+/// their source so recording the same cost twice changes nothing.
+model OrderCostLine {
+  id          String        @id @default(uuid(7)) @db.Uuid
+  orderId     String        @map("order_id") @db.Uuid
+  type        OrderCostType
+  amountMinor BigInt        @map("amount_minor")
+  currency    String        @db.Char(3)
+  sourceType  String?       @map("source_type")
+  sourceId    String?       @map("source_id")
+  note        String?
+  actorId     String?       @map("actor_id") @db.Uuid
+  createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Restrict)
+
+  @@index([orderId])
+  @@index([createdAt])
+  @@map("order_cost_lines")
+}
+
+enum RefundMethod {
+  original
+  store_credit
+  manual_bkash
+
+  @@map("refund_method")
+}
+
+enum RefundStatus {
+  requested
+  succeeded
+  failed
+  cancelled
+
+  @@map("refund_status")
+}
+
+/// Money going back to a customer. A cancelled paid order creates a `requested` row that staff
+/// process through the normal controls; nothing is refunded automatically.
+model Refund {
+  id              String       @id @default(uuid(7)) @db.Uuid
+  orderId         String       @map("order_id") @db.Uuid
+  paymentId       String       @map("payment_id") @db.Uuid
+  returnRequestId String?      @map("return_request_id") @db.Uuid
+  amountMinor     BigInt       @map("amount_minor")
+  currency        String       @db.Char(3)
+  reason          String
+  method          RefundMethod @default(manual_bkash)
+  status          RefundStatus @default(requested)
+  providerRef     String?      @map("provider_ref")
+  note            String?
+  requestedBy     String?      @map("requested_by") @db.Uuid
+  actorId         String?      @map("actor_id") @db.Uuid
+  processedAt     DateTime?    @map("processed_at") @db.Timestamptz(6)
+  idempotencyKey  String?      @unique @map("idempotency_key")
+  createdAt       DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  order         Order          @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  payment       Payment        @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  returnRequest ReturnRequest? @relation(fields: [returnRequestId], references: [id], onDelete: Restrict)
+
+  @@index([orderId])
+  @@index([paymentId])
+  @@index([status])
+  @@map("refunds")
+}
+
+enum CourierId {
+  pathao
+  steadfast
+  manual
+
+  @@map("courier_id")
+}
+
+enum ShipmentStatus {
+  pending
+  booked
+  picked_up
+  in_transit
+  out_for_delivery
+  delivered
+  failed
+  returned
+
+  @@map("shipment_status")
+}
+
+enum ShipmentKind {
+  outbound
+  replacement
+
+  @@map("shipment_kind")
+}
+
+model Shipment {
+  id             String         @id @default(uuid(7)) @db.Uuid
+  orderId        String         @map("order_id") @db.Uuid
+  kind           ShipmentKind   @default(outbound)
+  courier        CourierId
+  /// Free text for the manual courier ("Sundarban", "Own rider").
+  courierName    String?        @map("courier_name")
+  trackingNumber String?        @map("tracking_number")
+  consignmentId  String?        @map("consignment_id")
+  status         ShipmentStatus @default(pending)
+  codAmountMinor BigInt         @default(0) @map("cod_amount_minor")
+  /// What the courier charges us for carrying this parcel.
+  costMinor      BigInt         @default(0) @map("cost_minor")
+  codFeeMinor    BigInt         @default(0) @map("cod_fee_minor")
+  currency       String         @db.Char(3)
+  weightG        Int?           @map("weight_g")
+  labelUrl       String?        @map("label_url")
+  bookedBy       String?        @map("booked_by") @db.Uuid
+  bookedAt       DateTime?      @map("booked_at") @db.Timestamptz(6)
+  deliveredAt    DateTime?      @map("delivered_at") @db.Timestamptz(6)
+  createdAt      DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  order  Order           @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  events ShipmentEvent[]
+
+  @@index([orderId])
+  @@index([status])
+  @@index([courier, trackingNumber])
+  @@map("shipments")
+}
+
+model ShipmentEvent {
+  id          String         @id @default(uuid(7)) @db.Uuid
+  shipmentId  String         @map("shipment_id") @db.Uuid
+  status      ShipmentStatus
+  description String?
+  occurredAt  DateTime       @default(now()) @map("occurred_at") @db.Timestamptz(6)
+  /// The courier's own id for this update, so a polled update is stored once.
+  externalId  String?        @map("external_id")
+  actorId     String?        @map("actor_id") @db.Uuid
+  raw         Json?
+  createdAt   DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  shipment Shipment @relation(fields: [shipmentId], references: [id], onDelete: Restrict)
+
+  @@unique([shipmentId, externalId])
+  @@index([shipmentId, occurredAt])
+  @@map("shipment_events")
+}
+
+/// The box, tissue and card that go with an order. The default profile's cost is added to the order
+/// when it is handed to the courier.
+model PackagingProfile {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  name      String
+  costMinor BigInt   @map("cost_minor")
+  currency  String   @db.Char(3)
+  isDefault Boolean  @default(false) @map("is_default")
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("packaging_profiles")
+}
+
+enum ReturnType {
+  return
+  exchange
+
+  @@map("return_type")
+}
+
+enum ReturnStatus {
+  requested
+  approved
+  rejected
+  in_transit
+  received
+  inspected
+  refunded
+  exchanged
+  closed
+
+  @@map("return_status")
+}
+
+enum ReturnResolution {
+  refund
+  store_credit
+  exchange
+
+  @@map("return_resolution")
+}
+
+enum ReturnReason {
+  too_small
+  too_large
+  defective
+  not_as_described
+  changed_mind
+
+  @@map("return_reason")
+}
+
+enum ReturnCondition {
+  resellable
+  damaged
+
+  @@map("return_condition")
+}
+
+model ReturnRequest {
+  id                      String            @id @default(uuid(7)) @db.Uuid
+  /// RET-0001, from a sequence.
+  returnNumber            String            @unique @default(dbgenerated("('RET-'::text || lpad((nextval('return_number_seq'::regclass))::text, 4, '0'::text))")) @map("return_number")
+  orderId                 String            @map("order_id") @db.Uuid
+  type                    ReturnType        @default(return)
+  status                  ReturnStatus      @default(requested)
+  customerNote            String?           @map("customer_note")
+  staffNote               String?           @map("staff_note")
+  resolution              ReturnResolution?
+  returnShippingCostMinor BigInt            @default(0) @map("return_shipping_cost_minor")
+  currency                String            @db.Char(3)
+  requestedBy             String?           @map("requested_by")
+  decidedBy               String?           @map("decided_by") @db.Uuid
+  decidedAt               DateTime?         @map("decided_at") @db.Timestamptz(6)
+  receivedAt              DateTime?         @map("received_at") @db.Timestamptz(6)
+  inspectedAt             DateTime?         @map("inspected_at") @db.Timestamptz(6)
+  closedAt                DateTime?         @map("closed_at") @db.Timestamptz(6)
+  createdAt               DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt               DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  order   Order        @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  items   ReturnItem[]
+  refunds Refund[]
+
+  @@index([orderId])
+  @@index([status, createdAt])
+  @@map("return_requests")
+}
+
+model ReturnItem {
+  id                String           @id @default(uuid(7)) @db.Uuid
+  returnId          String           @map("return_id") @db.Uuid
+  orderItemId       String           @map("order_item_id") @db.Uuid
+  quantity          Int
+  reason            ReturnReason
+  /// Filled in at inspection.
+  condition         ReturnCondition?
+  /// The variant the customer wants instead (an exchange for another size).
+  exchangeVariantId String?          @map("exchange_variant_id") @db.Uuid
+
+  returnRequest ReturnRequest @relation(fields: [returnId], references: [id], onDelete: Restrict)
+  orderItem     OrderItem     @relation("ReturnedItem", fields: [orderItemId], references: [id], onDelete: Restrict)
+
+  @@unique([returnId, orderItemId])
+  @@index([orderItemId])
+  @@map("return_items")
+}
+
+enum StoreCreditReason {
+  return
+  goodwill
+  redeem
+
+  @@map("store_credit_reason")
+}
+
+/// Store credit as a ledger: the balance is the sum. Append-only.
+model StoreCreditEntry {
+  id          String            @id @default(uuid(7)) @db.Uuid
+  userId      String            @map("user_id") @db.Uuid
+  /// Signed: positive adds credit, negative spends it.
+  amountMinor BigInt            @map("amount_minor")
+  currency    String            @db.Char(3)
+  reason      StoreCreditReason
+  referenceId String?           @map("reference_id")
+  actorId     String?           @map("actor_id") @db.Uuid
+  createdAt   DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([userId, createdAt])
+  @@map("store_credit_ledger")
 }

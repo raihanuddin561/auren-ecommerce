@@ -5,6 +5,8 @@ export const SETTING_KEYS = {
   checkout: 'checkout.protection',
   cod: 'payments.cod',
   heroCarousel: 'storefront.hero_carousel',
+  verification: 'orders.verification',
+  returns: 'orders.returns',
 } as const;
 
 export const HERO_CAROUSEL_CACHE_TAG = 'hero-carousel';
@@ -45,6 +47,43 @@ export const codSettingsSchema = z
 
 export type CodSettings = z.infer<typeof codSettingsSchema>;
 export const DEFAULT_COD_SETTINGS: CodSettings = codSettingsSchema.parse({});
+
+/**
+ * Staff verification: working hours, target time and the attempt threshold (OD-11), the claim lock,
+ * and whether staff may confirm their own manual orders (ARCHITECTURE section 6.1). Nothing here can
+ * switch on automatic confirmation or cancellation: those paths do not exist.
+ */
+export const verificationSettingsSchema = z
+  .object({
+    /** Target time from placed to verified, in working minutes. */
+    slaMinutes: z.number().int().min(15).max(1440).default(120),
+    /** First working hour (0 to 23) and the hour the day ends (1 to 24), shop time. */
+    workStartHour: z.number().int().min(0).max(23).default(10),
+    workEndHour: z.number().int().min(1).max(24).default(21),
+    /** Failed contact attempts after which the order is flagged for a manager. */
+    attemptThreshold: z.number().int().min(1).max(10).default(3),
+    /** How long a claim keeps an order for one staff member. */
+    claimMinutes: z.number().int().min(5).max(120).default(15),
+    /** Whether the creator of a manual order may confirm it themselves. */
+    manualOrdersSelfVerify: z.boolean().default(false),
+  })
+  .strict()
+  .refine((value) => value.workEndHour > value.workStartHour, {
+    message: 'The working day must end after it starts.',
+    path: ['workEndHour'],
+  });
+
+export type VerificationSettings = z.infer<typeof verificationSettingsSchema>;
+export const DEFAULT_VERIFICATION_SETTINGS: VerificationSettings = verificationSettingsSchema.parse(
+  {},
+);
+
+/** The return window: how many days after delivery a customer can ask to return. */
+export const returnSettingsSchema = z
+  .object({ windowDays: z.number().int().min(1).max(90).default(7) })
+  .strict();
+export type ReturnSettings = z.infer<typeof returnSettingsSchema>;
+export const DEFAULT_RETURN_SETTINGS: ReturnSettings = returnSettingsSchema.parse({});
 
 /** What the admin form sends. Amounts are typed in taka. */
 export const saveCheckoutSettingsSchema = z
@@ -159,3 +198,21 @@ export const DEFAULT_HERO_CAROUSEL_SETTINGS: HeroCarouselSettings = {
 
 export const saveHeroCarouselSettingsSchema = heroCarouselSettingsSchema;
 export type SaveHeroCarouselSettingsInput = z.infer<typeof saveHeroCarouselSettingsSchema>;
+
+/** What the order rules form sends: verification rules and the return window, saved together. */
+export const saveOrderRulesSchema = z
+  .object({
+    slaMinutes: z.number().int().min(15).max(1440),
+    workStartHour: z.number().int().min(0).max(23),
+    workEndHour: z.number().int().min(1).max(24),
+    attemptThreshold: z.number().int().min(1).max(10),
+    claimMinutes: z.number().int().min(5).max(120),
+    manualOrdersSelfVerify: z.boolean(),
+    returnWindowDays: z.number().int().min(1).max(90),
+  })
+  .strict()
+  .refine((value) => value.workEndHour > value.workStartHour, {
+    message: 'The working day must end after it starts.',
+    path: ['workEndHour'],
+  });
+export type SaveOrderRulesInput = z.infer<typeof saveOrderRulesSchema>;

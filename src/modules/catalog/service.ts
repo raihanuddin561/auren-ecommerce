@@ -1682,6 +1682,15 @@ export async function lockVariantCosts(
   return new Map(rows.map((row) => [row.id, row]));
 }
 
+/** Cost basis of the variants without taking locks (previews and reads outside a transaction). */
+export async function readVariantCosts(
+  tx: Tx,
+  variantIds: readonly string[],
+): Promise<Map<string, VariantCost>> {
+  const rows = await repo.readVariantCosts(tx, variantIds);
+  return new Map(rows.map((row) => [row.id, row]));
+}
+
 /** Stores a recalculated weighted average cost (purchasing owns the formula). */
 export async function setVariantAverageCost(
   tx: Tx,

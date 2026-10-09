@@ -8,6 +8,7 @@ import { requireStaff } from '@/lib/staff';
 import {
   HERO_CAROUSEL_CACHE_TAG,
   saveCheckoutSettingsSchema,
+  saveOrderRulesSchema,
   saveHeroCarouselSettingsSchema,
 } from './schemas';
 import * as settings from './service';
@@ -74,6 +75,28 @@ export async function uploadHeroSlideImageAction(
     const bytes = Buffer.from(await file.arrayBuffer());
     const res = await settings.uploadHeroSlideImage(bytes);
     return ok(res);
+  } catch (error) {
+    return toActionError(error);
+  }
+}
+
+/**
+ * Verification rules (working hours, target time, attempt threshold, claim time, whether staff may
+ * verify their own manual orders) and the return window. Needs settings.manage; audited.
+ */
+export async function saveOrderRulesAction(input: unknown): Promise<ActionResult<{ saved: true }>> {
+  const parsed = saveOrderRulesSchema.safeParse(input);
+  if (!parsed.success) return validationError(parsed.error);
+  try {
+    const staff = await requireStaff();
+    assertPermission(staff, 'settings.manage');
+    const meta = await getRequestMeta();
+    const { returnWindowDays, ...verification } = parsed.data;
+    await settings.saveOrderRules(
+      { verification, returns: { windowDays: returnWindowDays } },
+      { userId: staff.userId, ip: meta.ip, userAgent: meta.userAgent },
+    );
+    return ok({ saved: true });
   } catch (error) {
     return toActionError(error);
   }

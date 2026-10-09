@@ -1,6 +1,6 @@
-import { afterAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { db } from '@/lib/db';
-import { isDomainError } from '@/lib/errors';
+import { DomainError, isDomainError } from '@/lib/errors';
 import {
   adjustStock,
   commitReservation,
@@ -45,7 +45,7 @@ const level = (variantId: string) => db.inventoryLevel.findFirstOrThrow({ where:
 
 const actor = async () => {
   const { user } = await makeStaff({ role: 'manager' });
-  return { userId: user.id };
+  return { userId: user.id, requireSetCostStepUp: async () => {} };
 };
 
 async function errorCode(work: Promise<unknown>): Promise<string> {
@@ -253,8 +253,8 @@ describe('cost basis from manual additions (INV-F3, INV-S3)', () => {
         referenceId: 'uncosted',
       }),
     );
-    await adjustStock(add(variant.id, 4, '1000'), await actor());
-    expect(await avg(variant.id)).toBe(100000n);
+    await adjustStock(add(variant.id, 4, '500'), await actor());
+    expect(await avg(variant.id)).toBe(50000n);
   });
 
   it('removals never change the cost and refuse a unit cost', async () => {
@@ -300,6 +300,93 @@ describe('cost basis from manual additions (INV-F3, INV-S3)', () => {
     );
     expect(await avg(variant.id)).toBe(0n);
     expect(await db.stockMovement.count({ where: { variantId: variant.id } })).toBe(0);
+  });
+});
+
+describe('setting a cost through Adjust stock needs the Set cost step-up (INV-A6)', () => {
+  const addWithCost = (variantId: string, delta: number, unitCost: string) => ({
+    variantId,
+    reason: 'opening_stock' as const,
+    change: { mode: 'delta' as const, delta },
+    unitCost,
+  });
+
+  it('refuses a cost that would set the basis when the step-up is missing or fails', async () => {
+    const { variant } = await setup(0, 0n);
+    const { user } = await makeStaff({ role: 'manager' });
+    // No way to ask for the step-up: refused.
+    expect(
+      await errorCode(adjustStock(addWithCost(variant.id, 5, '1000'), { userId: user.id })),
+    ).toBe('FORBIDDEN');
+    // The step-up itself fails: its error comes out and nothing changed.
+    const failing = {
+      userId: user.id,
+      requireSetCostStepUp: async () => {
+        throw new DomainError('STEP_UP_REQUIRED');
+      },
+    };
+    expect(await errorCode(adjustStock(addWithCost(variant.id, 5, '1000'), failing))).toBe(
+      'STEP_UP_REQUIRED',
+    );
+    expect(await db.stockMovement.count({ where: { variantId: variant.id } })).toBe(0);
+    expect(
+      (await db.productVariant.findUniqueOrThrow({ where: { id: variant.id } })).avgCostMinor,
+    ).toBe(0n);
+  });
+
+  it('also asks when the variant has a cost but nothing on hand, and not for a plain blend', async () => {
+    const { variant } = await setup(0, 40000n);
+    const { user } = await makeStaff({ role: 'manager' });
+    const asked = vi.fn(async () => {});
+    const actorWith = { userId: user.id, requireSetCostStepUp: asked };
+    await adjustStock(addWithCost(variant.id, 2, '1000'), actorWith);
+    expect(asked).toHaveBeenCalledTimes(1);
+    // Units are on hand now, so a further typed cost is a normal blend: no extra step-up.
+    await adjustStock(addWithCost(variant.id, 2, '1200'), actorWith);
+    expect(asked).toHaveBeenCalledTimes(1);
+  });
+
+  it('counts the units already on hand when giving them a cost (maker-checker valuation)', async () => {
+    const { variant } = await setup(0, 0n);
+    // 3,000 units on hand without a cost (found before costs existed).
+    await db.inventoryLevel.create({
+      data: {
+        variantId: variant.id,
+        locationId: (await db.location.findFirstOrThrow()).id,
+        onHand: 3000,
+        reserved: 0,
+      },
+    });
+    // Typing 1 unit at BDT 1,000 re-values 3,001 units: far above the approval threshold.
+    expect(await errorCode(adjustStock(addWithCost(variant.id, 1, '1000'), await actor()))).toBe(
+      'APPROVAL_REQUIRED',
+    );
+    expect(
+      (await db.productVariant.findUniqueOrThrow({ where: { id: variant.id } })).avgCostMinor,
+    ).toBe(0n);
+  });
+
+  it('Set cost is also gated by approval when the stock on hand is worth a lot', async () => {
+    const { variant } = await setup(0, 0n);
+    await db.inventoryLevel.create({
+      data: {
+        variantId: variant.id,
+        locationId: (await db.location.findFirstOrThrow()).id,
+        onHand: 3000,
+        reserved: 0,
+      },
+    });
+    expect(
+      await errorCode(
+        setCostBasis(
+          { scope: { kind: 'variant', variantId: variant.id }, unitCost: '1000' },
+          await actor(),
+        ),
+      ),
+    ).toBe('APPROVAL_REQUIRED');
+    expect(
+      (await db.productVariant.findUniqueOrThrow({ where: { id: variant.id } })).avgCostMinor,
+    ).toBe(0n);
   });
 });
 

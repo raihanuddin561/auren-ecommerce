@@ -3,7 +3,9 @@ import { logger } from '@/lib/logger';
 import { money, toDecimalString } from '@/lib/money';
 import { GEO_DIVISIONS, geoSlug } from './geo-data';
 import * as repo from './repository';
+import { listCourierOptions } from './couriers/registry';
 import { ensureReferenceData, listZonesForAdmin } from './service';
+import { listPackagingProfiles } from './shipments';
 import type { AdminZone } from './types';
 
 export interface AreaOption {
@@ -113,3 +115,9 @@ export async function getShippingConfigForAdmin(): Promise<AdminZone[]> {
     })),
   }));
 }
+
+/** Couriers staff can book with: the manual one and every courier whose keys are set. */
+export { listCourierOptions };
+
+/** Packaging profiles for the settings screen. */
+export const getPackagingProfiles = () => listPackagingProfiles(db);

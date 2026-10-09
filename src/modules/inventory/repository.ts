@@ -579,3 +579,24 @@ export async function listInStockProductIds(tx: Tx): Promise<string[]> {
   `;
   return rows.map((row) => row.product_id);
 }
+
+/**
+ * Units a reference (an order) currently holds as sold: sales minus the units put back, per
+ * variant. An order edited during verification sells and restocks several times, so cancelling
+ * restocks exactly what is still out, never more and never less.
+ */
+export async function netSoldByVariant(
+  tx: Tx,
+  referenceType: string,
+  referenceId: string,
+): Promise<Map<string, number>> {
+  const rows = await tx.$queryRaw<Array<{ variant_id: string; net: bigint }>>`
+    SELECT variant_id, -SUM(quantity)::bigint AS net
+      FROM stock_movements
+     WHERE reference_type = ${referenceType} AND reference_id = ${referenceId}
+       AND type IN ('sale', 'return_restock')
+     GROUP BY variant_id`;
+  return new Map(
+    rows.filter((row) => row.net > 0n).map((row) => [row.variant_id, Number(row.net)]),
+  );
+}

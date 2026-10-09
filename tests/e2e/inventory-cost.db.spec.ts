@@ -1,4 +1,4 @@
-import type { Page } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 import { db } from '@/lib/db';
 import { TEST_PASSWORD } from '../factories';
 import { expect, test } from './fixtures';
@@ -10,6 +10,13 @@ test.describe.configure({ timeout: 180_000 });
 /** Toasts carry a small close button that axe flags while they are on screen: wait them out. */
 const settle = async (page: Page) =>
   expect(page.locator('[data-sonner-toast]')).toHaveCount(0, { timeout: 15_000 });
+
+/** The live stock cells of one variants-table row (cells follow the column order). */
+const stockCells = (row: Locator) => ({
+  onHand: row.getByRole('cell').nth(6),
+  available: row.getByRole('cell').nth(7),
+  cost: row.getByRole('cell').nth(8),
+});
 
 const unique = () =>
   `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`.toUpperCase();
@@ -52,6 +59,8 @@ test.describe('cost basis for variants without one', () => {
     await dialog.getByRole('button', { name: 'Save adjustment' }).click();
     await expect(dialog.getByText('Enter what one unit cost you.')).toBeVisible();
     await dialog.getByLabel(/Unit cost/).fill('1000');
+    // Setting a cost this way needs the same fresh confirmation as Set cost.
+    await dialog.getByLabel('Your password').fill(TEST_PASSWORD);
     await dialog.getByRole('button', { name: 'Save adjustment' }).click();
     await expect(dialog).toBeHidden();
     await settle(page);
@@ -74,7 +83,11 @@ test.describe('cost basis for variants without one', () => {
     const secondRow = table
       .getByRole('row')
       .filter({ has: page.locator(`input[value="${second.sku}"]`) });
-    await expect(firstRow).toContainText('5');
+    await expect(stockCells(firstRow).onHand).toHaveText(/^5$/);
+    await expect(stockCells(firstRow).available).toHaveText(/^5$/);
+    await expect(stockCells(firstRow).cost).toContainText('1,000');
+    await expect(stockCells(secondRow).onHand).toHaveText(/^0$/);
+    await expect(stockCells(secondRow).cost).toHaveText('None');
     await expect(firstRow).not.toContainText('No cost: cannot be ordered');
     await expect(secondRow).toContainText('No cost: cannot be ordered');
     await expect(page.getByText(/set a cost in inventory first/)).toBeVisible();
@@ -91,7 +104,9 @@ test.describe('cost basis for variants without one', () => {
       .getByRole('link', { name: `Cost Test Shirt ${tag}` })
       .first()
       .click();
-    await expect(firstRow).toContainText('8');
+    await expect(stockCells(firstRow).onHand).toHaveText(/^8$/);
+    await expect(stockCells(firstRow).available).toHaveText(/^8$/);
+    await expect(stockCells(firstRow).cost).toContainText('1,000');
 
     // Set cost for every variant of the product, with a preview and a fresh password.
     await page.goto(`/admin/inventory?q=${second.sku}`);
@@ -112,6 +127,11 @@ test.describe('cost basis for variants without one', () => {
     expect(other.avgCostMinor).toBe(90000n);
     const untouched = await db.productVariant.findUniqueOrThrow({ where: { id: first.id } });
     expect(untouched.avgCostMinor).toBe(100000n);
+
+    // The product page shows the new cost in the Cost cell, not only the database.
+    await page.goto(`/admin/products/${product.id}`);
+    await expect(stockCells(secondRow).cost).toContainText('900');
+    await expect(stockCells(firstRow).cost).toContainText('1,000');
   });
 
   test('staff without inventory.adjust see the flag but no Set cost button', async ({

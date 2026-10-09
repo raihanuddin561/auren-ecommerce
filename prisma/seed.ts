@@ -91,6 +91,19 @@ try {
             ? `, ${purchasing.retiredLegacyUnits} legacy opening units replaced.`
             : '.'),
   );
+  // One default packaging profile, so the profit of a demo order includes the box (6.9). The owner
+  // edits the name and cost in Settings > Orders and fulfilment.
+  if ((await db.packagingProfile.count()) === 0) {
+    await db.packagingProfile.create({
+      data: {
+        name: 'Signature box and tissue',
+        costMinor: 3500n,
+        currency: 'BDT',
+        isDefault: true,
+      },
+    });
+    console.log('Packaging profile seeded: Signature box and tissue, BDT 35 (default).');
+  }
 } finally {
   await db.$disconnect();
 }

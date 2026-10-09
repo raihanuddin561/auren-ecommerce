@@ -104,11 +104,11 @@
 
 | ID | Sub-feature | Pri | BE | API | UT | FE | E2E | CR | Overall | Notes |
 |---|---|---|---|---|---|---|---|---|---|---|
-| 6.1 | Order state machine | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
+| 6.1 | Order state machine | P0 | Done | Done | Done | Todo | Todo | Todo | WIP | enhancement. state-machine.ts (TRANSITIONS table, staff-only confirmed/cancelled), transitions.ts is the single status write path (compare and set, order_events row and order.status_changed outbox event per move). INV-O9 DB guard already existed (migration add_cart_checkout_orders); added DB triggers freezing order lines and totals after confirmation. tests/unit/order-status-writes.test.ts scans the source: no job, webhook or handler can write confirmed or cancelled. FE/E2E/CR pending |
 | 6.2 | Admin order list | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
 | 6.3 | Admin order detail | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 6.4 | Order verification queue | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 6.5 | Manual order entry | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
+| 6.4 | Order verification queue | P0 | Done | Done | Done | Todo | Todo | Todo | WIP | new. Claim lock (15 min, server side), release, manager assign, queue read model with SLA/risk/filters. FE page and E2E pending |
+| 6.5 | Manual order entry | P0 | Done | Done | Done | Todo | Todo | Todo | WIP | new. checkout/manual.ts places channel orders (manual, facebook, instagram, whatsapp, store) through the same rules and queue; creator cannot verify unless setting on (integration tests). FE form written; E2E/CR pending |
 | 6.6 | Invoices and packing slips | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
 | 6.7 | Courier interface + Pathao | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
 | 6.8 | Steadfast courier | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
@@ -116,9 +116,9 @@
 | 6.10 | COD remittance reconciliation | P1 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
 | 6.11 | RTO handling | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
 | 6.12 | Returns and exchanges | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 6.13 | Verification checklist and outcomes | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 6.14 | Edit order during verification | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 6.15 | Verification SLA and escalation | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
+| 6.13 | Verification checklist and outcomes | P0 | Done | Done | Done | Todo | Todo | Todo | WIP | enhancement (the earlier panel kept the checklist in the browser only). Server now requires the whole checklist, stores it in order_verification_attempts, verifier from session, call back later outcomes with attempts log, cancel releases stock by net-sold ledger and creates a refund REQUEST for paid orders, fake_order flags phone. Integration verification 24/24. FE/E2E/CR pending |
+| 6.14 | Edit order during verification | P0 | Done | Done | Done | Todo | Todo | Todo | WIP | new. edit.ts: server re-price (kept lines keep agreed price), stock deltas through inventoryService, delivery re-quote, COD payment amount follows, order.updated event. FE/E2E/CR pending |
+| 6.15 | Verification SLA and escalation | P0 | Done | Done | Done | Todo | Todo | Todo | WIP | new. Verification settings (SLA 120 working min, 10-21 Dhaka, threshold 3, claim 15 min, self-verify off), working-minutes arithmetic with unit tests, escalation cron (flag + manager mail, once, never cancels; asserted in fulfilment integration test). Settings screen, FE/E2E/CR pending |
 
 ## Module 7: Customer Accounts
 

@@ -20,11 +20,15 @@ export const boundaryElements = [
     mode: 'full',
   },
   { type: 'app', pattern: 'src/app/**', mode: 'full' },
-  moduleFile('mod-actions', 'actions.{ts,tsx}'),
+  // A module may split its actions, services and repositories over several files; each file is
+  // named here so it is held to the rules of its layer (the first match wins).
+  moduleFile('mod-actions', '{actions,list-actions,fulfilment-actions}.{ts,tsx}'),
   moduleFile('mod-queries', 'queries.{ts,tsx}'),
-  moduleFile('mod-service', 'service.{ts,tsx}'),
-  moduleFile('mod-service', 'verification.{ts,tsx}'),
-  moduleFile('mod-repository', 'repository.{ts,tsx}'),
+  moduleFile(
+    'mod-service',
+    '{service,verification,edit,placement,transitions,return-transitions,fulfilment,escalation,customer-extras,documents-data,workspace,detail,list,collection,refunds,dispatch,manual,shipments}.{ts,tsx}',
+  ),
+  moduleFile('mod-repository', '{repository,shipments-repository}.{ts,tsx}'),
   // schemas, types, events, errors, constants: pure shared module files
   moduleFile('mod-shared', '*.{ts,tsx}'),
   // anything nested deeper inside a module is private to that module

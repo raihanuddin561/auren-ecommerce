@@ -102,6 +102,23 @@ const serverSchema = z.object({
   // work) exists until a gateway is chosen; production refuses to send real codes with it.
   SMS_PROVIDER: z.preprocess(blankToUndefined, z.enum(['log']).optional()),
 
+  // Couriers (6.7, 6.8). Both are optional: without keys the courier is unavailable and staff use
+  // the manual courier (type the courier name and tracking number). The adapters were written from
+  // the couriers' public documentation and tested against a fake transport; they have not been
+  // run against a live merchant account. Pathao needs all of its keys, Steadfast both of its keys.
+  PATHAO_BASE_URL: z.preprocess(blankToUndefined, z.url().default('https://api-hermes.pathao.com')),
+  PATHAO_CLIENT_ID: optionalString,
+  PATHAO_CLIENT_SECRET: optionalString,
+  PATHAO_USERNAME: optionalString,
+  PATHAO_PASSWORD: optionalString,
+  PATHAO_STORE_ID: optionalString,
+  STEADFAST_BASE_URL: z.preprocess(
+    blankToUndefined,
+    z.url().default('https://portal.packzy.com/api/v1'),
+  ),
+  STEADFAST_API_KEY: optionalString,
+  STEADFAST_SECRET_KEY: optionalString,
+
   // Media storage (ADR-026): Vercel Blob in production (token required there), the local
   // filesystem in development and tests.
   BLOB_READ_WRITE_TOKEN: optionalString,
@@ -137,6 +154,17 @@ const groups: ReadonlyArray<{ name: string; keys: readonly string[] }> = [
   { name: 'Turnstile', keys: ['TURNSTILE_SECRET_KEY', 'NEXT_PUBLIC_TURNSTILE_SITE_KEY'] },
   { name: 'Upstash Redis', keys: ['UPSTASH_REDIS_REST_URL', 'UPSTASH_REDIS_REST_TOKEN'] },
   { name: 'Inngest Cloud', keys: ['INNGEST_SIGNING_KEY', 'INNGEST_EVENT_KEY'] },
+  {
+    name: 'Pathao courier',
+    keys: [
+      'PATHAO_CLIENT_ID',
+      'PATHAO_CLIENT_SECRET',
+      'PATHAO_USERNAME',
+      'PATHAO_PASSWORD',
+      'PATHAO_STORE_ID',
+    ],
+  },
+  { name: 'Steadfast courier', keys: ['STEADFAST_API_KEY', 'STEADFAST_SECRET_KEY'] },
 ];
 
 const fullServerSchema = serverSchema.superRefine((value, ctx) => {

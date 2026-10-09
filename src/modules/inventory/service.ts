@@ -140,6 +140,12 @@ export interface StockActor {
   userId: string;
   ip?: string | null;
   userAgent?: string | null;
+  /**
+   * Asks for the fresh step-up that sets a cost basis (INV-A6). The service calls it when a stock
+   * addition would establish the cost of a variant (no cost yet, or nothing on hand), so a cost
+   * cannot be set through the Adjust stock door without the confirmation Set cost needs.
+   */
+  requireSetCostStepUp?: () => Promise<void>;
 }
 
 export interface AdjustResult {
@@ -200,6 +206,14 @@ export async function adjustStock(
 
     // Units on hand in every location, read before this change: the cost base of the average.
     const onHandBeforeAll = await repo.sumOnHandAllLocations(tx, input.variantId);
+    const establishesCost =
+      delta > 0 && unitCostMinor !== null && (variant.avgCostMinor <= 0n || onHandBeforeAll <= 0);
+    if (establishesCost) {
+      if (!actor.requireSetCostStepUp) {
+        throw new DomainError('FORBIDDEN', 'Setting a cost needs a fresh confirmation.');
+      }
+      await actor.requireSetCostStepUp();
+    }
     let after: repo.LevelAfter;
     if (delta > 0) {
       after = await repo.addOnHand(tx, input.variantId, locationId, delta);
@@ -219,7 +233,12 @@ export async function adjustStock(
       unitCostMinor !== null && unitCostMinor > variant.avgCostMinor
         ? unitCostMinor
         : variant.avgCostMinor;
-    const value = multiply(money(valuationBasis, variant.currency), Math.abs(delta));
+    // Giving a cost to units already on hand re-values them too, so they count toward the threshold.
+    const valuedUnits =
+      delta > 0 && unitCostMinor !== null && variant.avgCostMinor <= 0n
+        ? delta + onHandBeforeAll
+        : Math.abs(delta);
+    const value = multiply(money(valuationBasis, variant.currency), valuedUnits);
     await requireApproval(tx, {
       kind: 'stock_adjustment',
       subjectType: 'variant',
@@ -516,6 +535,62 @@ export async function restock(tx: Tx, input: RestockInput): Promise<StockEffect>
   return effectFor(tx, touched);
 }
 
+export interface ReturnLine {
+  variantId: string;
+  quantity: number;
+  /** Fit to sell again, or damaged. */
+  condition: 'resellable' | 'damaged';
+}
+
+/**
+ * Takes returned goods back after inspection (6.12). Every unit comes back as a restock movement;
+ * a damaged unit is written off straight away with its own write-off movement, so the ledger shows
+ * both the return and the loss and on hand only grows by what can be sold. Both movements carry
+ * the return as their reference.
+ */
+export async function restockReturn(
+  tx: Tx,
+  input: { returnId: string; lines: readonly ReturnLine[]; actorId?: string },
+): Promise<StockEffect> {
+  const locationId = await resolveLocation(tx);
+  const touched: string[] = [];
+  for (const line of input.lines) {
+    requirePositive(line.quantity);
+    await repo.addOnHand(tx, line.variantId, locationId, line.quantity);
+    await repo.insertMovement(tx, {
+      variantId: line.variantId,
+      locationId,
+      type: 'return_restock',
+      quantity: line.quantity,
+      referenceType: 'return',
+      referenceId: input.returnId,
+      reason: line.condition === 'resellable' ? 'return_resellable' : 'return_damaged',
+      actorId: input.actorId ?? null,
+    });
+    if (line.condition === 'damaged') {
+      const removed = await repo.removeFreeOnHand(tx, line.variantId, locationId, line.quantity);
+      if (!removed)
+        throw new DomainError('CONFLICT', 'The returned stock could not be written off.');
+      await repo.insertMovement(tx, {
+        variantId: line.variantId,
+        locationId,
+        type: 'write_off',
+        quantity: -line.quantity,
+        referenceType: 'return',
+        referenceId: input.returnId,
+        reason: 'return_damaged',
+        actorId: input.actorId ?? null,
+      });
+    }
+    touched.push(line.variantId);
+  }
+  return effectFor(tx, touched);
+}
+
+/** Units this reference still holds as sold, per variant (sales minus put-backs). */
+export const netSoldStock = (tx: Tx, referenceType: string, referenceId: string) =>
+  repo.netSoldByVariant(tx, referenceType, referenceId);
+
 export const hasSoldStock = (tx: Tx, referenceType: string, referenceId: string) =>
   repo.hasSaleMovements(tx, referenceType, referenceId);
 
@@ -556,7 +631,7 @@ export async function previewProductCost(productId: string): Promise<CostBasisPr
   const ids = await catalog.liveVariantIdsOfProduct(db, productId);
   if (ids.length === 0) return [];
   const [costs, labels, stock] = await Promise.all([
-    catalog.lockVariantCosts(db, ids),
+    catalog.readVariantCosts(db, ids),
     catalog.variantLabels(db, ids),
     getAvailability(ids),
   ]);
@@ -611,6 +686,15 @@ export async function setCostBasis(
         continue;
       }
       const unitCost = fromDecimalString(input.unitCost, variant.currency).minor;
+      // Stock already on hand is re-valued by this cost: a large re-valuation needs a second person.
+      const onHandNow = await repo.sumOnHandAllLocations(tx, id);
+      await requireApproval(tx, {
+        kind: 'stock_adjustment',
+        subjectType: 'variant',
+        subjectId: id,
+        amountMinor: multiply(money(unitCost, variant.currency), onHandNow).minor,
+        currency: variant.currency,
+      });
       if (!(await catalog.setVariantCostIfUnset(tx, id, unitCost))) {
         skipped += 1;
         continue;

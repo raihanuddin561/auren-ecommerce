@@ -6,8 +6,9 @@ import { assertPermission } from '@/lib/permissions';
 import { rateLimit } from '@/lib/rate-limit';
 import { getRequestMeta } from '@/lib/request-meta';
 import { requireStaff } from '@/lib/staff';
-import { listAreasSchema, saveRateSchema, saveZoneSchema } from './schemas';
+import { listAreasSchema, packagingProfileSchema, saveRateSchema, saveZoneSchema } from './schemas';
 import * as shipping from './service';
+import { savePackagingProfile } from './shipments';
 
 /** Thanas and upazilas of a district, for the cascading address picker. Public, read-only. */
 export async function listThanas(
@@ -59,6 +60,33 @@ export async function saveShippingRate(input: unknown): Promise<ActionResult<{ i
       userAgent: meta.userAgent,
     });
     updateTag(shipping.SHIPPING_TAG);
+    return ok({ id });
+  } catch (error) {
+    return toActionError(error);
+  }
+}
+
+/** Create or edit a packaging profile. Needs shipping.manage; audited. */
+export async function savePackagingProfileAction(
+  input: unknown,
+): Promise<ActionResult<{ id: string }>> {
+  const parsed = packagingProfileSchema.safeParse(input);
+  if (!parsed.success) return validationError(parsed.error);
+  try {
+    const staff = await requireStaff();
+    assertPermission(staff, 'shipping.manage');
+    const meta = await getRequestMeta();
+    const id = await savePackagingProfile(
+      {
+        ...(parsed.data.id ? { id: parsed.data.id } : {}),
+        name: parsed.data.name,
+        cost: parsed.data.cost,
+        isDefault: parsed.data.isDefault,
+        active: parsed.data.active,
+      },
+      { userId: staff.userId, ip: meta.ip, userAgent: meta.userAgent },
+    );
+    updateTag('packaging');
     return ok({ id });
   } catch (error) {
     return toActionError(error);

@@ -1,7 +1,16 @@
 import { cacheLife, cacheTag } from 'next/cache';
 import { toDecimalString, money } from '@/lib/money';
 import { HERO_CAROUSEL_CACHE_TAG, type HeroCarouselSettings } from './schemas';
-import { getCheckoutProtection, getCodSettings, getHeroCarouselSettings } from './service';
+import {
+  getCheckoutProtection,
+  getCodSettings,
+  getHeroCarouselSettings,
+  getReturnSettings,
+  getSavedViews,
+  getVerificationSettings,
+} from './service';
+
+export { getReturnSettings, getSavedViews, getVerificationSettings };
 import type { CheckoutSettingsView } from './types';
 
 /** Cash on delivery and checkout protection as the settings form shows them. */

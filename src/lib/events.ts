@@ -32,7 +32,45 @@ export const eventSchemas = {
     paymentMethod: z.enum(['cod', 'sslcommerz', 'stripe', 'bkash']),
     currency: z.string().length(3),
     totalMinor: z.string().regex(/^\d+$/),
-    channel: z.enum(['web']),
+    channel: z.enum(['web', 'manual', 'facebook', 'instagram', 'whatsapp', 'store']),
+  }),
+  /**
+   * Every move of an order through its lifecycle (ids and statuses only, INV-A9). Handlers (emails,
+   * SMS, analytics, finance rollups) key on `to`.
+   */
+  'order.status_changed': z.object({
+    orderId: z.uuid(),
+    from: z.string().min(1).max(40),
+    to: z.string().min(1).max(40),
+    /** The staff member (staff_members.id) who made the move; absent for an automatic move. */
+    actorId: z.uuid().optional(),
+  }),
+  /** Staff changed the lines, address or delivery of an order while verifying it. */
+  'order.updated': z.object({
+    orderId: z.uuid(),
+    totalChanged: z.boolean(),
+  }),
+  /** An order waits too long or could not be reached: managers should look (it is never cancelled). */
+  'order.escalated': z.object({
+    orderId: z.uuid(),
+    reason: z.enum(['sla_overdue', 'failed_attempts']),
+  }),
+  /** A refund was recorded (full or partial). */
+  'refund.processed': z.object({
+    refundId: z.uuid(),
+    orderId: z.uuid(),
+  }),
+  /** A return request moved (requested, approved, rejected, received, inspected, resolved). */
+  'return.status_changed': z.object({
+    returnId: z.uuid(),
+    orderId: z.uuid(),
+    status: z.string().min(1).max(40),
+  }),
+  /** A parcel changed state (booked, picked up, delivered ...). */
+  'shipment.updated': z.object({
+    shipmentId: z.uuid(),
+    orderId: z.uuid(),
+    status: z.string().min(1).max(40),
   }),
   /** Staff verified and confirmed the order (ids only, INV-A9). */
   'order.confirmed': z.object({

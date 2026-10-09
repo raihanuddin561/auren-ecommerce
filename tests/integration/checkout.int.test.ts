@@ -374,6 +374,39 @@ describe('placing an order (4.6)', () => {
     expect(await db.outboxEvent.count({ where: { type: 'order.placed' } })).toBe(0);
   });
 
+  it('refuses a district that is not in the chosen division and a thana of another district', async () => {
+    const areas = await areaIds();
+    const variant = await makeSellableVariant({ stock: 5 });
+    // Cumilla is not in the Dhaka division: both ids come from the known lists, so the pair is checked.
+    const forged = input(areas, {
+      address: {
+        ...input(areas).address,
+        divisionId: areas.dhaka.divisionId,
+        districtId: areas.cumilla.districtId,
+        thanaId: null,
+        thanaName: 'Anywhere',
+      },
+    });
+    expect(await errorCode(submit(await bag(variant), forged, { ip: null }))).toMatch(
+      /^VALIDATION/,
+    );
+    if (areas.dhaka.thanaId) {
+      // A listed Dhaka thana cannot belong to Cumilla.
+      const wrongThana = input(areas, {
+        address: {
+          ...input(areas).address,
+          divisionId: areas.cumilla.divisionId,
+          districtId: areas.cumilla.districtId,
+          thanaId: areas.dhaka.thanaId,
+        },
+      });
+      expect(await errorCode(submit(await bag(variant), wrongThana, { ip: null }))).toMatch(
+        /^VALIDATION/,
+      );
+    }
+    expect(await db.order.count()).toBe(0);
+  });
+
   it('refuses an empty bag and accepts a free-text thana (addresses never block an order)', async () => {
     const areas = await areaIds();
     const variant = await makeSellableVariant({ stock: 5 });

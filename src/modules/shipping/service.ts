@@ -86,6 +86,20 @@ export async function resolveArea(tx: Tx, selection: AreaSelection): Promise<Res
 
   // If both division and district rows exist in database
   if (division && district) {
+    // Manual entry stays open, but a pair taken from the known lists must still be one branch of
+    // the hierarchy: a district of that division, a thana of that district (forged ids are refused).
+    const branchOk =
+      division.level === 'division' &&
+      division.isActive &&
+      district.level === 'district' &&
+      district.isActive &&
+      district.parentId === division.id &&
+      (!thana || (thana.level === 'thana' && thana.isActive && thana.parentId === district.id));
+    if (!branchOk) {
+      throw new DomainError('VALIDATION', 'Please choose your division, district and area again.', {
+        fieldErrors: { districtId: ['Please choose a district in the selected division.'] },
+      });
+    }
     return {
       division: { id: division.id, name: division.name },
       district: { id: district.id, name: district.name },

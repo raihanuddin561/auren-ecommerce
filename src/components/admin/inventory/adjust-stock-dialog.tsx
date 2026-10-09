@@ -29,6 +29,7 @@ import { adjustStock } from '@/modules/inventory/actions';
 import {
   ADJUSTMENT_REASONS,
   REASON_LABELS,
+  SET_COST_STEP_UP,
   WRITE_OFF_STEP_UP,
   isWriteOffReason,
   type AdjustmentReason,
@@ -41,6 +42,8 @@ export interface AdjustTarget {
   reserved: number;
   /** Whether the variant already has a cost basis. Without one, adding stock needs a unit cost. */
   hasCost: boolean;
+  /** The variant currency: unit costs are typed in it. */
+  currency: string;
 }
 
 type Mode = 'delta' | 'set';
@@ -84,6 +87,10 @@ function AdjustForm({ target, onClose }: { target: AdjustTarget; onClose: () => 
     isWriteOffReason(reason) || mode === 'set' || (valid && number !== null && number < 0);
   const adding = valid && resulting !== null && resulting > target.onHand;
   const costRequired = adding && !target.hasCost;
+  // A cost typed for a variant with no cost, or nothing on hand, sets its cost basis: same fresh step-up as Set cost.
+  const establishesCost =
+    adding && unitCost.trim() !== '' && (!target.hasCost || target.onHand <= 0);
+  const askPassword = needsStepUp || writeOff || establishesCost;
 
   function submit(event: FormEvent) {
     event.preventDefault();
@@ -98,10 +105,10 @@ function AdjustForm({ target, onClose }: { target: AdjustTarget; onClose: () => 
       return;
     }
     startTransition(async () => {
-      if ((needsStepUp || writeOff) && password) {
+      if (askPassword && password) {
         const confirmed = await confirmStepUp({
           method: 'password',
-          purpose: WRITE_OFF_STEP_UP,
+          purpose: establishesCost && !writeOff ? SET_COST_STEP_UP : WRITE_OFF_STEP_UP,
           password,
         });
         if (!confirmed.ok) {
@@ -125,7 +132,11 @@ function AdjustForm({ target, onClose }: { target: AdjustTarget; onClose: () => 
       }
       if (result.error.code === 'STEP_UP_REQUIRED') {
         setNeedsStepUp(true);
-        setFormError('Confirm your password to remove stock.');
+        setFormError(
+          establishesCost && !writeOff
+            ? 'Confirm your password to set a cost.'
+            : 'Confirm your password to remove stock.',
+        );
         return;
       }
       if (result.error.code === 'APPROVAL_REQUIRED') {
@@ -197,7 +208,7 @@ function AdjustForm({ target, onClose }: { target: AdjustTarget; onClose: () => 
 
       {adding ? (
         <FormField
-          label="Unit cost (BDT)"
+          label={`Unit cost (${target.currency})`}
           hint={
             target.hasCost
               ? 'Optional. What one added unit cost you; the average cost is updated like a purchase receipt.'
@@ -253,10 +264,14 @@ function AdjustForm({ target, onClose }: { target: AdjustTarget; onClose: () => 
         )}
       </FormField>
 
-      {needsStepUp || writeOff ? (
+      {askPassword ? (
         <FormField
           label="Your password"
-          hint="Removing stock needs a fresh confirmation."
+          hint={
+            establishesCost && !writeOff
+              ? 'Setting a cost needs a fresh confirmation.'
+              : 'Removing stock needs a fresh confirmation.'
+          }
           required={needsStepUp}
         >
           {(control) => (

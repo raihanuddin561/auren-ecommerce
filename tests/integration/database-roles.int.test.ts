@@ -175,8 +175,19 @@ describe('role definition', () => {
       notification_logs: { sel: true, ins: true, upd: false, del: false },
       // Orders, their lines and payments are corrected, cancelled or refunded, never deleted.
       orders: { sel: true, ins: true, upd: true, del: false },
-      order_items: { sel: true, ins: true, upd: true, del: false },
+      // Lines can be deleted only while the order is open: a trigger refuses it afterwards.
+      order_items: { sel: true, ins: true, upd: true, del: true },
       payments: { sel: true, ins: true, upd: true, del: false },
+      // Verification attempts, order costs, courier updates and store credit are ledgers.
+      order_verification_attempts: { sel: true, ins: true, upd: false, del: false },
+      order_cost_lines: { sel: true, ins: true, upd: false, del: false },
+      shipment_events: { sel: true, ins: true, upd: false, del: false },
+      store_credit_ledger: { sel: true, ins: true, upd: false, del: false },
+      // Refunds, parcels and returns change state, and are never deleted.
+      refunds: { sel: true, ins: true, upd: true, del: false },
+      shipments: { sel: true, ins: true, upd: true, del: false },
+      return_requests: { sel: true, ins: true, upd: true, del: false },
+      return_items: { sel: true, ins: true, upd: true, del: false },
       // Column level UPDATE (delivery bookkeeping only) is checked in its own test.
       outbox_events: { sel: true, ins: true, upd: true, del: false },
       role_permissions: { sel: true, ins: false, upd: false, del: false },

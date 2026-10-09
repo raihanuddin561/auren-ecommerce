@@ -46,6 +46,7 @@ async function OrderContent({
     <OrderConfirmation
       order={view}
       justPlaced={placed === '1' && view.status === 'placed'}
+      token={token}
       extra={
         <Suspense fallback={null}>
           <StyleItWith />

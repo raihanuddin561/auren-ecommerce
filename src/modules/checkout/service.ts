@@ -9,8 +9,8 @@ import { normalizeBdPhone, maskPhone } from '@/lib/phone';
 import { SmsUnavailableError, sendSms } from '@/integrations/sms';
 import * as cart from '@/modules/cart/service';
 import type { CartIdentity } from '@/modules/cart/types';
-import * as catalog from '@/modules/catalog/service';
 import * as inventory from '@/modules/inventory/service';
+import { lineLabel, resolveLines } from '@/modules/orders/placement';
 import * as orders from '@/modules/orders/service';
 import { safeEqual } from '@/modules/orders/tracking';
 import type { ShippingAddressSnapshot } from '@/modules/orders/types';
@@ -48,7 +48,10 @@ const optionView = (option: DeliveryOption): DeliveryOptionView => ({
   codAllowed: option.codAllowed,
 });
 
-function chooseOption(options: DeliveryOption[], rateId: string | undefined): DeliveryOption {
+export function chooseOption(
+  options: DeliveryOption[],
+  rateId: string | undefined,
+): DeliveryOption {
   const chosen = rateId ? options.find((option) => option.rateId === rateId) : undefined;
   if (rateId && !chosen) {
     throw new DomainError('VALIDATION', 'That delivery option is not available for your address.', {
@@ -100,7 +103,7 @@ export async function summarize(
 // Phone codes (optional, off by default)
 // ---------------------------------------------------------------------------------------------
 
-function requirePhone(input: string): string {
+export function requirePhone(input: string): string {
   const phone = normalizeBdPhone(input);
   if (!phone) {
     throw new DomainError(
@@ -220,7 +223,7 @@ export interface SubmitResult {
 const squash = (text: string) => text.toLowerCase().replace(/\s+/g, ' ').trim();
 
 /** Fingerprint of the delivery address, to limit orders that arrive at one address (INV-O11). */
-const fingerprintAddress = (address: ShippingAddressSnapshot): string =>
+export const fingerprintAddress = (address: ShippingAddressSnapshot): string =>
   hmacHex(
     'address:v1',
     [
@@ -231,9 +234,6 @@ const fingerprintAddress = (address: ShippingAddressSnapshot): string =>
       squash(address.line2 ?? ''),
     ].join('|'),
   );
-
-const lineLabel = (variant: { productTitle: string; optionsLabel: string }) =>
-  variant.optionsLabel ? `${variant.productTitle} (${variant.optionsLabel})` : variant.productTitle;
 
 /**
  * Turns the bag into an order, once. The idempotency key is claimed in the same transaction as the
@@ -295,39 +295,13 @@ export async function submit(
         input.address.area?.trim() ??
         'General';
 
-      // Lock the variants, then read them: price and cost cannot change under us (INV-M3, INV-O5).
+      // Prices and costs come from the database, locked inside this transaction (INV-M3, INV-O5).
       const ids = bag.lines.map((line) => line.variantId);
-      await catalog.lockVariantCosts(tx, ids);
-      const variants = await catalog.getSellableVariants(tx, ids);
-      const availability = await inventory.getAvailability(ids, tx);
-      const lines = bag.lines.map((line) => {
-        const variant = variants.get(line.variantId);
-        if (!variant?.sellable || variant.currency !== bag.currency) {
-          throw new DomainError(
-            'CONFLICT',
-            `${variant ? lineLabel(variant) : 'An item in your bag'} is no longer available. Please remove it from your bag and try again.`,
-          );
-        }
-        if (variant.avgCostMinor <= 0n) {
-          // No cost basis: profit could not be recorded. Purchasing must receive stock first.
-          logger.warn({ variantId: variant.id }, 'order refused: variant has no cost basis');
-          noCostVariantIds.push(variant.id);
-          throw new DomainError(
-            'CONFLICT',
-            `${lineLabel(variant)} cannot be ordered online right now. Please message our concierge.`,
-          );
-        }
-        const available = availability.get(line.variantId)?.available ?? 0;
-        if (available < line.quantity) {
-          throw new DomainError(
-            'OUT_OF_STOCK',
-            available <= 0
-              ? `${lineLabel(variant)} has just sold out. Please remove it from your bag and try again.`
-              : `${lineLabel(variant)} has only ${available} left. Please lower the quantity and try again.`,
-          );
-        }
-        return { variant, quantity: line.quantity };
-      });
+      const lines = await resolveLines(
+        tx,
+        bag.lines.map((line) => ({ variantId: line.variantId, quantity: line.quantity })),
+        { currency: bag.currency, onNoCost: (variantId) => noCostVariantIds.push(variantId) },
+      );
 
       const subtotal = orders.totalsFor(lines, bag.currency, zero(bag.currency)).subtotal;
       const quote = await shipping.quoteDelivery(tx, area, subtotal);

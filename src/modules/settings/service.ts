@@ -1,4 +1,4 @@
-import type { z } from 'zod';
+import { z } from 'zod';
 import { db, type Tx } from '@/lib/db';
 import { DomainError } from '@/lib/errors';
 import { fromDecimalString } from '@/lib/money';
@@ -12,7 +12,13 @@ import {
   DEFAULT_CHECKOUT_PROTECTION,
   DEFAULT_COD_SETTINGS,
   DEFAULT_HERO_CAROUSEL_SETTINGS,
+  DEFAULT_RETURN_SETTINGS,
+  DEFAULT_VERIFICATION_SETTINGS,
   heroCarouselSettingsSchema,
+  returnSettingsSchema,
+  verificationSettingsSchema,
+  type ReturnSettings,
+  type VerificationSettings,
   SETTING_KEYS,
   type CheckoutProtection,
   type CodSettings,
@@ -41,6 +47,22 @@ export async function getCodSettings(tx: Tx = db): Promise<CodSettings> {
     codSettingsSchema,
     await repo.readSetting(tx, SETTING_KEYS.cod),
     DEFAULT_COD_SETTINGS,
+  );
+}
+
+export async function getVerificationSettings(tx: Tx = db): Promise<VerificationSettings> {
+  return parseSetting(
+    verificationSettingsSchema,
+    await repo.readSetting(tx, SETTING_KEYS.verification),
+    DEFAULT_VERIFICATION_SETTINGS,
+  );
+}
+
+export async function getReturnSettings(tx: Tx = db): Promise<ReturnSettings> {
+  return parseSetting(
+    returnSettingsSchema,
+    await repo.readSetting(tx, SETTING_KEYS.returns),
+    DEFAULT_RETURN_SETTINGS,
   );
 }
 
@@ -158,4 +180,99 @@ export async function uploadHeroSlideImage(bytes: Buffer): Promise<{ url: string
     contentType: processed.mime,
   });
   return { url: stored.url };
+}
+
+// ---------------------------------------------------------------------------------------------
+// Saved list views (per staff member)
+// ---------------------------------------------------------------------------------------------
+
+export interface SavedView {
+  name: string;
+  /** The query string of the list page, without the leading question mark. */
+  query: string;
+}
+
+const MAX_SAVED_VIEWS = 12;
+
+const savedViewsSchema = z.array(
+  z.object({ name: z.string().min(1).max(40), query: z.string().max(400) }).strict(),
+);
+
+const viewsKey = (list: string, userId: string) => `views.${list}.${userId}`;
+
+export async function getSavedViews(
+  list: string,
+  userId: string,
+  tx: Tx = db,
+): Promise<SavedView[]> {
+  const parsed = savedViewsSchema.safeParse(await repo.readSetting(tx, viewsKey(list, userId)));
+  return parsed.success ? parsed.data : [];
+}
+
+/** Adds or replaces a view with the same name. A staff member keeps at most a dozen. */
+export async function saveView(
+  list: string,
+  userId: string,
+  view: SavedView,
+): Promise<SavedView[]> {
+  return db.$transaction(async (tx) => {
+    const current = await getSavedViews(list, userId, tx);
+    const next = [...current.filter((item) => item.name !== view.name), view];
+    if (next.length > MAX_SAVED_VIEWS) {
+      throw new DomainError('VALIDATION', `You can keep up to ${MAX_SAVED_VIEWS} saved views.`, {
+        fieldErrors: { name: ['Delete a view before saving another.'] },
+      });
+    }
+    await repo.writeSetting(
+      tx,
+      viewsKey(list, userId),
+      next.map((v) => ({ name: v.name, query: v.query })),
+      userId,
+    );
+    return next;
+  });
+}
+
+export async function deleteView(list: string, userId: string, name: string): Promise<SavedView[]> {
+  return db.$transaction(async (tx) => {
+    const next = (await getSavedViews(list, userId, tx)).filter((item) => item.name !== name);
+    await repo.writeSetting(
+      tx,
+      viewsKey(list, userId),
+      next.map((v) => ({ name: v.name, query: v.query })),
+      userId,
+    );
+    return next;
+  });
+}
+
+// ---------------------------------------------------------------------------------------------
+// Verification and returns
+// ---------------------------------------------------------------------------------------------
+
+/** Saves verification rules and the return window together. Audited. */
+export async function saveOrderRules(
+  input: { verification: VerificationSettings; returns: ReturnSettings },
+  actor: SettingsActor,
+): Promise<void> {
+  const verification = verificationSettingsSchema.parse(input.verification);
+  const returns = returnSettingsSchema.parse(input.returns);
+  await db.$transaction(async (tx) => {
+    const before = {
+      verification: await getVerificationSettings(tx),
+      returns: await getReturnSettings(tx),
+    };
+    await repo.writeSetting(tx, SETTING_KEYS.verification, verification, actor.userId);
+    await repo.writeSetting(tx, SETTING_KEYS.returns, returns, actor.userId);
+    await audit(tx, {
+      actorId: actor.userId,
+      action: 'setting.update',
+      entity: 'setting',
+      entityId: 'order_rules',
+      before,
+      after: { verification, returns },
+      ...(actor.ip ? { ip: actor.ip } : {}),
+      ...(actor.userAgent ? { userAgent: actor.userAgent } : {}),
+    });
+  });
 }

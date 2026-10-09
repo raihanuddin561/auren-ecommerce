@@ -60,6 +60,26 @@ export interface CustomerOrderView {
   };
   /** Masked, for "we sent a confirmation to j***@gmail.com". Null when no email was given. */
   emailMasked: string | null;
+  /** The parcel, once it has been handed to a courier. */
+  parcel: { courier: string; trackingNumber: string | null; statusLabel: string } | null;
+  /** Dated steps of the order in the customer's words (never internal notes). */
+  updates: Array<{ label: string; at: string }>;
+  returns: Array<{ returnNumber: string; type: 'return' | 'exchange'; statusLabel: string }>;
+  /** Set while the customer can still ask for a return or an exchange. */
+  returnOffer: ReturnOffer | null;
+}
+
+export interface ReturnOffer {
+  windowDays: number;
+  endsAt: string;
+  items: Array<{
+    orderItemId: string;
+    title: string;
+    variantLabel: string;
+    maxQuantity: number;
+    /** Other sizes or colours of the same piece at the same price that are in stock. */
+    alternatives: Array<{ variantId: string; label: string }>;
+  }>;
 }
 
 /** What an order number plus a matching phone or email shows: the status and nothing else. */

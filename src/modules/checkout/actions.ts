@@ -1,13 +1,17 @@
 'use server';
 
-import { updateTag } from 'next/cache';
+import { revalidatePath, updateTag } from 'next/cache';
 import { fail, ok, toActionError, validationError, type ActionResult } from '@/lib/action-result';
+import { assertPermission } from '@/lib/permissions';
 import { hashIdentifier, rateLimit } from '@/lib/rate-limit';
 import { getRequestMeta } from '@/lib/request-meta';
 import { normalizeBdPhone } from '@/lib/phone';
+import { requireStaff } from '@/lib/staff';
 import { turnstileEnabled, verifyTurnstile } from '@/lib/turnstile';
 import { readCartIdentity } from '@/modules/cart/cookie';
 import { writeOrderProof } from '@/modules/orders/cookie';
+import { manualOrderSchema } from '@/modules/orders/schemas';
+import { placeManualOrder } from './manual';
 import { placeOrderSchema, quoteSchema, requestOtpSchema, verifyOtpSchema } from './schemas';
 import * as checkout from './service';
 import type { CheckoutSummary } from './types';
@@ -97,6 +101,32 @@ export async function verifyCheckoutCode(
     if (!(await rateLimit('otpVerify', hashIdentifier(phone))).success) return fail('RATE_LIMITED');
     await checkout.verifyOtp(phone, parsed.data.code);
     return ok({ verified: true });
+  } catch (error) {
+    return toActionError(error);
+  }
+}
+
+/**
+ * Staff type in an order that came in by phone, Facebook, Instagram, WhatsApp or in store (6.5). It
+ * uses the same rules as the website and enters the same verification queue. Needs orders.update.
+ */
+export async function createManualOrderAction(
+  input: unknown,
+): Promise<ActionResult<{ orderId: string; orderNumber: string }>> {
+  const parsed = manualOrderSchema.safeParse(input);
+  if (!parsed.success) return validationError(parsed.error);
+  try {
+    const staff = await requireStaff();
+    assertPermission(staff, 'orders.update');
+    const meta = await getRequestMeta();
+    const result = await placeManualOrder(
+      { staffId: staff.id, userId: staff.userId, ip: meta.ip, userAgent: meta.userAgent },
+      parsed.data,
+    );
+    for (const tag of result.tags) updateTag(tag);
+    revalidatePath('/admin/orders');
+    revalidatePath('/admin/orders/verification');
+    return ok({ orderId: result.orderId, orderNumber: result.orderNumber });
   } catch (error) {
     return toActionError(error);
   }

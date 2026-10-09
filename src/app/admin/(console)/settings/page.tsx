@@ -13,6 +13,12 @@ const SECTIONS = [
       'Delivery zones and rates, free delivery, cash on delivery limits and checkout protection.',
   },
   {
+    href: '/admin/settings/orders',
+    title: 'Orders and fulfilment',
+    description:
+      'Verification rules and working hours, the return window, and packaging costs added to each order.',
+  },
+  {
     href: '/admin/settings/carousel',
     title: 'Hero carousel & banners',
     description:

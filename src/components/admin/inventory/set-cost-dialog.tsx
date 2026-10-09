@@ -26,6 +26,8 @@ export interface SetCostTarget {
   productId: string;
   productTitle: string;
   title: string;
+  /** The variant currency: costs are typed and shown in it. */
+  currency: string;
 }
 
 type Scope = 'variant' | 'product';
@@ -73,11 +75,15 @@ function SetCostForm({ target, onClose }: { target: SetCostTarget; onClose: () =
   useEffect(() => {
     if (scope !== 'product' || preview !== null) return;
     let cancelled = false;
-    void previewCostBasis({ productId: target.productId }).then((result) => {
-      if (cancelled) return;
-      if (result.ok) setPreview(result.data);
-      else setPreviewFailed(true);
-    });
+    previewCostBasis({ productId: target.productId })
+      .then((result) => {
+        if (cancelled) return;
+        if (result.ok) setPreview(result.data);
+        else setPreviewFailed(true);
+      })
+      .catch(() => {
+        if (!cancelled) setPreviewFailed(true);
+      });
     return () => {
       cancelled = true;
     };
@@ -136,8 +142,8 @@ function SetCostForm({ target, onClose }: { target: SetCostTarget; onClose: () =
         <DialogTitle>Set cost</DialogTitle>
         <DialogDescription>
           {target.title} has no cost yet, so customers cannot order it. Enter what one unit cost
-          you, in BDT. This only fills a missing cost: an existing cost changes through purchase
-          receipts.
+          you, in {target.currency}. This only fills a missing cost: an existing cost changes
+          through purchase receipts.
         </DialogDescription>
       </DialogHeader>
 
@@ -155,7 +161,10 @@ function SetCostForm({ target, onClose }: { target: SetCostTarget; onClose: () =
             size="sm"
             variant={scope === value ? 'primary' : 'secondary'}
             aria-pressed={scope === value}
-            onClick={() => setScope(value)}
+            onClick={() => {
+              setScope(value);
+              setPreviewFailed(false);
+            }}
           >
             {label}
           </Button>
@@ -163,7 +172,7 @@ function SetCostForm({ target, onClose }: { target: SetCostTarget; onClose: () =
       </fieldset>
 
       <FormField
-        label="Unit cost (BDT)"
+        label={`Unit cost (${target.currency})`}
         hint="What one unit cost you, including freight and duty. For example 1250 or 1250.50."
         error={firstError(errors, 'unitCost')}
         required
@@ -191,7 +200,7 @@ function SetCostForm({ target, onClose }: { target: SetCostTarget; onClose: () =
             <>
               <p className="type-small text-fg-muted">
                 {missing.length} {missing.length === 1 ? 'variant gets' : 'variants get'}
-                {cost.trim() ? ` a cost of ${cost.trim()} BDT` : ' this cost'}
+                {cost.trim() ? ` a cost of ${cost.trim()} ${target.currency}` : ' this cost'}
                 {keeping.length > 0
                   ? `; ${keeping.length} already ${keeping.length === 1 ? 'has' : 'have'} a cost and stay as they are.`
                   : '.'}
@@ -225,6 +234,7 @@ function SetCostForm({ target, onClose }: { target: SetCostTarget; onClose: () =
             <Input
               {...control}
               type="password"
+              autoFocus
               autoComplete="current-password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}

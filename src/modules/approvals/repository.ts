@@ -11,6 +11,8 @@ export interface ApprovalRow {
   requestedBy: string;
   decidedBy: string | null;
   consumedAt: Date | null;
+  reason: string | null;
+  requestedAt: Date;
 }
 
 const select = {
@@ -24,6 +26,8 @@ const select = {
   requestedBy: true,
   decidedBy: true,
   consumedAt: true,
+  reason: true,
+  requestedAt: true,
 } as const;
 
 export const findPending = (tx: Tx, kind: string, subjectType: string, subjectId: string) =>

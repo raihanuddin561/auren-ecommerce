@@ -6,6 +6,13 @@ import { deserialize } from '@/lib/money';
 import type { CustomerOrderView } from '@/modules/orders/types';
 import { OrderPlacedEvent } from './order-placed-event';
 import { OrderTimeline } from './order-timeline';
+import { ReturnRequestForm } from './return-request-form';
+
+const dayTime = new Intl.DateTimeFormat('en-GB', {
+  dateStyle: 'medium',
+  timeStyle: 'short',
+  timeZone: 'Asia/Dhaka',
+});
 
 function Row({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
   return (
@@ -39,9 +46,12 @@ export function OrderConfirmation({
   order,
   justPlaced,
   extra,
+  token,
 }: {
   order: CustomerOrderView;
   justPlaced: boolean;
+  /** The private link token, needed to send a return request from this page. */
+  token?: string;
   /** Editorial rail shown at the end ("Style it with"). */
   extra?: React.ReactNode;
 }) {
@@ -144,6 +154,19 @@ export function OrderConfirmation({
             </p>
           </section>
 
+          {order.parcel ? (
+            <section aria-labelledby="order-parcel">
+              <h2 id="order-parcel" className="type-eyebrow text-fg">
+                Your parcel
+              </h2>
+              <p className="mt-3 type-body text-fg">{order.parcel.statusLabel}</p>
+              <p className="type-small text-fg-muted">
+                {order.parcel.courier}
+                {order.parcel.trackingNumber ? ` · Tracking ${order.parcel.trackingNumber}` : ''}
+              </p>
+            </section>
+          ) : null}
+
           <section aria-labelledby="order-payment">
             <h2 id="order-payment" className="type-eyebrow text-fg">
               Payment
@@ -151,6 +174,43 @@ export function OrderConfirmation({
             <p className="mt-3 type-body text-fg">{order.payment.label}</p>
             <p className="type-small text-fg-muted">{PAYMENT_NOTE[order.payment.status]}</p>
           </section>
+
+          {order.updates.length > 0 ? (
+            <section aria-labelledby="order-updates">
+              <h2 id="order-updates" className="type-eyebrow text-fg">
+                Updates
+              </h2>
+              <ol className="mt-3 flex flex-col gap-2">
+                {order.updates.map((update, index) => (
+                  <li key={`${update.at}-${index}`} className="type-small text-fg">
+                    {update.label}
+                    <time dateTime={update.at} className="ml-2 text-fg-muted">
+                      {dayTime.format(new Date(update.at))}
+                    </time>
+                  </li>
+                ))}
+              </ol>
+            </section>
+          ) : null}
+
+          {order.returns.length > 0 ? (
+            <section aria-labelledby="order-returns">
+              <h2 id="order-returns" className="type-eyebrow text-fg">
+                Returns
+              </h2>
+              <ul className="mt-3 flex flex-col gap-1">
+                {order.returns.map((found) => (
+                  <li key={found.returnNumber} className="type-small text-fg">
+                    {found.returnNumber} ({found.type}): {found.statusLabel}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+
+          {order.returnOffer && token ? (
+            <ReturnRequestForm token={token} offer={order.returnOffer} />
+          ) : null}
 
           <section aria-labelledby="order-account" className="border border-line bg-raised p-6">
             <h2 id="order-account" className="type-h3 text-fg">

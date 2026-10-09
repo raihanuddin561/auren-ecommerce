@@ -717,6 +717,24 @@ export async function lockVariantCosts(
   }));
 }
 
+/** Cost basis of variants WITHOUT row locks: for previews and reads outside a transaction. */
+export async function readVariantCosts(
+  tx: Tx,
+  variantIds: readonly string[],
+): Promise<VariantCostRow[]> {
+  if (variantIds.length === 0) return [];
+  const rows = await tx.productVariant.findMany({
+    where: { id: { in: [...new Set(variantIds)] } },
+    select: { id: true, productId: true, currency: true, avgCostMinor: true },
+  });
+  return rows.map((row) => ({
+    id: row.id,
+    productId: row.productId,
+    currency: row.currency,
+    avgCostMinor: row.avgCostMinor,
+  }));
+}
+
 export const setVariantAvgCost = (tx: Tx, id: string, avgCostMinor: bigint) =>
   tx.productVariant.update({ where: { id }, data: { avgCostMinor } });
 
