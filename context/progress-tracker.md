@@ -16,6 +16,33 @@
 - Blockers/risks: <none | details>
 ```
 
+### 2026-10-10 — 15.5, 15.6 Audit Log Viewer & System Health Diagnostics — Done
+- Type: new and enhancement
+- Scope: Implemented admin audit trail inspector with filtered tabular view, actor joins, pagination, and JSON diff modal. Built real-time system health dashboard probing database round-trip latency, outbox event pipeline queues and poison states, idempotency key locks, and external infrastructure integrations.
+- Changed:
+  - Audit Log Viewer (15.5):
+    - `src/modules/audit/types.ts`: Extended types with `AuditLogListItem`, `AuditLogFilterParams`, and `AuditLogListResult`.
+    - `src/modules/audit/repository.ts`: Added `listAuditLogsForAdmin` joining actor staff records with action/entity filtering and cursor pagination.
+    - `src/modules/audit/queries.ts`: Added `getAuditLogsForAdmin` query.
+    - `src/components/admin/audit/audit-filter-bar.tsx`: Interactive filter controls for actions, entity types, dates, and actor IDs.
+    - `src/components/admin/audit/audit-log-table.tsx`: Luxury audit log table with badge styling, actor badges, IP/UA forensic display, and JSON payload inspect dialog.
+    - `src/app/admin/(console)/settings/audit/page.tsx`: Dedicated audit trail console page guarded by `audit.read` permission.
+    - `src/modules/audit/__tests__/audit-viewer.test.ts`: Unit tests validating audit repository filtering and parameter normalization.
+  - System Health Diagnostics (15.6):
+    - `src/modules/settings/types.ts`: Defined `SystemHealthData` diagnostics model.
+    - `src/modules/settings/queries.ts`: Implemented `getSystemHealthForAdmin` probing Postgres latency, outbox queue metrics (pending/dispatched/failed/oldest), inbox deduplication count, and integrations (Email, Storage, Inngest, Redis, Sentry, Maintenance mode).
+    - `src/components/admin/health/health-dashboard.tsx`: Real-time system diagnostics interface with status badges, latency indicators, outbox queue breakdown, and environment status cards.
+    - `src/app/admin/(console)/settings/health/page.tsx`: System health dashboard page guarded by `settings.manage` permission.
+    - `src/modules/settings/__tests__/system-health.test.ts`: Unit tests validating diagnostic probes and healthy/degraded classification logic.
+  - Settings Hub & Navigation:
+    - `src/app/admin/(console)/settings/page.tsx`: Added "Audit Log & History" and "System Health & Pipeline" cards.
+    - `src/lib/admin-nav.ts`: Enabled Audit Log (`/admin/settings/audit`) and System Health (`/admin/settings/health`) with `ready: true`.
+- Tests: `pnpm typecheck`, `pnpm lint`, `pnpm format:check`, and Vitest suites for audit and settings all passing cleanly.
+- Review: Module boundaries respected (components consume shared types), RBAC security enforced, design tokens strictly followed without raw hex colors.
+- Decisions: ADR-015, ADR-023, ADR-025 preserved.
+- Next: Module 11 (Finance and Cost Tracking) or Module 8.1 (Section-block page builder).
+- Blockers/risks: none.
+
 ### 2026-10-10 — 14.1, 14.2, 14.3, 14.4, 14.6 SEO, Rich Structured Data & Dynamic OG Images — Done
 - Type: new and enhancement
 - Scope: Implemented comprehensive SEO metadata framework, rich schema.org structured data (Organization, WebSite + SearchAction, MerchantReturnPolicy, OfferShippingDetails, FAQPage, Article), complete sitemap with image metadata, faceted navigation crawler protection rules, and dynamic luxury Open Graph card generation.

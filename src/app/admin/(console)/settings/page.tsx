@@ -36,6 +36,18 @@ const SECTIONS = [
     description:
       'Homepage hero slides, campaign imagery, editorial messaging, and call-to-actions.',
   },
+  {
+    href: '/admin/settings/audit',
+    title: 'Audit Log & History',
+    description:
+      'Immutable trail of administrative modifications, role adjustments, and security operations.',
+  },
+  {
+    href: '/admin/settings/health',
+    title: 'System Health & Pipeline',
+    description:
+      'Live database latency probes, outbox event queue status, worker health, and integration diagnostics.',
+  },
 ] as const;
 
 export default async function SettingsPage() {

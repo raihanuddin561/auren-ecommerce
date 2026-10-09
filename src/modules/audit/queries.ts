@@ -8,6 +8,7 @@ import { markProcessed, wasProcessed } from '@/lib/inbox';
 import { inngest } from '@/lib/jobs/client';
 import { logger } from '@/lib/logger';
 import { ALERT_TITLES, type AlertRuleId } from './alerts';
+import * as repo from './repository';
 import { scanAuditForAlerts } from './service';
 
 /**
@@ -81,3 +82,16 @@ export const securityAlertMailer = inngest.createFunction(
 );
 
 export const auditFunctions = [securityAlertScan, securityAlertMailer];
+
+/**
+ * Returns paginated, filtered audit logs for the admin console (15.5).
+ */
+export async function getAuditLogsForAdmin(filter: {
+  entityType?: string;
+  action?: string;
+  actorId?: string;
+  page?: number;
+  limit?: number;
+}) {
+  return repo.listAuditLogsForAdmin(db, filter);
+}

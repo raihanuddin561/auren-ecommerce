@@ -26,3 +26,35 @@ export interface AuditRecord {
   after: unknown;
   createdAt: Date;
 }
+
+export interface AuditLogListItem {
+  id: string;
+  actorId: string | null;
+  actorName: string | null;
+  actorEmail: string | null;
+  action: string;
+  entityType: string;
+  entityId: string;
+  before: unknown;
+  after: unknown;
+  ip: string | null;
+  userAgent: string | null;
+  createdAt: Date;
+}
+
+export interface AuditLogFilterParams {
+  entityType?: string;
+  action?: string;
+  actorId?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface AuditLogListResult {
+  items: AuditLogListItem[];
+  totalCount: number;
+  page: number;
+  totalPages: number;
+  availableEntityTypes: string[];
+  availableActions: string[];
+}

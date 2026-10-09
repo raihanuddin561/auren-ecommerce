@@ -114,3 +114,90 @@ export async function tryScanLock(tx: Tx, lockId: number): Promise<boolean> {
     SELECT pg_try_advisory_xact_lock(${lockId}::bigint) AS locked`;
   return rows[0]?.locked === true;
 }
+
+// ---------------------------------------------------------------------------------------------
+// Admin Audit Trail Viewing (15.5)
+// ---------------------------------------------------------------------------------------------
+
+export async function listAuditLogsForAdmin(
+  tx: Tx,
+  filter: {
+    entityType?: string;
+    action?: string;
+    actorId?: string;
+    page?: number;
+    limit?: number;
+  },
+) {
+  const page = Math.max(1, filter.page ?? 1);
+  const limit = Math.min(100, Math.max(10, filter.limit ?? 25));
+  const skip = (page - 1) * limit;
+
+  const where: Prisma.AuditLogWhereInput = {
+    ...(filter.entityType ? { entityType: filter.entityType } : {}),
+    ...(filter.action ? { action: filter.action } : {}),
+    ...(filter.actorId ? { actorId: filter.actorId } : {}),
+  };
+
+  const [totalCount, rows, distinctTypes, distinctActions] = await Promise.all([
+    tx.auditLog.count({ where }),
+    tx.auditLog.findMany({
+      where,
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      skip,
+      take: limit,
+    }),
+    tx.auditLog.findMany({
+      select: { entityType: true },
+      distinct: ['entityType'],
+      take: 50,
+    }),
+    tx.auditLog.findMany({
+      select: { action: true },
+      distinct: ['action'],
+      take: 100,
+    }),
+  ]);
+
+  const actorIds = [
+    ...new Set(rows.map((r) => r.actorId).filter((id): id is string => Boolean(id))),
+  ];
+  const staffMembers =
+    actorIds.length > 0
+      ? await tx.staffMember.findMany({
+          where: { id: { in: actorIds } },
+          include: { user: { select: { name: true, email: true } } },
+        })
+      : [];
+
+  const staffMap = new Map(
+    staffMembers.map((s) => [s.id, { name: s.user.name, email: s.user.email }]),
+  );
+
+  const items = rows.map((row) => {
+    const staff = row.actorId ? staffMap.get(row.actorId) : null;
+    return {
+      id: row.id,
+      actorId: row.actorId,
+      actorName: staff?.name ?? null,
+      actorEmail: staff?.email ?? null,
+      action: row.action,
+      entityType: row.entityType,
+      entityId: row.entityId,
+      before: row.before,
+      after: row.after,
+      ip: row.ip,
+      userAgent: row.userAgent,
+      createdAt: row.createdAt,
+    };
+  });
+
+  return {
+    items,
+    totalCount,
+    page,
+    totalPages: Math.ceil(totalCount / limit) || 1,
+    availableEntityTypes: distinctTypes.map((t) => t.entityType).sort(),
+    availableActions: distinctActions.map((a) => a.action).sort(),
+  };
+}
