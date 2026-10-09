@@ -8,6 +8,9 @@ import {
 } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 
+import { JsonLd } from '@/components/seo/json-ld';
+import { faqPageJsonLd } from '@/lib/seo/jsonld';
+
 export const metadata: Metadata = {
   title: 'Frequently Asked Questions (FAQ) | AUREN',
   description:
@@ -87,27 +90,16 @@ const FAQ_ITEMS = [
 ];
 
 export default function FaqPage() {
-  const jsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'FAQPage',
-    mainEntity: FAQ_ITEMS.flatMap((cat) =>
-      cat.questions.map((item) => ({
-        '@type': 'Question',
-        name: item.q,
-        acceptedAnswer: {
-          '@type': 'Answer',
-          text: item.a,
-        },
-      })),
-    ),
-  };
+  const faqQuestions = FAQ_ITEMS.flatMap((cat) =>
+    cat.questions.map((item) => ({
+      question: item.q,
+      answer: item.a,
+    })),
+  );
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
+      <JsonLd data={faqPageJsonLd(faqQuestions)} />
       <article className="pt-8 pb-24 md:pt-14 md:pb-32">
         <div className="container-page">
           <header className="mx-auto max-w-3xl text-center">

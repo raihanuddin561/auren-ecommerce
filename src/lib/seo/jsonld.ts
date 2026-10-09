@@ -107,12 +107,93 @@ export interface ProductJsonLdInput {
 const availability = (inStock: boolean) =>
   inStock ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock';
 
+/** 7-day doorstep size exchange and returns policy across Bangladesh */
+export function merchantReturnPolicyNode(): JsonLdNode {
+  return {
+    '@type': 'MerchantReturnPolicy',
+    applicableCountry: 'BD',
+    returnPolicyCategory: 'https://schema.org/MerchantReturnFiniteReturnWindow',
+    merchantReturnDays: 7,
+    returnMethod: 'https://schema.org/ReturnByMail',
+    returnFees: 'https://schema.org/FreeReturn',
+    restockingFee: {
+      '@type': 'MonetaryAmount',
+      value: '0',
+      currency: 'BDT',
+    },
+  };
+}
+
+/** Delivery SLA and pricing rates for Dhaka and Nationwide Bangladesh */
+export function offerShippingDetailsNodes(): JsonLdNode[] {
+  return [
+    {
+      '@type': 'OfferShippingDetails',
+      shippingRate: {
+        '@type': 'MonetaryAmount',
+        value: '80.00',
+        currency: 'BDT',
+      },
+      shippingDestination: {
+        '@type': 'DefinedRegion',
+        addressCountry: 'BD',
+        addressRegion: 'Dhaka',
+      },
+      deliveryTime: {
+        '@type': 'ShippingDeliveryTime',
+        handlingTime: {
+          '@type': 'QuantitativeValue',
+          minValue: 0,
+          maxValue: 1,
+          unitCode: 'DAY',
+        },
+        transitTime: {
+          '@type': 'QuantitativeValue',
+          minValue: 1,
+          maxValue: 2,
+          unitCode: 'DAY',
+        },
+      },
+    },
+    {
+      '@type': 'OfferShippingDetails',
+      shippingRate: {
+        '@type': 'MonetaryAmount',
+        value: '150.00',
+        currency: 'BDT',
+      },
+      shippingDestination: {
+        '@type': 'DefinedRegion',
+        addressCountry: 'BD',
+      },
+      deliveryTime: {
+        '@type': 'ShippingDeliveryTime',
+        handlingTime: {
+          '@type': 'QuantitativeValue',
+          minValue: 0,
+          maxValue: 1,
+          unitCode: 'DAY',
+        },
+        transitTime: {
+          '@type': 'QuantitativeValue',
+          minValue: 2,
+          maxValue: 4,
+          unitCode: 'DAY',
+        },
+      },
+    },
+  ];
+}
+
 /**
  * A Product with its Offers and the page breadcrumb in one graph. One variant gives a plain Offer;
  * several give an AggregateOffer (lowest and highest price) that lists each variant's Offer.
  */
 export function productJsonLd(input: ProductJsonLdInput, origin?: string): JsonLdNode {
   const url = absoluteUrl(input.path, origin);
+  const returnPolicy = merchantReturnPolicyNode();
+  const shippingDetails = offerShippingDetailsNodes();
+
   const offers = input.offers.map((offer) => ({
     '@type': 'Offer',
     sku: offer.sku,
@@ -121,6 +202,8 @@ export function productJsonLd(input: ProductJsonLdInput, origin?: string): JsonL
     priceCurrency: offer.currency,
     availability: availability(offer.inStock),
     itemCondition: 'https://schema.org/NewCondition',
+    hasMerchantReturnPolicy: returnPolicy,
+    shippingDetails,
   }));
   const sorted = [...input.offers].sort((a, b) =>
     a.priceMinor < b.priceMinor ? -1 : a.priceMinor > b.priceMinor ? 1 : 0,
@@ -159,6 +242,127 @@ export function productJsonLd(input: ProductJsonLdInput, origin?: string): JsonL
       },
       breadcrumbList(input.breadcrumb, origin),
     ],
+  };
+}
+
+/**
+ * Organization structured data for brand presence, knowledge panel, and contact channels.
+ */
+export function organizationJsonLd(origin?: string): JsonLdNode {
+  const site = origin ?? siteOrigin();
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    '@id': `${site}#organization`,
+    name: 'AUREN',
+    legalName: 'Auren Atelier Ltd.',
+    url: site,
+    logo: absoluteUrl('/logo.png', site),
+    description:
+      'Quintessential luxury menswear atelier in Dhaka. Impeccable tailoring, pure natural fibers, and quiet confidence.',
+    address: {
+      '@type': 'PostalAddress',
+      streetAddress: 'House 42, Road 11, Block D, Banani',
+      addressLocality: 'Dhaka',
+      postalCode: '1213',
+      addressCountry: 'BD',
+    },
+    contactPoint: {
+      '@type': 'ContactPoint',
+      telephone: '+8801700000000',
+      contactType: 'customer service',
+      areaServed: 'BD',
+      availableLanguage: ['en', 'bn'],
+    },
+    sameAs: ['https://www.instagram.com/auren.menswear', 'https://www.facebook.com/auren.menswear'],
+  };
+}
+
+/**
+ * WebSite structured data with SearchAction for Sitelinks Searchbox in Google search.
+ */
+export function websiteJsonLd(origin?: string): JsonLdNode {
+  const site = origin ?? siteOrigin();
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    '@id': `${site}#website`,
+    url: site,
+    name: 'AUREN',
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: {
+        '@type': 'EntryPoint',
+        urlTemplate: `${site}/search?q={search_term_string}`,
+      },
+      'query-input': 'required name=search_term_string',
+    },
+    publisher: {
+      '@id': `${site}#organization`,
+    },
+  };
+}
+
+export interface FaqItem {
+  question: string;
+  answer: string;
+}
+
+/**
+ * FAQPage structured data for rich FAQ snippet accordions in SERP.
+ */
+export function faqPageJsonLd(items: readonly FaqItem[]): JsonLdNode {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: items.map((item) => ({
+      '@type': 'Question',
+      name: item.question,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: item.answer,
+      },
+    })),
+  };
+}
+
+export interface ArticleInput {
+  title: string;
+  description: string;
+  path: string;
+  publishedAt: string;
+  modifiedAt?: string;
+  image?: string;
+  author?: string;
+}
+
+/**
+ * Article structured data for editorial and journal entries.
+ */
+export function articleJsonLd(input: ArticleInput, origin?: string): JsonLdNode {
+  const url = absoluteUrl(input.path, origin);
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    '@id': `${url}#article`,
+    headline: input.title,
+    description: input.description,
+    url,
+    datePublished: input.publishedAt,
+    dateModified: input.modifiedAt ?? input.publishedAt,
+    author: {
+      '@type': 'Person',
+      name: input.author ?? 'AUREN Atelier',
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'AUREN',
+      logo: {
+        '@type': 'ImageObject',
+        url: absoluteUrl('/logo.png', origin),
+      },
+    },
+    ...(input.image ? { image: absoluteUrl(input.image, origin) } : {}),
   };
 }
 

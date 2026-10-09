@@ -1,31 +1,27 @@
 import { ImageResponse } from 'next/og';
-import { money, toDecimalString } from '@/lib/money';
 import { OG_THEME } from '@/lib/seo/og-theme';
-import { getLivePriceRows, getProductPage } from '@/modules/catalog/queries';
+import { EMPTY_QUERY } from '@/modules/catalog/listing';
+import { listingFor } from '../../_listing/load';
 
-export const alt = 'AUREN Product Detail';
+export const alt = 'AUREN Curated Collection';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
 export default async function Image({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const product = await getProductPage(slug);
+  let title = 'Curated Collection';
+  let description = 'Architectural drape and quiet luxury tailoring.';
 
-  const title = product?.title ?? 'AUREN Menswear';
-  const category = product?.breadcrumb.at(-2)?.name ?? 'Collection';
-  const material = product?.fabric ?? product?.subtitle ?? 'Fine Tailored Garment';
-  let priceDisplay = 'Atelier Tailoring';
-
-  if (product?.id) {
-    try {
-      const rows = await getLivePriceRows(product.id);
-      const firstRow = rows[0];
-      if (firstRow) {
-        priceDisplay = `BDT ${toDecimalString(money(firstRow.priceMinor, 'BDT'))}`;
+  try {
+    const listing = await listingFor({ kind: 'collection', slug }, EMPTY_QUERY);
+    if (listing?.header) {
+      title = listing.header.title;
+      if (listing.header.description) {
+        description = listing.header.description;
       }
-    } catch {
-      // Fall back gracefully
     }
+  } catch {
+    // Fall back to clean default collection copy
   }
 
   return new ImageResponse(
@@ -85,11 +81,11 @@ export default async function Image({ params }: { params: Promise<{ slug: string
             textTransform: 'uppercase',
           }}
         >
-          {category}
+          Curated Capsule
         </div>
       </div>
 
-      {/* Center Content: Title, Material, Price */}
+      {/* Center Content */}
       <div
         style={{
           display: 'flex',
@@ -107,11 +103,11 @@ export default async function Image({ params }: { params: Promise<{ slug: string
             textTransform: 'uppercase',
           }}
         >
-          {material}
+          Seasonal Lookbook
         </div>
         <div
           style={{
-            fontSize: title.length > 30 ? '44px' : '56px',
+            fontSize: title.length > 25 ? '48px' : '60px',
             fontFamily: 'serif',
             color: OG_THEME.ivory,
             lineHeight: 1.15,
@@ -122,32 +118,13 @@ export default async function Image({ params }: { params: Promise<{ slug: string
         </div>
         <div
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '16px',
-            marginTop: '8px',
+            fontSize: '20px',
+            color: OG_THEME.stoneMuted,
+            maxWidth: '850px',
+            lineHeight: 1.4,
           }}
         >
-          <div
-            style={{
-              fontSize: '26px',
-              fontFamily: 'serif',
-              color: OG_THEME.gold,
-              letterSpacing: '2px',
-            }}
-          >
-            {priceDisplay}
-          </div>
-          <div
-            style={{
-              fontSize: '13px',
-              letterSpacing: '2px',
-              color: OG_THEME.stoneMuted,
-              textTransform: 'uppercase',
-            }}
-          >
-            • Doorstep Delivery Across Bangladesh
-          </div>
+          {description}
         </div>
       </div>
 
@@ -169,7 +146,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
             textTransform: 'uppercase',
           }}
         >
-          House 42, Road 11, Banani • Dhaka
+          Quintessential Menswear • Dhaka Atelier
         </div>
         <div
           style={{

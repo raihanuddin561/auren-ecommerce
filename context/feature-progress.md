@@ -213,12 +213,12 @@
 
 | ID | Sub-feature | Pri | BE | API | UT | FE | E2E | CR | Overall | Notes |
 |---|---|---|---|---|---|---|---|---|---|---|
-| 14.1 | Metadata framework | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 14.2 | Structured data | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 14.3 | Sitemaps and robots | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 14.4 | Faceted navigation rules | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
+| 14.1 | Metadata framework | P0 | Done | Done | Done | Done | N/A | Done | Done | new. src/lib/seo/metadata.ts builders: buildPageMetadata, sanitizeTitle (prevents double | AUREN suffixes), canonical URL resolution, and luxury Open Graph / Twitter defaults. |
+| 14.2 | Structured data | P0 | Done | Done | Done | Done | N/A | Done | Done | enhancement. Extended schema.org JSON-LD builders: Organization (Banani studio address & contact), WebSite with Sitelinks SearchAction, Product with MerchantReturnPolicy (7-day doorstep exchange) & OfferShippingDetails (Dhaka ৳80, Nationwide ৳150), FAQPage accordions, and Article. |
+| 14.3 | Sitemaps and robots | P0 | Done | Done | Done | Done | N/A | Done | Done | enhancement. Comprehensive sitemap.ts listing all storefront static pages, categories, collections, and live products with high-res images and priorities; robots.ts protecting private admin, checkout, account, search, and API paths. |
+| 14.4 | Faceted navigation rules | P0 | Done | Done | Done | Done | N/A | Done | Done | new. src/lib/seo/faceted.ts and listingSeo: allows indexing of clean single-color/single-fit capsule landings while canonicalizing and applying noindex/follow to multi-filter permutations and deep pagination. |
 | 14.5 | Product feeds | P1 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 14.6 | OG images | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
+| 14.6 | OG images | P0 | Done | Done | Done | Done | N/A | Done | Done | new. Dynamic next/og ImageResponse card generators for root storefront (opengraph-image.tsx), product detail pages (products/[slug]/opengraph-image.tsx with live prices & fabrics), and collections (collections/[slug]/opengraph-image.tsx). |
 | 14.7 | Performance budgets | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
 | 14.8 | Image pipeline audit | P0 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | Images now come from Vercel Blob (ADR-026, CSP img-src updated); public/seed SVG placeholders are development only |
 

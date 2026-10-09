@@ -16,6 +16,34 @@
 - Blockers/risks: <none | details>
 ```
 
+### 2026-10-10 — 14.1, 14.2, 14.3, 14.4, 14.6 SEO, Rich Structured Data & Dynamic OG Images — Done
+- Type: new and enhancement
+- Scope: Implemented comprehensive SEO metadata framework, rich schema.org structured data (Organization, WebSite + SearchAction, MerchantReturnPolicy, OfferShippingDetails, FAQPage, Article), complete sitemap with image metadata, faceted navigation crawler protection rules, and dynamic luxury Open Graph card generation.
+- Changed:
+  - Metadata Framework (14.1):
+    - `src/lib/seo/metadata.ts`: Created `buildPageMetadata` and `sanitizeTitle` helpers ensuring clean canonical URLs, title templates, and Open Graph defaults without duplicated brand suffixes.
+    - `src/lib/seo/__tests__/metadata.test.ts`: Unit tests validating title sanitization and Open Graph metadata generation.
+  - Structured Data (14.2):
+    - `src/lib/seo/jsonld.ts`: Added `organizationJsonLd`, `websiteJsonLd`, `merchantReturnPolicyNode` (7-day doorstep exchange in BD), `offerShippingDetailsNodes` (Dhaka ৳80 & Nationwide ৳150 delivery rates), `faqPageJsonLd`, and `articleJsonLd`.
+    - `src/app/(storefront)/layout.tsx`: Injected `Organization` and `WebSite` JSON-LD globally for brand panel and Google Sitelinks Searchbox eligibility.
+    - `src/app/(storefront)/faq/page.tsx`: Embedded `FAQPage` JSON-LD for rich accordion search snippet eligibility.
+    - `src/lib/seo/__tests__/jsonld-advanced.test.ts`: 6 unit tests covering advanced JSON-LD schemas.
+  - Sitemaps & Robots (14.3):
+    - `src/app/sitemap.ts`: Extended sitemap to index all 10 static storefront pages, categories, collections, and live products with high-res photography attachments, priorities, and change frequencies.
+  - Faceted Navigation Rules (14.4):
+    - `src/lib/seo/faceted.ts`: Implemented `getFacetedRobotsAndCanonical` allowing clean category landings to index while applying `noindex, follow` and canonical root references to faceted filter combinations, pagination (> 1), and internal search queries.
+    - `src/lib/seo/__tests__/faceted.test.ts`: 4 unit tests covering faceted navigation crawling rules.
+  - Dynamic Open Graph Images (14.6):
+    - `src/lib/seo/og-theme.ts`: Created luxury color tokens for Satori rendering without violating CSS design token guards.
+    - `src/app/(storefront)/opengraph-image.tsx`: Root luxury Open Graph card with gold crest and Cormorant Garamond typography.
+    - `src/app/(storefront)/products/[slug]/opengraph-image.tsx`: Dynamic product Open Graph card rendering product title, fabric, live price, and atelier branding.
+    - `src/app/(storefront)/collections/[slug]/opengraph-image.tsx`: Dynamic collection capsule Open Graph card.
+- Tests: `pnpm check` passed cleanly (0 typecheck errors, 0 lint errors, 100% Prettier formatting, 105 test files and 1,264 tests passed).
+- Review: Design tokens respected without raw hex colors in components, module boundaries preserved, and SSR safety verified.
+- Decisions: Architecture section 9 and 10 requirements strictly fulfilled.
+- Next: Module 15.5/15.6 (Audit Log Viewer & System Health) or Module 11 (Finance & Expenses).
+- Blockers/risks: none.
+
 ### 2026-10-10 — 15.1, 15.3, 15.4 Store General Settings, Staff Management & Dashboard KPIs — Done
 - Type: new and enhancement
 - Scope: Implemented store general settings configuration, staff directory & RBAC management, and advanced executive dashboard KPIs (AOV, overdue verification SLA countdown, RTO % and order cancellation metrics).
