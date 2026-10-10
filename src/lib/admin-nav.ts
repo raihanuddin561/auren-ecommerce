@@ -178,7 +178,8 @@ export const ADMIN_NAV: AdminNavGroup[] = [
         href: '/admin/reviews',
         icon: MessageSquareQuote,
         permission: 'reviews.moderate',
-        ready: false,
+        ready: true,
+        keywords: ['testimonials', 'moderation', 'feedback', 'ratings', 'social proof'],
       },
       {
         label: 'Content',

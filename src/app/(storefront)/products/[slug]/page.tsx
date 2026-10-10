@@ -73,10 +73,18 @@ async function RelatedProducts({
   );
 }
 
+import { PdpReviewsSection } from '@/components/storefront/reviews/pdp-reviews-section';
+import { getProductRatingStatsQuery, getProductReviewsQuery } from '@/modules/reviews/queries';
+
 export default async function ProductPage({ params }: PageProps<'/products/[slug]'>) {
   const { slug } = await params;
   const product = await getProductPage(slug);
   if (!product) notFound();
+
+  const [reviewsData, ratingStats] = await Promise.all([
+    getProductReviewsQuery(product.id, { limit: 20 }),
+    getProductRatingStatsQuery(product.id),
+  ]);
 
   const firstColor = product.colors[0]?.id ?? null;
   const lead = product.images.find((image) => image.colorId === firstColor) ?? product.images[0];
@@ -97,7 +105,7 @@ export default async function ProductPage({ params }: PageProps<'/products/[slug
               <ProductGallery images={product.images} title={product.title} />
             </div>
             <div className="flex min-w-0 flex-col gap-8 lg:sticky lg:top-24 lg:self-start">
-              <ProductHeading product={product} />
+              <ProductHeading product={product} stats={ratingStats} />
               <Suspense fallback={<BuyBoxSkeleton />}>
                 <LiveBuyBox product={product} />
               </Suspense>
@@ -107,6 +115,14 @@ export default async function ProductPage({ params }: PageProps<'/products/[slug
           </div>
         </PdpState>
       </div>
+
+      <PdpReviewsSection
+        productId={product.id}
+        productTitle={product.title}
+        productSlug={product.slug}
+        stats={ratingStats}
+        initialReviews={reviewsData.items}
+      />
 
       <Suspense fallback={null}>
         <RelatedProducts productId={product.id} categoryId={product.categoryId} />

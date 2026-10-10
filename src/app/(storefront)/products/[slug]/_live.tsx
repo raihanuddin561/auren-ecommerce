@@ -34,9 +34,14 @@ export async function LiveBuyBox({ product }: { product: PdpData }) {
   );
 }
 
+import { getProductRatingStatsQuery } from '@/modules/reviews/queries';
+
 /** Product, Offer and BreadcrumbList structured data with the live price and availability. */
 export async function LiveStructuredData({ product }: { product: PdpData }) {
-  const { rows, live } = await loadLive(product);
+  const [{ rows, live }, stats] = await Promise.all([
+    loadLive(product),
+    getProductRatingStatsQuery(product.id),
+  ]);
   const skuById = new Map(product.variants.map((variant) => [variant.id, variant.sku]));
   const stock = new Map(live.variants.map((variant) => [variant.id, variant.available]));
   return (
@@ -54,6 +59,13 @@ export async function LiveStructuredData({ product }: { product: PdpData }) {
           currency: row.currency,
           inStock: (stock.get(row.id) ?? 0) > 0,
         })),
+        aggregateRating:
+          stats.reviewCount > 0
+            ? {
+                ratingValue: stats.averageRating,
+                reviewCount: stats.reviewCount,
+              }
+            : undefined,
         breadcrumb: product.breadcrumb.map((crumb, index, all) => ({
           name: crumb.name,
           ...(index === all.length - 1 ? {} : { path: crumb.href }),

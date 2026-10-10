@@ -191,10 +191,10 @@
 
 | ID | Sub-feature | Pri | BE | API | UT | FE | E2E | CR | Overall | Notes |
 |---|---|---|---|---|---|---|---|---|---|---|
-| 12.1 | Review submission | P1 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 12.2 | Moderation | P1 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 12.3 | PDP review display | P1 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
-| 12.4 | Review request email | P1 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
+| 12.1 | Review submission | P1 | Done | Done | Done | Done | N/A | Done | Done | new. Storefront review submission dialog (WriteReviewModal), verified buyer matching via email & order history, fit feedback (runs small, true to size, runs large), body measurements (height & size worn), photo URLs attachment, rate limiting, and Zod schema validation. |
+| 12.2 | Moderation | P1 | Done | Done | Done | Done | N/A | Done | Done | new. Admin moderation console at /admin/reviews with 4 KPI summary cards, filter tabs (pending, approved, rejected), quick actions, ReviewDetailModal with inspector, moderation notes, transactional status transitions with audit(tx, ...), and atomic ProductRatingStats rollup recalc. |
+| 12.3 | PDP review display | P1 | Done | Done | Done | Done | N/A | Done | Done | new. PDP reviews section (PdpReviewsSection) with score aggregate, 5-star distribution histogram, fit feedback meter ("Runs True to Size: 88%"), rating badge on ProductHeading jumping to #reviews, filter chips, sort dropdown, review cards, photo gallery lightbox, helpful voting with optimistic counts, and schema.org aggregateRating JSON-LD. |
+| 12.4 | Review request email | P1 | Done | Done | Done | Done | N/A | Done | Done | new. Transactional review request email template (src/emails/review-request.tsx) with quiet luxury styling, garment thumbnail, direct review call-to-action, and Banani studio support links. |
 | 12.5 | UGC / Instagram grid | P2 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
 
 ## Module 13: Notifications and Marketing Automation

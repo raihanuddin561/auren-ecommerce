@@ -1,4 +1,4 @@
-import { CreditCard, Repeat, Truck } from 'lucide-react';
+import { CreditCard, Repeat, Star, Truck } from 'lucide-react';
 import {
   Accordion,
   AccordionContent,
@@ -7,13 +7,48 @@ import {
 } from '@/components/ui/accordion';
 import { Icon } from '@/components/ui/icon';
 import type { PdpData } from '@/modules/catalog/pdp';
+import type { ProductRatingStatsData } from '@/modules/reviews/types';
 
-/** Eyebrow, serif title and subtitle. The page's only h1. */
-export function ProductHeading({ product }: { product: PdpData }) {
+/** Eyebrow, serif title, subtitle and social proof rating stars. The page's only h1. */
+export function ProductHeading({
+  product,
+  stats,
+}: {
+  product: PdpData;
+  stats?: ProductRatingStatsData | null;
+}) {
   return (
     <header className="flex flex-col gap-3">
       {product.eyebrow ? <p className="type-eyebrow text-fg-muted">{product.eyebrow}</p> : null}
       <h1 className="type-h1 text-fg">{product.title}</h1>
+      {stats && stats.reviewCount > 0 ? (
+        <a
+          href="#reviews"
+          className="inline-flex flex-wrap items-center gap-2 type-caption text-fg-muted transition-colors hover:text-accent-text"
+        >
+          <div className="flex items-center gap-0.5 text-accent-text">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Star
+                key={i}
+                size={13}
+                className={
+                  i < Math.round(stats.averageRating)
+                    ? 'fill-gold text-accent-text'
+                    : 'text-stone-300'
+                }
+              />
+            ))}
+          </div>
+          <span className="font-medium text-fg">{stats.averageRating.toFixed(1)}</span>
+          <span>
+            ({stats.reviewCount} {stats.reviewCount === 1 ? 'review' : 'reviews'})
+          </span>
+          <span className="text-fg-muted/40">•</span>
+          <span className="font-medium text-accent-text">
+            {stats.fitTrueToSizePercentage}% True to size
+          </span>
+        </a>
+      ) : null}
       {product.subtitle ? <p className="type-body text-fg-muted">{product.subtitle}</p> : null}
     </header>
   );

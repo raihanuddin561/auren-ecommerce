@@ -102,6 +102,11 @@ export interface ProductJsonLdInput {
   category?: string | null;
   offers: readonly ProductOfferInput[];
   breadcrumb: readonly BreadcrumbEntry[];
+  aggregateRating?: {
+    ratingValue: number;
+    reviewCount: number;
+    bestRating?: number;
+  };
 }
 
 const availability = (inStock: boolean) =>
@@ -239,6 +244,17 @@ export function productJsonLd(input: ProductJsonLdInput, origin?: string): JsonL
         brand: { '@type': 'Brand', name: input.brand ?? 'AUREN' },
         ...(input.category ? { category: input.category } : {}),
         ...(offerNode ? { offers: offerNode } : {}),
+        ...(input.aggregateRating && input.aggregateRating.reviewCount > 0
+          ? {
+              aggregateRating: {
+                '@type': 'AggregateRating',
+                ratingValue: input.aggregateRating.ratingValue,
+                reviewCount: input.aggregateRating.reviewCount,
+                bestRating: input.aggregateRating.bestRating ?? 5,
+                worstRating: 1,
+              },
+            }
+          : {}),
       },
       breadcrumbList(input.breadcrumb, origin),
     ],

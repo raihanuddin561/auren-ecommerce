@@ -16,6 +16,40 @@
 - Blockers/risks: <none | details>
 ```
 
+### 2026-10-10 — 12.1–12.4 Customer Reviews and Social Proof — Done
+- Type: new and enhancement
+- Scope: Implemented customer review collection, verified buyer matching, fit feedback, admin moderation queue at `/admin/reviews` with audit logging and stats rollup recalc, storefront PDP review gallery with score summaries, fit meter, photo lightbox, helpful voting, schema.org aggregateRating JSON-LD, and post-delivery review request transactional email.
+- Changed:
+  - Database & Migrations:
+    - `prisma/migrations/20261010120000_add_reviews_and_social_proof/migration.sql`: Created `Review`, `ReviewMedia`, `ProductRatingStats` tables, enums `ReviewStatus` and `FitFeedback`, RLS security via `public.auren_secure_table()`, and seeded verified sample reviews.
+    - `prisma/schema.prisma`: Added `ReviewStatus`, `FitFeedback`, `Review`, `ReviewMedia`, and `ProductRatingStats` models and relations to `Product`, `User`, `OrderItem`, and `StaffMember`.
+  - Reviews Domain Core (`src/modules/reviews/`):
+    - `types.ts`: Comprehensive domain types (`ReviewItem`, `ProductRatingStatsData`, `SubmitReviewInput`, `ModerateReviewInput`, `ReviewFilterParams`, `AdminReviewsOverviewMetrics`, etc.).
+    - `schemas.ts`: Strict Zod validation schemas (`submitReviewSchema`, `moderateReviewSchema`, `reviewFilterSchema`, `adminReviewFilterSchema`, `voteHelpfulSchema`).
+    - `repository.ts`: Database queries, CRUD, transactional rating stats rollup calculations, verified buyer matching, and admin metrics.
+    - `service.ts`: Business logic, purchase verification, transaction-level moderation with `audit(tx, ...)`, cache revalidation, and helpful voting.
+    - `queries.ts`: Storefront and admin queries guarded by `assertPermission(staff, 'reviews.moderate')`.
+    - `actions.ts`: Server Actions (`submitReviewAction`, `moderateReviewAction`, `voteHelpfulReviewAction`) with `ok`, `fail`, `validationError`, `toActionError`.
+    - `__tests__/reviews.test.ts`: 14 unit tests covering validation, submission, moderation transitions, and fit calculations.
+  - Storefront PDP Components (`src/components/storefront/reviews/`):
+    - `write-review-modal.tsx`: Luxury dialog with star picker, fit feedback, height/size worn inputs, and customer photo URL attachments.
+    - `pdp-reviews-section.tsx`: PDP reviews section with aggregate score, 5-star distribution histogram, fit feedback meter ("Runs True to Size: 88%"), filter chips, sort options, review cards, photo gallery lightbox, and helpful vote button.
+    - `src/components/storefront/pdp/product-info.tsx`: Updated `ProductHeading` to display star summary badge with smooth anchor jump to `#reviews`.
+    - `src/app/(storefront)/products/[slug]/page.tsx` & `_live.tsx`: Integrated reviews queries, `<PdpReviewsSection />`, and schema.org aggregateRating JSON-LD.
+  - Admin Moderation Console (`src/components/admin/reviews/` & `src/app/admin/(console)/reviews/`):
+    - `reviews-metric-strip.tsx`: 4-card executive KPI summary (Total Reviews, Pending Moderation, Average Rating, Verified Buyers %).
+    - `reviews-table.tsx`: Filterable table with status tabs, star ratings, search, photo counts, and quick moderation actions.
+    - `review-detail-modal.tsx`: Inspector modal with full review text, measurements, customer photos, moderation note input, and approve/reject actions.
+    - `src/app/admin/(console)/reviews/page.tsx`: Route guarded by `requireStaff()` and `reviews.moderate`.
+    - `src/lib/admin-nav.ts`: Activated Reviews nav item with `ready: true`.
+  - Transactional Email (`src/emails/review-request.tsx`):
+    - Post-delivery review invitation email with branded typography, garment preview, direct review call-to-action button, and Banani studio concierge contact.
+- Tests: `pnpm typecheck`, `pnpm lint`, `pnpm format:check`, and Vitest test suites passing (reviews tests 14/14, tokens tests 47/47, admin guards and boundaries clean).
+- Review: Enforced strict design tokens (0 arbitrary brackets or raw hex colors), RBAC permissions (`reviews.moderate`), transaction isolation, and audit logging.
+- Decisions: ADR-023, ADR-025 preserved.
+- Next: Module 8.5 Lookbooks (P1) or Module 8.6 Journal / Blog (P1).
+- Blockers/risks: none.
+
 ### 2026-10-10 — 8.1 Section-Block Page Builder & Landing Page Editor — Done
 - Type: new and enhancement
 - Scope: Implemented dynamic section-block landing page builder with PostgreSQL schema, RLS policies, typed block components, admin drag/reorder editor, and public dynamic storefront route with Draft Mode preview and SEO metadata.

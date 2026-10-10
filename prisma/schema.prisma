@@ -70,6 +70,7 @@ model User {
   orders      Order[]
   storeCredit StoreCreditEntry[]
   discountRedemptions DiscountRedemption[]
+  reviews     Review[]
 
   @@map("users")
 }
@@ -174,6 +175,7 @@ model StaffMember {
   createdOrders   Order[]                    @relation("OrderCreatedBy")
   attempts        OrderVerificationAttempt[]
   expenses        Expense[]
+  moderatedReviews Review[]                  @relation("ReviewModerator")
 
   @@index([role])
   @@map("staff_members")
@@ -363,6 +365,8 @@ model Product {
   variants    ProductVariant[]
   media       ProductMedia[]
   collections CollectionProduct[]
+  reviews     Review[]
+  ratingStats ProductRatingStats?
 
   @@index([status, publishedAt(sort: Desc)])
   @@index([categoryId])
@@ -1150,6 +1154,7 @@ model OrderItem {
   returnItems   ReturnItem[]   @relation("ReturnedItem")
   replacementOf OrderItem?     @relation("Replacement", fields: [replacementOfItemId], references: [id], onDelete: Restrict)
   replacements  OrderItem[]    @relation("Replacement")
+  reviews       Review[]
 
   @@index([orderId])
   @@index([variantId])
@@ -1853,5 +1858,95 @@ model PageSection {
 
   @@index([pageId, sortOrder])
   @@map("page_sections")
+}
+
+// ---------------------------------------------------------------------------------------------
+// Customer Reviews & Social Proof (Module 12)
+// ---------------------------------------------------------------------------------------------
+
+enum ReviewStatus {
+  pending
+  approved
+  rejected
+
+  @@map("review_status")
+}
+
+enum FitFeedback {
+  runs_small
+  true_to_size
+  runs_large
+
+  @@map("fit_feedback")
+}
+
+model Review {
+  id             String       @id @default(uuid(7)) @db.Uuid
+  productId      String       @map("product_id") @db.Uuid
+  userId         String?      @map("user_id") @db.Uuid
+  orderItemId    String?      @map("order_item_id") @db.Uuid
+  authorName     String       @map("author_name")
+  authorEmail    String?      @map("author_email")
+  rating         Int
+  title          String
+  body           String       @db.Text
+  fitFeedback    FitFeedback  @default(true_to_size) @map("fit_feedback")
+  sizePurchased  String?      @map("size_purchased")
+  heightCm       Int?         @map("height_cm")
+  isVerified     Boolean      @default(false) @map("is_verified")
+  status         ReviewStatus @default(pending)
+  helpfulCount   Int          @default(0) @map("helpful_count")
+  moderatedBy    String?      @map("moderated_by") @db.Uuid
+  moderatedAt    DateTime?    @map("moderated_at") @db.Timestamptz(6)
+  moderationNote String?      @map("moderation_note")
+  publishedAt    DateTime?    @map("published_at") @db.Timestamptz(6)
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime     @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  product        Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user           User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  orderItem      OrderItem?   @relation(fields: [orderItemId], references: [id], onDelete: SetNull)
+  moderator      StaffMember? @relation("ReviewModerator", fields: [moderatedBy], references: [id], onDelete: SetNull)
+  media          ReviewMedia[]
+
+  @@index([productId, status, publishedAt(sort: Desc)])
+  @@index([status, createdAt(sort: Desc)])
+  @@index([userId])
+  @@index([orderItemId])
+  @@map("reviews")
+}
+
+model ReviewMedia {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  reviewId  String   @map("review_id") @db.Uuid
+  url       String
+  width     Int?
+  height    Int?
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  review    Review   @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+
+  @@index([reviewId, sortOrder])
+  @@map("review_media")
+}
+
+model ProductRatingStats {
+  productId          String   @id @map("product_id") @db.Uuid
+  averageRating      Float    @default(0) @map("average_rating")
+  reviewCount        Int      @default(0) @map("review_count")
+  fitRunsSmallCount  Int      @default(0) @map("fit_runs_small_count")
+  fitTrueToSizeCount Int      @default(0) @map("fit_true_to_size_count")
+  fitRunsLargeCount  Int      @default(0) @map("fit_runs_large_count")
+  oneStarCount       Int      @default(0) @map("one_star_count")
+  twoStarCount       Int      @default(0) @map("two_star_count")
+  threeStarCount     Int      @default(0) @map("three_star_count")
+  fourStarCount      Int      @default(0) @map("four_star_count")
+  fiveStarCount      Int      @default(0) @map("five_star_count")
+  updatedAt          DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  product            Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("product_rating_stats")
 }
 
