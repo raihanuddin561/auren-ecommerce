@@ -159,11 +159,13 @@ export function ListingEmpty({ basePath, query, suggestions, filtered }: Listing
   return (
     <div className="container-page py-14 md:py-20">
       <EmptyState
-        title="No pieces match these filters"
+        title={
+          filtered ? 'No pieces match these filters' : 'The Atelier is Tailoring This Collection'
+        }
         description={
           filtered
             ? 'Try removing a filter or two, or start again from everything in this edit.'
-            : 'There is nothing here yet. New pieces arrive often.'
+            : 'Pieces for this capsule are currently being handcrafted by our master artisans in Dhaka. In the meantime, explore our active seasonal arrivals.'
         }
         action={
           filtered ? (
@@ -174,7 +176,7 @@ export function ListingEmpty({ basePath, query, suggestions, filtered }: Listing
             </Button>
           ) : (
             <Button asChild variant="primary">
-              <Link href="/shop">Shop all</Link>
+              <Link href="/shop">Explore active collection</Link>
             </Button>
           )
         }

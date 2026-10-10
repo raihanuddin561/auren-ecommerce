@@ -7,6 +7,8 @@ import { getRequestMeta } from '@/lib/request-meta';
 import { requireStaff } from '@/lib/staff';
 import {
   HERO_CAROUSEL_CACHE_TAG,
+  NAVIGATION_CACHE_TAG,
+  navigationSettingsSchema,
   saveCheckoutSettingsSchema,
   saveOrderRulesSchema,
   saveHeroCarouselSettingsSchema,
@@ -120,6 +122,52 @@ export async function saveStoreGeneralSettingsAction(
       userAgent: meta.userAgent,
     });
     return ok(result);
+  } catch (error) {
+    return toActionError(error);
+  }
+}
+
+/**
+ * Saves storefront navigation items & mega menu structure.
+ * Requires settings.manage. Revalidates storefront-navigation cache tag.
+ */
+export async function saveNavigationSettingsAction(
+  input: unknown,
+): Promise<ActionResult<{ saved: true }>> {
+  const parsed = navigationSettingsSchema.safeParse(input);
+  if (!parsed.success) return validationError(parsed.error);
+  try {
+    const staff = await requireStaff();
+    assertPermission(staff, 'settings.manage');
+    const meta = await getRequestMeta();
+    await settings.saveNavigationSettings(parsed.data, {
+      userId: staff.userId,
+      ip: meta.ip,
+      userAgent: meta.userAgent,
+    });
+    updateTag(NAVIGATION_CACHE_TAG);
+    return ok({ saved: true });
+  } catch (error) {
+    return toActionError(error);
+  }
+}
+
+/**
+ * Resets storefront navigation back to luxury defaults.
+ * Requires settings.manage.
+ */
+export async function resetNavigationSettingsAction(): Promise<ActionResult<{ saved: true }>> {
+  try {
+    const staff = await requireStaff();
+    assertPermission(staff, 'settings.manage');
+    const meta = await getRequestMeta();
+    await settings.resetNavigationSettings({
+      userId: staff.userId,
+      ip: meta.ip,
+      userAgent: meta.userAgent,
+    });
+    updateTag(NAVIGATION_CACHE_TAG);
+    return ok({ saved: true });
   } catch (error) {
     return toActionError(error);
   }

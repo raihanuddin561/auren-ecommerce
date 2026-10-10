@@ -13,6 +13,12 @@ const SECTIONS = [
       'Brand identity, concierge email/phone, Dhaka studio location, VAT/BIN configuration, and social channels.',
   },
   {
+    href: '/admin/settings/navigation',
+    title: 'Navigation & Menu Bar',
+    description:
+      'Primary menu items, drop-down category columns, and promotional feature tiles for the storefront header.',
+  },
+  {
     href: '/admin/settings/staff',
     title: 'Staff & Permissions',
     description:

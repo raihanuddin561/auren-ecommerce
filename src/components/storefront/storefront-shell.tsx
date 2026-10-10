@@ -15,9 +15,12 @@ import { Header } from './header';
  */
 export function StorefrontShell({
   children,
+  header,
   cartIsland,
 }: {
   children: ReactNode;
+  /** Optional custom/dynamic header slot. Falls back to default Header if omitted. */
+  header?: ReactNode;
   /** The dynamic island that gives the browser the visitor's bag (a page that has none shows an empty bag). */
   cartIsland?: ReactNode;
 }) {
@@ -30,16 +33,18 @@ export function StorefrontShell({
         Skip to content
       </a>
       <AnnouncementBar messages={ANNOUNCEMENTS} />
-      <Suspense
-        fallback={
-          <div
-            aria-hidden="true"
-            className="sticky top-0 z-40 h-(--header-height) border-b border-line bg-page"
-          />
-        }
-      >
-        <Header />
-      </Suspense>
+      {header ?? (
+        <Suspense
+          fallback={
+            <div
+              aria-hidden="true"
+              className="sticky top-0 z-40 h-(--header-height) border-b border-line bg-page"
+            />
+          }
+        >
+          <Header />
+        </Suspense>
+      )}
       <main id="main" className="flex flex-1 flex-col">
         {children}
       </main>

@@ -6,11 +6,13 @@ export const SETTING_KEYS = {
   checkout: 'checkout.protection',
   cod: 'payments.cod',
   heroCarousel: 'storefront.hero_carousel',
+  navigation: 'storefront.navigation',
   verification: 'orders.verification',
   returns: 'orders.returns',
 } as const;
 
 export const HERO_CAROUSEL_CACHE_TAG = 'hero-carousel';
+export const NAVIGATION_CACHE_TAG = 'storefront-navigation';
 
 export const storeGeneralSettingsSchema = z
   .object({
@@ -249,3 +251,119 @@ export const saveOrderRulesSchema = z
     path: ['workEndHour'],
   });
 export type SaveOrderRulesInput = z.infer<typeof saveOrderRulesSchema>;
+
+// ---------------------------------------------------------------------------------------------
+// Navigation & Mega Menu Settings
+// ---------------------------------------------------------------------------------------------
+
+export const navLinkSchema = z
+  .object({
+    label: z.string().trim().min(1, 'Label is required').max(60),
+    href: z.string().trim().min(1, 'Link URL is required').max(300),
+  })
+  .strict();
+
+export const megaMenuTileSchema = z
+  .object({
+    eyebrow: z.string().trim().max(60).default(''),
+    title: z.string().trim().max(100).default(''),
+    href: z.string().trim().max(300).default(''),
+    image: z.string().trim().max(500).default(''),
+    imageAlt: z.string().trim().max(120).default(''),
+  })
+  .strict();
+
+export const navColumnSchema = z
+  .object({
+    heading: z.string().trim().min(1, 'Column heading is required').max(60),
+    links: z.array(navLinkSchema).default([]),
+  })
+  .strict();
+
+export const navItemSchema = z
+  .object({
+    label: z.string().trim().min(1, 'Menu label is required').max(60),
+    href: z.string().trim().min(1, 'Menu link URL is required').max(300),
+    columns: z.array(navColumnSchema).optional(),
+    tile: megaMenuTileSchema.optional(),
+  })
+  .strict();
+
+export const navigationSettingsSchema = z
+  .object({
+    items: z.array(navItemSchema).min(1, 'At least one menu item is required').max(20),
+  })
+  .strict();
+
+export type NavigationSettings = z.infer<typeof navigationSettingsSchema>;
+export type NavItemInput = z.infer<typeof navItemSchema>;
+export type NavColumnInput = z.infer<typeof navColumnSchema>;
+export type NavLinkInput = z.infer<typeof navLinkSchema>;
+export type MegaMenuTileInput = z.infer<typeof megaMenuTileSchema>;
+
+export const DEFAULT_NAVIGATION_SETTINGS: NavigationSettings = {
+  items: [
+    {
+      label: 'Shop',
+      href: '/shop',
+      columns: [
+        {
+          heading: 'Clothing',
+          links: [
+            { label: 'Shirts', href: '/shop/shirts' },
+            { label: 'Trousers', href: '/shop/trousers' },
+            { label: 'Tailoring', href: '/shop/tailoring' },
+            { label: 'Knitwear', href: '/shop/knitwear' },
+            { label: 'Polos', href: '/shop/polos' },
+          ],
+        },
+        {
+          heading: 'Accessories',
+          links: [
+            { label: 'Belts', href: '/shop/accessories' },
+            { label: 'Scarves', href: '/shop/accessories' },
+            { label: 'Wallets', href: '/shop/accessories' },
+          ],
+        },
+        {
+          heading: 'Discover',
+          links: [
+            { label: 'Shop all', href: '/shop' },
+            { label: 'New arrivals', href: '/shop?sort=newest' },
+          ],
+        },
+      ],
+      tile: {
+        eyebrow: 'The edit',
+        title: 'Winter layers',
+        href: '/collections/winter-layers',
+        image: '/seed/sand.svg',
+        imageAlt: 'Sand coloured shirt',
+      },
+    },
+    { label: 'New', href: '/shop?sort=newest' },
+    {
+      label: 'Collections',
+      href: '/collections',
+      columns: [
+        {
+          heading: 'Collections',
+          links: [
+            { label: 'Winter layers', href: '/collections/winter-layers' },
+            { label: 'The summer edit', href: '/collections/the-summer-edit' },
+            { label: 'Tailoring for occasions', href: '/collections/tailoring-for-occasions' },
+          ],
+        },
+      ],
+      tile: {
+        eyebrow: 'Lookbook',
+        title: 'Tailoring for occasions',
+        href: '/collections/tailoring-for-occasions',
+        image: '/seed/charcoal.svg',
+        imageAlt: 'Charcoal tailoring',
+      },
+    },
+    { label: 'Lookbook', href: '/lookbook' },
+    { label: 'Journal', href: '/journal' },
+  ],
+};

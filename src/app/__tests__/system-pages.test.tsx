@@ -14,7 +14,7 @@ const html = (node: React.ReactElement) => renderToStaticMarkup(node);
 describe('404 page', () => {
   it('is editorial, helpful and kept out of search results', () => {
     const markup = html(<NotFoundContent />);
-    expect(markup).toContain('This page has stepped out');
+    expect(markup).toContain('Crafting Something Extraordinary');
     expect(markup).toContain('action="/search"');
     expect(markup).toContain('role="search"');
     expect(markup).toContain('href="/shop"');

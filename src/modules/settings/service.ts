@@ -12,13 +12,16 @@ import {
   DEFAULT_CHECKOUT_PROTECTION,
   DEFAULT_COD_SETTINGS,
   DEFAULT_HERO_CAROUSEL_SETTINGS,
+  DEFAULT_NAVIGATION_SETTINGS,
   DEFAULT_RETURN_SETTINGS,
   DEFAULT_STORE_GENERAL_SETTINGS,
   DEFAULT_VERIFICATION_SETTINGS,
   heroCarouselSettingsSchema,
+  navigationSettingsSchema,
   returnSettingsSchema,
   storeGeneralSettingsSchema,
   verificationSettingsSchema,
+  type NavigationSettings,
   type ReturnSettings,
   type StoreGeneralSettings,
   type VerificationSettings,
@@ -309,4 +312,52 @@ export async function saveStoreGeneralSettings(
     });
   });
   return validated;
+}
+
+// ---------------------------------------------------------------------------------------------
+// Navigation & Mega Menu Management
+// ---------------------------------------------------------------------------------------------
+
+/**
+ * Loads storefront navigation items, falling back to the default luxury menswear menu
+ * if not yet saved or if unparseable.
+ */
+export async function getNavigationSettings(tx: Tx = db): Promise<NavigationSettings> {
+  const raw = await repo.readSetting(tx, SETTING_KEYS.navigation);
+  if (!raw || typeof raw !== 'object') {
+    return DEFAULT_NAVIGATION_SETTINGS;
+  }
+  const parsed = navigationSettingsSchema.safeParse(raw);
+  if (!parsed.success || parsed.data.items.length === 0) {
+    return DEFAULT_NAVIGATION_SETTINGS;
+  }
+  return parsed.data;
+}
+
+/** Saves storefront navigation settings with audit logging. */
+export async function saveNavigationSettings(
+  input: NavigationSettings,
+  actor: SettingsActor,
+): Promise<NavigationSettings> {
+  const parsed = navigationSettingsSchema.parse(input);
+  await db.$transaction(async (tx) => {
+    const before = await getNavigationSettings(tx);
+    await repo.writeSetting(tx, SETTING_KEYS.navigation, parsed, actor.userId);
+    await audit(tx, {
+      actorId: actor.userId,
+      action: 'setting.update',
+      entity: 'setting',
+      entityId: 'navigation',
+      before,
+      after: parsed,
+      ...(actor.ip ? { ip: actor.ip } : {}),
+      ...(actor.userAgent ? { userAgent: actor.userAgent } : {}),
+    });
+  });
+  return parsed;
+}
+
+/** Resets navigation back to default luxury menu. Audited. */
+export async function resetNavigationSettings(actor: SettingsActor): Promise<NavigationSettings> {
+  return saveNavigationSettings(DEFAULT_NAVIGATION_SETTINGS, actor);
 }

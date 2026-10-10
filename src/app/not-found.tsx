@@ -3,6 +3,7 @@ import { Suspense } from 'react';
 import { NotFoundContent } from '@/components/storefront/not-found-content';
 import { StorefrontShell } from '@/components/storefront/storefront-shell';
 import { CartIsland } from './(storefront)/_cart/cart-island';
+import { StorefrontHeaderSuspense } from './(storefront)/_header/storefront-header';
 
 export const metadata: Metadata = {
   title: 'Page not found',
@@ -13,6 +14,7 @@ export const metadata: Metadata = {
 export default function NotFound() {
   return (
     <StorefrontShell
+      header={<StorefrontHeaderSuspense />}
       cartIsland={
         <Suspense fallback={null}>
           <CartIsland />

@@ -2,18 +2,30 @@ import { cacheLife, cacheTag } from 'next/cache';
 import { db } from '@/lib/db';
 import { env } from '@/lib/env';
 import { toDecimalString, money } from '@/lib/money';
-import { HERO_CAROUSEL_CACHE_TAG, type HeroCarouselSettings } from './schemas';
+import {
+  HERO_CAROUSEL_CACHE_TAG,
+  NAVIGATION_CACHE_TAG,
+  type HeroCarouselSettings,
+  type NavigationSettings,
+} from './schemas';
 import {
   getCheckoutProtection,
   getCodSettings,
   getHeroCarouselSettings,
+  getNavigationSettings,
   getReturnSettings,
   getSavedViews,
   getStoreGeneralSettings,
   getVerificationSettings,
 } from './service';
 
-export { getReturnSettings, getSavedViews, getStoreGeneralSettings, getVerificationSettings };
+export {
+  getNavigationSettings,
+  getReturnSettings,
+  getSavedViews,
+  getStoreGeneralSettings,
+  getVerificationSettings,
+};
 export async function getStoreGeneralSettingsForAdmin() {
   return getStoreGeneralSettings();
 }
@@ -49,6 +61,21 @@ export async function getHeroCarouselForStorefront(): Promise<HeroCarouselSettin
 /** Returns the hero carousel settings for admin management (includes inactive slides). */
 export async function getHeroCarouselForAdmin(): Promise<HeroCarouselSettings> {
   return getHeroCarouselSettings();
+}
+
+/**
+ * Returns storefront navigation items. Cached and tagged.
+ */
+export async function getNavigationForStorefront(): Promise<NavigationSettings> {
+  'use cache';
+  cacheLife('hours');
+  cacheTag(NAVIGATION_CACHE_TAG);
+  return getNavigationSettings();
+}
+
+/** Returns navigation settings for admin management. */
+export async function getNavigationForAdmin(): Promise<NavigationSettings> {
+  return getNavigationSettings();
 }
 
 /**

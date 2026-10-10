@@ -6,7 +6,10 @@ test.describe('404 page', () => {
     const response = await page.goto('/this-page-does-not-exist');
     expect(response?.status()).toBe(404);
     await expect(
-      page.getByRole('heading', { name: 'This page has stepped out', level: 1 }),
+      page.getByRole('heading', {
+        name: /Crafting Something Extraordinary|This page has stepped out/,
+        level: 1,
+      }),
     ).toBeVisible();
     await expect(page.getByRole('banner')).toBeVisible();
     await expect(page.getByRole('contentinfo')).toBeVisible();

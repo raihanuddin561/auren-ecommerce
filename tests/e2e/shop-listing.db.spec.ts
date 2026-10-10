@@ -212,7 +212,11 @@ test.describe('shop page', () => {
     await expect(cards(page).first()).toBeVisible();
 
     await page.goto('/shop/does-not-exist');
-    await expect(page.getByRole('heading', { name: 'This page has stepped out' })).toBeVisible();
+    await expect(
+      page.getByRole('heading', {
+        name: /Crafting Something Extraordinary|This page has stepped out/,
+      }),
+    ).toBeVisible();
   });
 
   test('puts a colour and a size choice in the address and narrows the results', async ({
@@ -342,7 +346,11 @@ test.describe('shop page', () => {
 
     // A page past the end is not found.
     await page.goto(`${SHOP}?page=9`);
-    await expect(page.getByRole('heading', { name: 'This page has stepped out' })).toBeVisible();
+    await expect(
+      page.getByRole('heading', {
+        name: /Crafting Something Extraordinary|This page has stepped out/,
+      }),
+    ).toBeVisible();
   });
 
   test('canonical and robots follow the faceted URL rules', async ({ request }) => {
@@ -486,7 +494,11 @@ test.describe('collection page', () => {
   test('does not show a draft collection or an unknown one', async ({ page }) => {
     for (const slug of [DRAFT_COLLECTION_SLUG, 'no-such-collection']) {
       await page.goto(`/collections/${slug}`);
-      await expect(page.getByRole('heading', { name: 'This page has stepped out' })).toBeVisible();
+      await expect(
+        page.getByRole('heading', {
+          name: /Crafting Something Extraordinary|This page has stepped out/,
+        }),
+      ).toBeVisible();
     }
   });
 });

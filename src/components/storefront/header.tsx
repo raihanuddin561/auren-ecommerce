@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import { useState, useSyncExternalStore } from 'react';
 import { Icon } from '@/components/ui/icon';
 import { cn } from '@/lib/cn';
-import { hasHeroHeader, PRIMARY_NAV } from '@/lib/site';
+import { hasHeroHeader, PRIMARY_NAV, type NavItem } from '@/lib/site';
 import { MegaMenu } from './mega-menu';
 import { MobileMenu } from './mobile-menu';
 import { BagButton } from './cart/bag-button';
@@ -32,11 +32,15 @@ function useScrolledPast(threshold: number): boolean {
 const iconLink =
   'touch-target relative inline-flex size-11 items-center justify-center text-fg transition-auren-fast hover:text-accent-text';
 
+export interface HeaderProps {
+  items?: NavItem[];
+}
+
 /**
  * Transparent over a hero (home) until the visitor scrolls 80px or opens a menu, then ivory with a
  * hairline border. On every other page it is solid from the start.
  */
-export function Header() {
+export function Header({ items = PRIMARY_NAV }: HeaderProps = {}) {
   const pathname = usePathname();
   const scrolled = useScrolledPast(HEADER_SOLID_AFTER_PX);
   const [openPanel, setOpenPanel] = useState<string | null>(null);
@@ -66,9 +70,9 @@ export function Header() {
         ) : null}
         <div className="container-page grid h-full grid-cols-[1fr_auto_1fr] items-center">
           <div className="flex items-center">
-            <MobileMenu items={PRIMARY_NAV} />
+            <MobileMenu items={items} />
             <MegaMenu
-              items={PRIMARY_NAV}
+              items={items}
               pathname={pathname}
               openLabel={openPanel}
               onOpenChange={setOpenPanel}
