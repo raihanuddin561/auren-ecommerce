@@ -1,8 +1,6 @@
 import { getJournalRssXmlQuery } from '@/modules/journal/queries';
 import { siteOrigin } from '@/lib/seo/jsonld';
 
-export const dynamic = 'force-dynamic';
-
 export async function GET() {
   const origin = siteOrigin();
   const xml = await getJournalRssXmlQuery(origin);

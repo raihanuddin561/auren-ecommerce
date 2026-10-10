@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { Suspense } from 'react';
 import { Sparkles, ArrowRight } from 'lucide-react';
 import { getStorefrontLookbooksQuery } from '@/modules/lookbook/queries';
 import { LookbookCard } from '@/components/storefront/lookbook/lookbook-card';
@@ -12,7 +13,7 @@ export const metadata: Metadata = buildPageMetadata({
   path: '/lookbook',
 });
 
-export default async function LookbooksPage() {
+async function LookbooksContent() {
   const lookbooks = await getStorefrontLookbooksQuery();
 
   return (
@@ -74,5 +75,34 @@ export default async function LookbooksPage() {
         </div>
       </section>
     </div>
+  );
+}
+
+function LookbooksSkeleton() {
+  return (
+    <div className="min-h-screen bg-page">
+      <section className="border-b border-line bg-raised/30 py-16 md:py-24">
+        <div className="container mx-auto space-y-3 px-4 text-center sm:px-6 lg:px-8">
+          <div className="mx-auto h-4 w-32 animate-skeleton rounded-xs bg-skeleton" />
+          <div className="mx-auto h-10 w-64 animate-skeleton rounded-xs bg-skeleton" />
+          <div className="mx-auto h-4 w-96 animate-skeleton rounded-xs bg-skeleton" />
+        </div>
+      </section>
+      <section className="container mx-auto px-4 py-16 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="aspect-4/5 animate-skeleton rounded-xs bg-skeleton" />
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+export default function LookbooksPage() {
+  return (
+    <Suspense fallback={<LookbooksSkeleton />}>
+      <LookbooksContent />
+    </Suspense>
   );
 }

@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
+import { Suspense } from 'react';
 import { ChevronRight, ArrowLeft, Clock, Calendar, User } from 'lucide-react';
 import { getStorefrontArticleDetailQuery } from '@/modules/journal/queries';
 import { ArticleBody } from '@/components/storefront/journal/article-body';
@@ -32,7 +33,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   });
 }
 
-export default async function ArticleDetailPage({ params }: PageProps) {
+async function ArticleContent({ params }: PageProps) {
   const { slug } = await params;
   const article = await getStorefrontArticleDetailQuery(slug);
 
@@ -179,5 +180,30 @@ export default async function ArticleDetailPage({ params }: PageProps) {
         </Link>
       </div>
     </article>
+  );
+}
+
+function ArticleSkeleton() {
+  return (
+    <article className="min-h-screen bg-page">
+      <div className="container mx-auto max-w-4xl px-4 pt-12 sm:px-6 lg:px-8">
+        <div className="h-4 w-32 animate-skeleton rounded-xs bg-skeleton" />
+        <div className="mt-4 h-12 w-3/4 animate-skeleton rounded-xs bg-skeleton" />
+        <div className="mt-6 aspect-16/9 w-full animate-skeleton rounded-xs bg-skeleton" />
+        <div className="mt-8 space-y-4">
+          <div className="h-4 w-full animate-skeleton rounded-xs bg-skeleton" />
+          <div className="h-4 w-5/6 animate-skeleton rounded-xs bg-skeleton" />
+          <div className="h-4 w-4/6 animate-skeleton rounded-xs bg-skeleton" />
+        </div>
+      </div>
+    </article>
+  );
+}
+
+export default function ArticleDetailPage(props: PageProps) {
+  return (
+    <Suspense fallback={<ArticleSkeleton />}>
+      <ArticleContent {...props} />
+    </Suspense>
   );
 }

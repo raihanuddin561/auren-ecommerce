@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { Suspense } from 'react';
 import { Rss, Sparkles } from 'lucide-react';
 import {
   getStorefrontArticlesQuery,
@@ -24,7 +25,7 @@ interface JournalPageProps {
   }>;
 }
 
-export default async function JournalPage({ searchParams }: JournalPageProps) {
+async function JournalContent({ searchParams }: JournalPageProps) {
   const resolvedParams = await searchParams;
   const activeCategory = resolvedParams.category || 'all';
 
@@ -143,5 +144,34 @@ export default async function JournalPage({ searchParams }: JournalPageProps) {
         )}
       </section>
     </div>
+  );
+}
+
+function JournalSkeleton() {
+  return (
+    <div className="min-h-screen bg-page">
+      <section className="border-b border-line bg-raised/30 py-16 md:py-24">
+        <div className="container mx-auto space-y-3 px-4 text-center sm:px-6 lg:px-8">
+          <div className="mx-auto h-4 w-32 animate-skeleton rounded-xs bg-skeleton" />
+          <div className="mx-auto h-10 w-64 animate-skeleton rounded-xs bg-skeleton" />
+          <div className="mx-auto h-4 w-96 animate-skeleton rounded-xs bg-skeleton" />
+        </div>
+      </section>
+      <section className="container mx-auto px-4 py-12 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="aspect-4/3 animate-skeleton rounded-xs bg-skeleton" />
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+export default function JournalPage(props: JournalPageProps) {
+  return (
+    <Suspense fallback={<JournalSkeleton />}>
+      <JournalContent {...props} />
+    </Suspense>
   );
 }

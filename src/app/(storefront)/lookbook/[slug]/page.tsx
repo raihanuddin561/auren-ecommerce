@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
+import { Suspense } from 'react';
 import { ChevronRight, ArrowLeft, ShoppingBag } from 'lucide-react';
 import { getStorefrontLookbookDetailQuery } from '@/modules/lookbook/queries';
 import { LookbookViewer } from '@/components/storefront/lookbook/lookbook-viewer';
@@ -34,7 +35,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   });
 }
 
-export default async function LookbookDetailPage({ params }: PageProps) {
+async function LookbookContent({ params }: PageProps) {
   const { slug } = await params;
   const lookbook = await getStorefrontLookbookDetailQuery(slug);
 
@@ -185,5 +186,32 @@ export default async function LookbookDetailPage({ params }: PageProps) {
         </Link>
       </div>
     </div>
+  );
+}
+
+function LookbookSkeleton() {
+  return (
+    <div className="min-h-screen bg-page">
+      <div className="border-b border-line bg-raised/20">
+        <div className="container mx-auto px-4 py-3 sm:px-6 lg:px-8">
+          <div className="h-4 w-32 animate-skeleton rounded-xs bg-skeleton" />
+        </div>
+      </div>
+      <section className="container mx-auto px-4 py-12 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-4xl space-y-4 text-center">
+          <div className="mx-auto h-4 w-28 animate-skeleton rounded-xs bg-skeleton" />
+          <div className="mx-auto h-12 w-80 animate-skeleton rounded-xs bg-skeleton" />
+        </div>
+        <div className="mx-auto mt-12 aspect-4/5 max-w-md animate-skeleton rounded-xs bg-skeleton" />
+      </section>
+    </div>
+  );
+}
+
+export default function LookbookDetailPage(props: PageProps) {
+  return (
+    <Suspense fallback={<LookbookSkeleton />}>
+      <LookbookContent {...props} />
+    </Suspense>
   );
 }
