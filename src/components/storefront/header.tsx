@@ -30,7 +30,7 @@ function useScrolledPast(threshold: number): boolean {
 }
 
 const iconLink =
-  'touch-target relative inline-flex size-11 items-center justify-center text-fg transition-auren-fast hover:text-accent-text';
+  'touch-target relative inline-flex size-11 items-center justify-center text-fg transition-all duration-200 hover:text-gold hover:scale-105 active:scale-95';
 
 export interface HeaderProps {
   items?: NavItem[];
@@ -38,7 +38,7 @@ export interface HeaderProps {
 
 /**
  * Transparent over a hero (home) until the visitor scrolls 80px or opens a menu, then ivory with a
- * hairline border. On every other page it is solid from the start.
+ * hairline border and frosted glass backdrop. On every other page it is solid from the start.
  */
 export function Header({ items = PRIMARY_NAV }: HeaderProps = {}) {
   const pathname = usePathname();
@@ -59,7 +59,7 @@ export function Header({ items = PRIMARY_NAV }: HeaderProps = {}) {
           overHero && '-mb-(--header-height)',
           transparent
             ? 'border-b border-transparent bg-transparent'
-            : 'border-b border-line bg-page',
+            : 'shadow-2xs border-b border-line/70 bg-page/90 backdrop-blur-md',
         )}
       >
         {openPanel ? (

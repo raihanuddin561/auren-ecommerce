@@ -1,5 +1,55 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="800" height="1000" viewBox="0 0 800 1000" role="img" aria-label="Olive placeholder">
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="1000" viewBox="0 0 800 1000" role="img" aria-label="Olive tailoring textile specimen">
+  <defs>
+    <!-- Textile weave pattern -->
+    <pattern id="weave-olive" width="16" height="16" patternUnits="userSpaceOnUse" opacity="0.08">
+      <path d="M0 8h16M8 0v16" stroke="#f6f2eb" stroke-width="1.5"/>
+      <path d="M0 0l16 16M16 0L0 16" stroke="#f6f2eb" stroke-width="0.75"/>
+    </pattern>
+    <radialGradient id="grad-olive" cx="50%" cy="40%" r="70%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.22"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Base tone fill -->
   <rect width="800" height="1000" fill="#5B6040"/>
-  <text x="400" y="470" text-anchor="middle" font-family="Georgia, serif" font-size="44" letter-spacing="18" fill="#f6f2eb">AUREN</text>
-  <text x="400" y="530" text-anchor="middle" font-family="Georgia, serif" font-size="22" letter-spacing="4" fill="#f6f2eb" opacity="0.7">OLIVE</text>
+  <!-- Ambient depth gradient -->
+  <rect width="800" height="1000" fill="url(#grad-olive)"/>
+  <!-- Textile weave texture -->
+  <rect width="800" height="1000" fill="url(#weave-olive)"/>
+
+  <!-- Atelier Hairline Inset Frame -->
+  <rect x="36" y="36" width="728" height="928" fill="none" stroke="rgba(246, 242, 235, 0.18)" stroke-width="1"/>
+  <rect x="44" y="44" width="712" height="912" fill="none" stroke="#d9c7a6" stroke-width="0.75" stroke-dasharray="6 4" opacity="0.45"/>
+
+  <!-- Corner Sartorial Crossmarks -->
+  <path d="M30 36h12 M36 30v12 M758 36h12 M764 30v12 M30 964h12 M36 958v12 M758 964h12 M764 958v12" stroke="#d9c7a6" stroke-width="1.5"/>
+
+  <!-- Top Atelier Provenance Header -->
+  <text x="400" y="90" text-anchor="middle" font-family="'Manrope', -apple-system, sans-serif" font-size="13" font-weight="600" letter-spacing="7" fill="#d9c7a6">✦ AUREN ATELIER ARCHIVE ✦</text>
+  <text x="400" y="112" text-anchor="middle" font-family="'Manrope', -apple-system, sans-serif" font-size="11" font-weight="400" letter-spacing="4" fill="rgba(246, 242, 235, 0.65)">NOBLE FIBER SPECIMEN • DHAKA</text>
+
+  <!-- Central Watermark / Tailored Lapel Vector Silhouette -->
+  <g transform="translate(320, 270)" stroke="#d9c7a6" stroke-width="1.2" fill="none" opacity="0.35">
+    <!-- Tailored jacket neckline & lapel contour -->
+    <path d="M80 0 L110 50 L140 120 L155 230 L80 230 L5 230 L20 120 L50 50 Z" />
+    <path d="M80 0 L80 230" stroke-dasharray="4 3"/>
+    <path d="M45 55 L75 140" />
+    <path d="M115 55 L85 140" />
+    <!-- Monogram Seal Center -->
+    <circle cx="80" cy="115" r="28" stroke="#d9c7a6" stroke-width="1"/>
+    <text x="80" y="123" text-anchor="middle" font-family="Georgia, serif" font-size="24" font-weight="300" fill="#d9c7a6">A</text>
+  </g>
+
+  <!-- Typography Block -->
+  <text x="400" y="590" text-anchor="middle" font-family="'Cormorant Garamond', Georgia, serif" font-size="46" font-weight="300" letter-spacing="14" fill="#f6f2eb">AUREN</text>
+  
+  <line x1="320" y1="615" x2="480" y2="615" stroke="#d9c7a6" stroke-width="1" opacity="0.7"/>
+
+  <text x="400" y="655" text-anchor="middle" font-family="'Cormorant Garamond', Georgia, serif" font-size="26" font-style="italic" letter-spacing="3" fill="#f6f2eb">Olive</text>
+  <text x="400" y="688" text-anchor="middle" font-family="'Manrope', -apple-system, sans-serif" font-size="11" font-weight="500" letter-spacing="5" fill="rgba(246, 242, 235, 0.65)">TEXTILE SPECIMEN • NATURAL WEAVE</text>
+
+  <!-- Bottom Details Stamp -->
+  <text x="400" y="900" text-anchor="middle" font-family="'Manrope', -apple-system, sans-serif" font-size="10" font-weight="500" letter-spacing="4" fill="rgba(246, 242, 235, 0.65)">BESPOKE &amp; READY-TO-WEAR • BANANI STUDIO</text>
+  <text x="400" y="920" text-anchor="middle" font-family="'Manrope', -apple-system, sans-serif" font-size="9" font-weight="400" letter-spacing="2" fill="#d9c7a6">HAND-FINISHED SEAMS • ZERO SYNTHETIC BLENDS</text>
 </svg>

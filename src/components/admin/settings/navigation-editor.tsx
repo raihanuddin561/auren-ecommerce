@@ -345,19 +345,19 @@ export function NavigationEditor({ initialSettings }: NavigationEditorProps) {
                 >
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex min-w-0 items-center gap-2.5">
-                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-xs bg-page font-mono text-[10px] text-fg-muted">
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-xs bg-page type-caption font-mono text-fg-muted">
                         {idx + 1}
                       </span>
                       <div className="truncate">
                         <div className="truncate text-xs font-semibold text-fg">{item.label}</div>
-                        <div className="truncate font-mono text-[11px] text-fg-muted">
+                        <div className="truncate type-caption font-mono text-fg-muted">
                           {item.href}
                         </div>
                       </div>
                     </div>
 
                     <div className="flex shrink-0 items-center gap-1">
-                      <Badge tone={hasMegaMenu ? 'gold' : 'neutral'} className="text-[10px]">
+                      <Badge tone={hasMegaMenu ? 'gold' : 'neutral'} className="type-caption">
                         {hasMegaMenu ? `${item.columns?.length} cols` : 'Direct'}
                       </Badge>
                       <button
@@ -547,7 +547,7 @@ export function NavigationEditor({ initialSettings }: NavigationEditorProps) {
                                   })
                                 }
                                 placeholder="/shop/category"
-                                className="h-7 flex-1 border-line bg-page font-mono text-[11px]"
+                                className="h-7 flex-1 border-line bg-page type-caption font-mono"
                               />
                               <button
                                 type="button"
@@ -566,7 +566,7 @@ export function NavigationEditor({ initialSettings }: NavigationEditorProps) {
                           variant="ghost"
                           size="sm"
                           onClick={() => addLink(editingIndex, colIdx)}
-                          className="h-6 w-full text-[11px] text-fg-muted hover:text-fg"
+                          className="h-6 w-full type-caption text-fg-muted hover:text-fg"
                         >
                           + Add Sub-Link
                         </Button>
@@ -581,7 +581,7 @@ export function NavigationEditor({ initialSettings }: NavigationEditorProps) {
                     </span>
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                       <div className="space-y-1">
-                        <Label className="text-[11px] text-fg-muted">Eyebrow / Badge</Label>
+                        <Label className="type-caption text-fg-muted">Eyebrow / Badge</Label>
                         <Input
                           value={currentItem.tile?.eyebrow || ''}
                           onChange={(e) => updateTile(editingIndex, { eyebrow: e.target.value })}
@@ -590,7 +590,7 @@ export function NavigationEditor({ initialSettings }: NavigationEditorProps) {
                         />
                       </div>
                       <div className="space-y-1">
-                        <Label className="text-[11px] text-fg-muted">Headline / Title</Label>
+                        <Label className="type-caption text-fg-muted">Headline / Title</Label>
                         <Input
                           value={currentItem.tile?.title || ''}
                           onChange={(e) => updateTile(editingIndex, { title: e.target.value })}
@@ -599,7 +599,7 @@ export function NavigationEditor({ initialSettings }: NavigationEditorProps) {
                         />
                       </div>
                       <div className="space-y-1">
-                        <Label className="text-[11px] text-fg-muted">Destination Link</Label>
+                        <Label className="type-caption text-fg-muted">Destination Link</Label>
                         <Input
                           value={currentItem.tile?.href || ''}
                           onChange={(e) => updateTile(editingIndex, { href: e.target.value })}
@@ -608,7 +608,7 @@ export function NavigationEditor({ initialSettings }: NavigationEditorProps) {
                         />
                       </div>
                       <div className="space-y-1">
-                        <Label className="text-[11px] text-fg-muted">Image URL</Label>
+                        <Label className="type-caption text-fg-muted">Image URL</Label>
                         <Input
                           value={currentItem.tile?.image || ''}
                           onChange={(e) => updateTile(editingIndex, { image: e.target.value })}

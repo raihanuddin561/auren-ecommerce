@@ -252,30 +252,35 @@ export function QuickAdd({ title }: QuickAddProps) {
       role="group"
       aria-label={`Quick add, ${title}`}
       className={cn(
-        'pointer-events-none absolute inset-x-0 bottom-0 z-20 hidden bg-page/95 px-3 pt-2 pb-3 opacity-0 transition-auren',
+        'shadow-md pointer-events-none absolute inset-x-0 bottom-0 z-20 hidden translate-y-1 border-t border-line/60 bg-page/95 px-3 pt-2.5 pb-3 opacity-0 backdrop-blur-md transition-all duration-300',
         '[@media(hover:hover)_and_(pointer:fine)]:block',
-        'group-focus-within:pointer-events-auto group-focus-within:opacity-100',
-        'group-hover:pointer-events-auto group-hover:opacity-100',
+        'group-focus-within:pointer-events-auto group-focus-within:translate-y-0 group-focus-within:opacity-100',
+        'group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100',
       )}
     >
-      <p className="mb-1 type-eyebrow text-fg-muted">Quick add</p>
-      <ul className="flex flex-wrap gap-1">
+      <div className="mb-1.5 flex items-center justify-between">
+        <p className="type-eyebrow font-medium tracking-eyebrow text-gold uppercase">Select Size</p>
+        <span className="type-caption font-mono text-fg-muted">Quick Add</span>
+      </div>
+      <ul className="flex flex-wrap gap-1.5">
         {sizes.map((size) => {
           const variant = variantFor(size);
           const available = variant?.available ?? 0;
           const soldOut = !variant || available <= 0;
+          const isCurrentPending = isPending && pendingId === variant?.id;
           return (
             <li key={size}>
               <button
                 type="button"
-                disabled={soldOut || (isPending && pendingId === variant?.id)}
+                disabled={soldOut || isCurrentPending}
                 aria-label={soldOut ? `${size}, sold out` : `Add size ${size} to bag`}
                 onClick={() => variant && add(size, variant)}
                 className={cn(
-                  'touch-target inline-flex h-9 min-w-9 items-center justify-center border border-line-strong px-2 type-small text-fg transition-auren-fast',
-                  'hover:border-fg hover:bg-fg hover:text-page',
-                  'disabled:cursor-not-allowed disabled:border-line disabled:text-fg-muted disabled:hover:bg-transparent disabled:hover:text-fg-muted',
-                  soldOut && 'line-through',
+                  'touch-target inline-flex h-8 min-w-8 items-center justify-center rounded-xs border border-line-strong px-2 type-caption font-mono text-fg transition-all duration-200',
+                  'hover:scale-105 hover:border-gold hover:bg-gold hover:text-ink active:scale-95',
+                  'disabled:cursor-not-allowed disabled:border-line disabled:text-fg-muted disabled:hover:scale-100 disabled:hover:bg-transparent disabled:hover:text-fg-muted',
+                  soldOut && 'line-through opacity-40',
+                  isCurrentPending && 'animate-pulse border-gold bg-gold/20 text-gold',
                 )}
               >
                 {size}

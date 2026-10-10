@@ -107,23 +107,25 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
       role="dialog"
       aria-modal="true"
       aria-label="Search Collection"
-      className="fixed inset-0 z-50 flex flex-col bg-ink/60 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex flex-col bg-ink/75 backdrop-blur-md"
     >
       {/* Backdrop click dismiss */}
       <div className="absolute inset-0 -z-10" onClick={onClose} />
 
-      <div className="w-full border-b border-line bg-page shadow-float">
+      <div className="w-full border-b border-line bg-page/95 shadow-float backdrop-blur-md">
         <div className="container-editorial py-6">
           {/* Header Bar */}
           <div className="flex items-center justify-between pb-4">
-            <span className="type-eyebrow tracking-widest text-accent-text">Atelier Discovery</span>
+            <span className="type-eyebrow font-medium tracking-widest text-gold uppercase">
+              ✦ Atelier Collection Discovery ✦
+            </span>
             <button
               type="button"
               onClick={onClose}
               aria-label="Close search"
-              className="p-2 text-fg-muted transition-auren-fast hover:text-fg"
+              className="flex size-9 items-center justify-center rounded-full border border-line/60 p-2 text-fg-muted transition-all duration-200 hover:border-gold hover:bg-gold/10 hover:text-gold"
             >
-              <Icon icon={X} size={20} />
+              <Icon icon={X} size={18} />
             </button>
           </div>
 
@@ -132,7 +134,7 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
             <Icon
               icon={Search}
               size={22}
-              className="pointer-events-none absolute left-0 text-fg-muted"
+              className="pointer-events-none absolute left-0 text-gold"
             />
             <input
               ref={inputRef}
@@ -140,13 +142,13 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search garments, noble fabrics, silhouettes..."
-              className="w-full border-b border-line bg-transparent py-4 pr-24 pl-10 font-serif text-xl text-fg placeholder:text-fg-muted focus:border-gold focus:outline-none md:text-2xl"
+              className="w-full border-b border-line/80 bg-transparent py-4 pr-28 pl-10 font-serif text-xl text-fg placeholder:text-fg-muted/60 focus:border-gold focus:outline-none md:text-2xl"
               autoComplete="off"
             />
             {query ? (
               <button
                 type="submit"
-                className="absolute right-0 flex items-center gap-1 type-eyebrow text-fg transition-auren-fast hover:text-accent-text"
+                className="absolute right-0 flex items-center gap-1.5 rounded-xs border border-gold/40 bg-gold/10 px-3 py-1.5 type-eyebrow font-medium text-gold transition-all duration-200 hover:bg-gold hover:text-ink"
               >
                 <span>View all</span>
                 <Icon icon={ArrowRight} size={14} />
@@ -157,14 +159,16 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
           {/* Popular Searches when no query */}
           {query.trim().length < 2 ? (
             <div className="mt-8 flex flex-col gap-3">
-              <p className="type-eyebrow text-fg-muted">Trending Curations</p>
+              <p className="type-eyebrow font-medium tracking-eyebrow text-gold uppercase">
+                Trending Curations
+              </p>
               <div className="flex flex-wrap gap-2">
                 {popular.map((term) => (
                   <button
                     key={term}
                     type="button"
                     onClick={() => handleSelectTerm(term)}
-                    className="border border-line bg-raised px-3.5 py-1.5 type-small text-fg transition-auren-fast hover:border-fg hover:bg-fg/5"
+                    className="rounded-full border border-line/70 bg-raised px-4 py-1.5 type-small text-fg transition-all duration-200 hover:scale-105 hover:border-gold hover:bg-gold/5 hover:text-gold active:scale-95"
                   >
                     {term}
                   </button>

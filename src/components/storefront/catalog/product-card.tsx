@@ -56,14 +56,17 @@ export function ProductCard({
   const background = safeColor(image?.dominantColor);
 
   return (
-    <article className={cn('group relative', className)} data-stock={product.stock ?? undefined}>
+    <article
+      className={cn('group relative transition-all duration-300 hover:-translate-y-1', className)}
+      data-stock={product.stock ?? undefined}
+    >
       <CardState
         colors={product.colors ?? []}
         variants={product.variants ?? []}
         sizes={product.sizes ?? []}
       >
         <div
-          className="relative aspect-4/5 overflow-hidden bg-sunken"
+          className="shadow-xs group-hover:shadow-soft relative aspect-4/5 overflow-hidden rounded-xs border border-line/60 bg-sunken transition-all duration-500 group-hover:border-gold/60"
           style={background ? { backgroundColor: background } : undefined}
         >
           {image ? (
@@ -78,14 +81,12 @@ export function ProductCard({
             <ImagePlaceholder label="AUREN" />
           )}
           {badges.length > 0 ? (
-            <div className="absolute top-3 left-3 flex flex-col items-start gap-1">
+            <div className="absolute top-3 left-3 z-10 flex flex-col items-start gap-1">
               {badges.map((badge) => (
                 <Badge
                   key={badge.key}
                   tone={BADGE_TONE[badge.key]}
-                  className={
-                    badge.key === 'low-stock' || badge.key === 'new' ? 'bg-page/90' : undefined
-                  }
+                  className="shadow-2xs border border-line/60 bg-page/90 type-caption font-mono tracking-wider uppercase backdrop-blur-xs"
                 >
                   {badge.label}
                 </Badge>
@@ -95,15 +96,17 @@ export function ProductCard({
           <WishlistButton
             productId={product.id}
             title={product.title}
-            className="absolute top-1 right-1"
+            className="absolute top-2.5 right-2.5"
           />
           <QuickAdd title={product.title} />
         </div>
         <div className="mt-4 flex flex-col gap-1">
           {product.categoryName ? (
-            <p className="type-eyebrow text-fg-muted">{product.categoryName}</p>
+            <p className="type-eyebrow tracking-eyebrow text-accent-text uppercase">
+              {product.categoryName}
+            </p>
           ) : null}
-          <h3 className="type-body font-medium text-fg">
+          <h3 className="type-body font-medium text-fg transition-colors duration-200 group-hover:text-gold">
             <Link
               href={`/products/${product.slug}`}
               className="outline-none after:absolute after:inset-0 after:z-10 after:content-[''] focus-visible:after:outline-2 focus-visible:after:outline-offset-2 focus-visible:after:outline-gold"

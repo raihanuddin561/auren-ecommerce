@@ -98,11 +98,12 @@ export function WishlistButton({ productId, title, className }: WishlistButtonPr
       aria-label={saved ? `Remove ${title} from wishlist` : `Add ${title} to wishlist`}
       onClick={toggle}
       className={cn(
-        'touch-target relative z-20 inline-flex size-11 items-center justify-center bg-page/80 text-fg transition-auren-fast hover:bg-page',
+        'shadow-xs touch-target relative z-20 inline-flex size-10 items-center justify-center rounded-full border border-line/60 bg-page/85 text-fg backdrop-blur-xs transition-auren-fast hover:scale-105 hover:border-gold hover:text-gold active:scale-95',
+        saved && 'border-gold/60 fill-gold text-gold',
         className,
       )}
     >
-      <Icon icon={Heart} size={20} className={cn(saved && 'fill-current')} />
+      <Icon icon={Heart} size={18} className={cn(saved && 'fill-current text-gold')} />
     </button>
   );
 }

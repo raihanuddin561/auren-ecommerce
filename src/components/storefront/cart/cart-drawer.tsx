@@ -59,13 +59,17 @@ export function CartDrawer() {
         {empty ? (
           <SheetBody className="flex items-center">
             <EmptyState
-              className="w-full border-0"
-              icon={<Icon icon={ShoppingBag} size={28} />}
-              title="Your bag is empty"
-              description="Pieces you add will wait here."
+              className="w-full border-0 py-16"
+              icon={
+                <div className="flex size-14 items-center justify-center rounded-full border border-gold/40 bg-gold/5 text-gold">
+                  <Icon icon={ShoppingBag} size={24} />
+                </div>
+              }
+              title="Your Bag Awaits"
+              description="Discover bespoke tailoring, noble fibers, and modern menswear in our seasonal edit."
               action={
-                <Button asChild variant="secondary" onClick={closeCartDrawer}>
-                  <Link href="/shop">Explore the collection</Link>
+                <Button asChild variant="primary" onClick={closeCartDrawer} className="mt-2">
+                  <Link href="/shop">Explore The Collection</Link>
                 </Button>
               }
             />
@@ -98,17 +102,17 @@ export function CartDrawer() {
                   View bag
                 </Link>
               </Button>
-              <div className="flex flex-col items-center gap-1 pt-1 text-center">
-                <p className="type-caption text-fg-muted">
-                  Cash on delivery across 64 districts &middot; Doorstep inspection
+              <div className="flex flex-col items-center gap-1.5 rounded-xs border border-line/60 bg-raised/30 p-2.5 text-center">
+                <p className="type-caption font-medium text-fg">
+                  ✦ Cash on Delivery Across 64 Districts · Doorstep Inspection
                 </p>
-                <div className="flex items-center justify-center gap-1.5 type-caption tracking-wider text-fg-subtle uppercase">
+                <div className="flex items-center justify-center gap-2 type-caption font-mono tracking-wider text-gold-strong uppercase dark:text-gold">
                   <span>Cash</span>
-                  <span>&bull;</span>
+                  <span>·</span>
                   <span>bKash</span>
-                  <span>&bull;</span>
+                  <span>·</span>
                   <span>Nagad</span>
-                  <span>&bull;</span>
+                  <span>·</span>
                   <span>Cards</span>
                 </div>
               </div>

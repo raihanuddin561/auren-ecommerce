@@ -9,9 +9,9 @@ describe('HeroCarousel', () => {
   it('renders with ARIA carousel role and default slides', () => {
     const markup = html(<HeroCarousel settings={DEFAULT_HERO_CAROUSEL_SETTINGS} />);
     expect(markup).toContain('aria-roledescription="carousel"');
-    expect(markup).toContain('Modern, refined menswear');
+    expect(markup).toContain('Architectural Cuts in Tropical Wool');
     expect(markup).toContain('href="/shop"');
-    expect(markup).toContain('Explore the collection');
+    expect(markup).toContain('Explore Collection');
     expect(markup).toContain('role="tablist"');
   });
 

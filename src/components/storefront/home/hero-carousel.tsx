@@ -406,7 +406,7 @@ export function HeroCarousel({ settings, className }: HeroCarouselProps) {
                 type="button"
                 onClick={() => setIsPlaying((prev) => !prev)}
                 aria-label={isPlaying ? 'Pause carousel autoplay' : 'Start carousel autoplay'}
-                className="flex size-9 items-center justify-center border border-line/40 bg-ink/40 text-fg-muted backdrop-blur-xs transition-colors duration-150 hover:border-fg hover:text-fg focus:outline-none focus-visible:ring-1 focus-visible:ring-gold"
+                className="flex size-9 items-center justify-center rounded-xs border border-line/50 bg-ink/50 text-fg-muted backdrop-blur-md transition-all duration-200 hover:scale-105 hover:border-gold hover:bg-gold/10 hover:text-gold focus:outline-none focus-visible:ring-1 focus-visible:ring-gold active:scale-95"
               >
                 <Icon icon={isPlaying ? Pause : Play} size={16} aria-hidden />
               </button>
@@ -416,7 +416,7 @@ export function HeroCarousel({ settings, className }: HeroCarouselProps) {
                 type="button"
                 onClick={prev}
                 aria-label="Previous slide"
-                className="flex size-9 items-center justify-center border border-line/40 bg-ink/40 text-fg-muted backdrop-blur-xs transition-colors duration-150 hover:border-fg hover:text-fg focus:outline-none focus-visible:ring-1 focus-visible:ring-gold"
+                className="flex size-9 items-center justify-center rounded-xs border border-line/50 bg-ink/50 text-fg-muted backdrop-blur-md transition-all duration-200 hover:scale-105 hover:border-gold hover:bg-gold/10 hover:text-gold focus:outline-none focus-visible:ring-1 focus-visible:ring-gold active:scale-95"
               >
                 <Icon icon={ChevronLeft} size={16} aria-hidden />
               </button>
@@ -426,7 +426,7 @@ export function HeroCarousel({ settings, className }: HeroCarouselProps) {
                 type="button"
                 onClick={next}
                 aria-label="Next slide"
-                className="flex size-9 items-center justify-center border border-line/40 bg-ink/40 text-fg-muted backdrop-blur-xs transition-colors duration-150 hover:border-fg hover:text-fg focus:outline-none focus-visible:ring-1 focus-visible:ring-gold"
+                className="flex size-9 items-center justify-center rounded-xs border border-line/50 bg-ink/50 text-fg-muted backdrop-blur-md transition-all duration-200 hover:scale-105 hover:border-gold hover:bg-gold/10 hover:text-gold focus:outline-none focus-visible:ring-1 focus-visible:ring-gold active:scale-95"
               >
                 <Icon icon={ChevronRight} size={16} aria-hidden />
               </button>
