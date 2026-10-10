@@ -1,38 +1,53 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { draftMode } from 'next/headers';
+import { Suspense } from 'react';
 import { getDraftPageBySlug, getPublishedPageBySlug } from '@/modules/content/queries';
 import { SectionRenderer } from '@/components/content/section-renderer';
 import { buildPageMetadata } from '@/lib/seo/metadata';
+
+export const dynamic = 'force-dynamic';
 
 interface PageProps {
   params: Promise<{ slug: string }>;
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { slug } = await params;
-  const page = await getPublishedPageBySlug(slug);
+  try {
+    const { slug } = await params;
+    const page = await getPublishedPageBySlug(slug);
 
-  if (!page) {
+    if (!page) {
+      return {
+        title: 'Page Not Found',
+        robots: { index: false, follow: false },
+      };
+    }
+
+    return buildPageMetadata({
+      title: page.seoTitle || page.title,
+      description: page.seoDescription || page.description || undefined,
+      path: `/pages/${page.slug}`,
+      image: page.ogImageUrl || undefined,
+    });
+  } catch {
     return {
       title: 'Page Not Found',
       robots: { index: false, follow: false },
     };
   }
-
-  return buildPageMetadata({
-    title: page.seoTitle || page.title,
-    description: page.seoDescription || page.description || undefined,
-    path: `/pages/${page.slug}`,
-    image: page.ogImageUrl || undefined,
-  });
 }
 
-export default async function StorefrontContentPage({ params }: PageProps) {
+async function PageContent({ params }: PageProps) {
   const { slug } = await params;
   const { isEnabled: isDraft } = await draftMode();
 
-  const page = isDraft ? await getDraftPageBySlug(slug) : await getPublishedPageBySlug(slug);
+  let page = null;
+  try {
+    page = isDraft ? await getDraftPageBySlug(slug) : await getPublishedPageBySlug(slug);
+  } catch {
+    notFound();
+  }
 
   if (!page) {
     notFound();
@@ -62,5 +77,27 @@ export default async function StorefrontContentPage({ params }: PageProps) {
 
       <SectionRenderer sections={page.sections} />
     </article>
+  );
+}
+
+function PageSkeleton() {
+  return (
+    <article className="min-h-screen py-10 md:py-16">
+      <header className="mx-auto mb-12 max-w-4xl space-y-3 px-6 text-center">
+        <div className="mx-auto h-10 w-3/4 max-w-md animate-skeleton rounded-xs bg-skeleton md:h-14" />
+        <div className="mx-auto h-4 w-1/2 max-w-sm animate-skeleton rounded-xs bg-skeleton" />
+      </header>
+      <div className="container-page space-y-12">
+        <div className="h-64 w-full animate-skeleton rounded-xs bg-skeleton" />
+      </div>
+    </article>
+  );
+}
+
+export default function StorefrontContentPage(props: PageProps) {
+  return (
+    <Suspense fallback={<PageSkeleton />}>
+      <PageContent {...props} />
+    </Suspense>
   );
 }
