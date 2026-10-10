@@ -36,8 +36,23 @@ export async function verifyTurnstile(
     if (result.success !== true) return false;
     // A token minted for another site with the same widget must not unlock this one.
     const expected = new URL(env.APP_URL).hostname;
+    const allowed = new Set<string>([
+      expected,
+      'aurenbd.shop',
+      'www.aurenbd.shop',
+      'aurenbd.vercel.app',
+    ]);
+    if (process.env.BETTER_AUTH_TRUSTED_ORIGINS) {
+      for (const origin of process.env.BETTER_AUTH_TRUSTED_ORIGINS.split(',')) {
+        try {
+          allowed.add(new URL(origin.trim()).hostname);
+        } catch {
+          if (origin.trim()) allowed.add(origin.trim());
+        }
+      }
+    }
     const local = ['localhost', '127.0.0.1', '[::1]'].includes(expected);
-    return local || result.hostname === undefined || result.hostname === expected;
+    return local || result.hostname === undefined || allowed.has(String(result.hostname));
   } catch (error) {
     logger.error({ err: error }, 'turnstile verification unavailable; refusing the request');
     return false;

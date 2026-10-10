@@ -26,7 +26,12 @@ async function isStaffUser(userId: string): Promise<boolean> {
 }
 
 function buildTrustedOrigins(): string[] {
-  const origins = new Set<string>(['https://aurenbd.vercel.app', 'https://*.vercel.app']);
+  const origins = new Set<string>([
+    'https://aurenbd.shop',
+    'https://www.aurenbd.shop',
+    'https://aurenbd.vercel.app',
+    'https://*.vercel.app',
+  ]);
   if (env.APP_URL) {
     try {
       origins.add(new URL(env.APP_URL).origin);
