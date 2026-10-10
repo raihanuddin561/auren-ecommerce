@@ -98,9 +98,12 @@ export function OrdersList({ orders }: OrdersListProps) {
               <div className="flex flex-wrap items-center justify-between gap-4 border-b border-line/60 pb-4">
                 <div>
                   <div className="flex items-center gap-3">
-                    <span className="font-mono text-sm font-semibold tracking-wider text-fg">
+                    <Link
+                      href={`/account/orders/${order.id}`}
+                      className="font-mono text-sm font-semibold tracking-wider text-fg transition-colors hover:text-accent-text"
+                    >
                       {order.orderNumber}
-                    </span>
+                    </Link>
                     <span
                       className={`type-body-xs inline-flex items-center rounded-full px-2 py-0.5 font-medium tracking-wide uppercase ${badge.className}`}
                     >
@@ -110,7 +113,7 @@ export function OrdersList({ orders }: OrdersListProps) {
                   <p className="type-body-xs mt-1 text-fg-muted">Placed on {formattedDate}</p>
                 </div>
 
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3">
                   <div className="text-right">
                     <span className="type-body-xs block text-fg-muted">Total Investment</span>
                     <Price
@@ -119,11 +122,17 @@ export function OrdersList({ orders }: OrdersListProps) {
                     />
                   </div>
                   <Link
-                    href={`/track?orderNumber=${encodeURIComponent(order.orderNumber)}`}
-                    className="type-body-xs inline-flex items-center gap-1.5 rounded-xs border border-line bg-page px-3 py-1.5 text-fg transition-colors hover:border-fg"
+                    href={`/account/orders/${order.id}`}
+                    className="type-body-xs inline-flex items-center gap-1.5 rounded-xs bg-ink px-3 py-1.5 text-ivory transition-colors hover:bg-accent-text"
                   >
-                    <span>Track Order</span>
-                    <Icon icon={ArrowUpRight} className="size-3.5 text-fg-muted" />
+                    <span>View Commission</span>
+                    <Icon icon={ArrowUpRight} className="size-3.5 text-ivory/80" />
+                  </Link>
+                  <Link
+                    href={`/track?orderNumber=${encodeURIComponent(order.orderNumber)}`}
+                    className="type-body-xs inline-flex items-center gap-1.5 rounded-xs border border-line bg-page px-2.5 py-1.5 text-fg-muted transition-colors hover:border-fg hover:text-fg"
+                  >
+                    <span>Track</span>
                   </Link>
                 </div>
               </div>

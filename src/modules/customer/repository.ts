@@ -121,6 +121,60 @@ export async function findCustomerOrders(tx: Tx, userId: string) {
   });
 }
 
+export async function findCustomerOrderById(tx: Tx, userId: string, orderIdOrNumber: string) {
+  const user = await tx.user.findUnique({
+    where: { id: userId },
+    select: { email: true, phone: true },
+  });
+
+  const orConditions: Array<{ userId?: string; email?: string; phone?: string }> = [{ userId }];
+  if (user?.email) orConditions.push({ email: user.email });
+  if (user?.phone) orConditions.push({ phone: user.phone });
+
+  return tx.order.findFirst({
+    where: {
+      AND: [
+        {
+          OR: [{ id: orderIdOrNumber }, { orderNumber: orderIdOrNumber }],
+        },
+        {
+          OR: orConditions,
+        },
+      ],
+    },
+    include: {
+      items: {
+        include: {
+          variant: {
+            include: {
+              product: {
+                include: {
+                  media: {
+                    orderBy: { position: 'asc' },
+                    take: 1,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      events: {
+        orderBy: { createdAt: 'desc' },
+      },
+      payments: {
+        orderBy: { createdAt: 'desc' },
+      },
+      shipments: {
+        orderBy: { createdAt: 'desc' },
+      },
+      returns: {
+        orderBy: { createdAt: 'desc' },
+      },
+    },
+  });
+}
+
 export async function findCustomerProfile(tx: Tx, userId: string) {
   return tx.user.findUnique({
     where: { id: userId },

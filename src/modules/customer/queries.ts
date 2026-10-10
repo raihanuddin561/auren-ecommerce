@@ -10,6 +10,10 @@ export async function getCustomerOrders(userId: string) {
   return repo.findCustomerOrders(db, userId);
 }
 
+export async function getCustomerOrderDetail(userId: string, orderIdOrNumber: string) {
+  return repo.findCustomerOrderById(db, userId, orderIdOrNumber);
+}
+
 export async function getCustomerProfile(userId: string) {
   return repo.findCustomerProfile(db, userId);
 }
