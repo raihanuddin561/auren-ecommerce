@@ -84,6 +84,8 @@ export const PRIMARY_NAV: NavItem[] = [
       imageAlt: 'Charcoal tailoring',
     },
   },
+  { label: 'Lookbook', href: '/lookbook' },
+  { label: 'Journal', href: '/journal' },
 ];
 
 /** Shown in the announcement bar (at most three; the bar enforces it). */
@@ -126,6 +128,8 @@ export const FOOTER_COLUMNS: Array<{ heading: string; links: NavLink[] }> = [
       { label: 'About AUREN', href: '/about' },
       { label: 'The atelier & craft', href: '/about#craftsmanship' },
       { label: 'Natural fiber standards', href: '/about#fabrics' },
+      { label: 'Seasonal lookbooks', href: '/lookbook' },
+      { label: 'The Journal', href: '/journal' },
       { label: 'Client concierge desk', href: '/contact' },
     ],
   },

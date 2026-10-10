@@ -365,8 +365,10 @@ model Product {
   variants    ProductVariant[]
   media       ProductMedia[]
   collections CollectionProduct[]
-  reviews     Review[]
-  ratingStats ProductRatingStats?
+  reviews          Review[]
+  ratingStats      ProductRatingStats?
+  lookbookHotspots LookbookHotspot[]
+  featuredInArticles ArticleProduct[]
 
   @@index([status, publishedAt(sort: Desc)])
   @@index([categoryId])
@@ -1949,4 +1951,110 @@ model ProductRatingStats {
 
   @@map("product_rating_stats")
 }
+
+// ---------------------------------------------------------------------------------------------
+// Lookbooks & Shoppable Hotspots (8.5)
+// ---------------------------------------------------------------------------------------------
+
+model Lookbook {
+  id           String        @id @default(uuid(7)) @db.Uuid
+  title        String
+  slug         String        @unique
+  season       String
+  description  String?
+  heroImage    String        @map("hero_image")
+  heroImageAlt String?       @map("hero_image_alt")
+  status       PageStatus    @default(draft)
+  sortOrder    Int           @default(0) @map("sort_order")
+  publishedAt  DateTime?     @map("published_at") @db.Timestamptz(6)
+  createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  slides       LookbookSlide[]
+
+  @@index([status, sortOrder])
+  @@index([season])
+  @@map("lookbooks")
+}
+
+model LookbookSlide {
+  id         String            @id @default(uuid(7)) @db.Uuid
+  lookbookId String            @map("lookbook_id") @db.Uuid
+  imageUrl   String            @map("image_url")
+  imageAlt   String            @map("image_alt")
+  title      String?
+  caption    String?
+  sortOrder  Int               @default(0) @map("sort_order")
+  createdAt  DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  lookbook   Lookbook          @relation(fields: [lookbookId], references: [id], onDelete: Cascade)
+  hotspots   LookbookHotspot[]
+
+  @@index([lookbookId, sortOrder])
+  @@map("lookbook_slides")
+}
+
+model LookbookHotspot {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  slideId   String   @map("slide_id") @db.Uuid
+  productId String   @map("product_id") @db.Uuid
+  x         Float
+  y         Float
+  label     String?
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  slide     LookbookSlide @relation(fields: [slideId], references: [id], onDelete: Cascade)
+  product   Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([slideId])
+  @@index([productId])
+  @@map("lookbook_hotspots")
+}
+
+// ---------------------------------------------------------------------------------------------
+// Editorial Journal / Articles (8.6)
+// ---------------------------------------------------------------------------------------------
+
+model Article {
+  id              String           @id @default(uuid(7)) @db.Uuid
+  title           String
+  slug            String           @unique
+  excerpt         String
+  content         String
+  heroImage       String           @map("hero_image")
+  heroImageAlt    String?          @map("hero_image_alt")
+  category        String           @default("Editorial")
+  tags            String[]         @default([])
+  authorName      String           @default("Auren Atelier") @map("author_name")
+  status          PageStatus       @default(draft)
+  readTimeMinutes Int              @default(3) @map("read_time_minutes")
+  seoTitle        String?          @map("seo_title")
+  seoDescription  String?          @map("seo_description")
+  publishedAt     DateTime?        @map("published_at") @db.Timestamptz(6)
+  createdAt       DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime         @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  products        ArticleProduct[]
+
+  @@index([status, publishedAt(sort: Desc)])
+  @@index([category])
+  @@map("articles")
+}
+
+model ArticleProduct {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  articleId String   @map("article_id") @db.Uuid
+  productId String   @map("product_id") @db.Uuid
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([articleId, productId])
+  @@index([articleId])
+  @@index([productId])
+  @@map("article_products")
+}
+
 

@@ -18,6 +18,8 @@ const STATIC_ROUTES: readonly StaticRouteConfig[] = [
   { path: '/size-guide', priority: 0.8, changeFrequency: 'monthly' },
   { path: '/faq', priority: 0.8, changeFrequency: 'weekly' },
   { path: '/contact', priority: 0.7, changeFrequency: 'monthly' },
+  { path: '/lookbook', priority: 0.8, changeFrequency: 'weekly' },
+  { path: '/journal', priority: 0.8, changeFrequency: 'weekly' },
   { path: '/privacy', priority: 0.3, changeFrequency: 'yearly' },
   { path: '/terms', priority: 0.3, changeFrequency: 'yearly' },
 ];

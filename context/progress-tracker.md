@@ -16,6 +16,42 @@
 - Blockers/risks: <none | details>
 ```
 
+### 2026-10-10 — 8.5, 8.6 Lookbooks with Shoppable Hotspots & Editorial Journal — Done
+- Type: new and enhancement
+- Scope: Implemented seasonal lookbooks with shoppable interactive hotspot pins, presentation mode, product preview popovers, and direct storefront links. Built an editorial journal / blog platform with full Markdown typography (drop caps, pull quotes, subheadings), attached garment rails, category and tag filtering, Article schema.org JSON-LD, RSS 2.0 feeds, and admin studios for both modules.
+- Changed:
+  - Database & Migrations:
+    - `prisma/migrations/20261010130000_add_lookbooks_and_journal/migration.sql`: Added `Lookbook`, `LookbookSlide`, `LookbookHotspot`, `Article`, `ArticleProduct` models and enums with RLS security via `public.auren_secure_table()`, and seeded seasonal lookbook and 3 craftsmanship articles.
+    - `prisma/schema.prisma`: Added `Lookbook`, `LookbookSlide`, `LookbookHotspot`, `Article`, `ArticleProduct` models and relations to `Product` and `StaffMember`.
+  - Lookbook Domain (`src/modules/lookbook/`):
+    - `types.ts`, `schemas.ts`, `repository.ts`, `service.ts`, `queries.ts`, `actions.ts`.
+    - `__tests__/lookbook.test.ts`: 10 unit tests passing covering schema validation, partial updates, and hotspot positioning.
+  - Journal Domain (`src/modules/journal/`):
+    - `types.ts`, `schemas.ts`, `repository.ts`, `service.ts`, `queries.ts`, `actions.ts`.
+    - `__tests__/journal.test.ts`: 8 unit tests passing covering schema validation, slugs, filter defaults, and partial updates.
+  - Storefront Lookbooks:
+    - `src/components/storefront/lookbook/lookbook-card.tsx`: Luxury seasonal cards with slide counts and hover zoom.
+    - `src/components/storefront/lookbook/lookbook-viewer.tsx`: Hotspot viewer with coordinate pins, popover product cards, fullscreen presentation mode, keyboard navigation, and thumbnail rails.
+    - `src/app/(storefront)/lookbook/page.tsx` & `[slug]/page.tsx`: Gallery index and individual lookbook route with canonical SEO metadata.
+  - Storefront Editorial Journal:
+    - `src/components/storefront/journal/article-card.tsx`: Editorial article cards with read times and tag badges.
+    - `src/components/storefront/journal/journal-hero-feature.tsx`: Prominent hero feature article block.
+    - `src/components/storefront/journal/article-body.tsx`: Bespoke typography renderer with drop caps, pull quotes, and code/blockquotes.
+    - `src/components/storefront/journal/featured-garments-rail.tsx`: Horizontal rail displaying garments highlighted in the essay.
+    - `src/app/(storefront)/journal/page.tsx` & `[slug]/page.tsx`: Dynamic journal route with category/tag filtering, Article JSON-LD schema, and SEO metadata.
+    - `src/app/feed.xml/route.ts` & `src/app/journal/rss.xml/route.ts`: RSS 2.0 XML publication feeds.
+  - Admin Console:
+    - Lookbooks Studio: `src/components/admin/lookbook/create-lookbook-dialog.tsx`, `lookbooks-table.tsx`, `lookbook-editor.tsx` (canvas pin placement & product search modal), `src/app/admin/(console)/lookbooks/page.tsx` & `[id]/page.tsx`.
+    - Journal Studio: `src/components/admin/journal/articles-table.tsx`, `article-editor.tsx` (Markdown compose/preview tabs & garment attachment), `src/app/admin/(console)/journal/page.tsx`, `new/page.tsx`, `[id]/page.tsx`.
+    - `src/lib/admin-nav.ts`: Activated Lookbooks and Journal nav items guarded by `content.manage`.
+    - `src/lib/site.ts`: Added Lookbook and Journal to `PRIMARY_NAV` and `FOOTER_COLUMNS`.
+    - `src/app/sitemap.ts`: Added `/lookbook` and `/journal` to static sitemap routes.
+- Tests: `pnpm check` (typecheck + lint + format:check + vitest) 100% green (1,330 tests passing across 112 suites).
+- Review: Enforced strict quiet luxury design system tokens, RBAC permissions (`content.manage`), transaction isolation, and architectural module boundaries.
+- Decisions: ADR-023, ADR-025 preserved.
+- Next: Module 2.6 Product Relations or Module 5.3 SSLCommerz Gateway.
+- Blockers/risks: none.
+
 ### 2026-10-10 — 12.1–12.4 Customer Reviews and Social Proof — Done
 - Type: new and enhancement
 - Scope: Implemented customer review collection, verified buyer matching, fit feedback, admin moderation queue at `/admin/reviews` with audit logging and stats rollup recalc, storefront PDP review gallery with score summaries, fit meter, photo lightbox, helpful voting, schema.org aggregateRating JSON-LD, and post-delivery review request transactional email.
