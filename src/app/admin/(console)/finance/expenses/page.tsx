@@ -7,6 +7,8 @@ import {
   getMarketingCampaignsForAdmin,
 } from '@/modules/finance/queries';
 
+import { requireStaff } from '@/lib/staff';
+
 export const metadata: Metadata = { title: 'Expenses Log | Finance' };
 
 interface ExpensesPageProps {
@@ -19,6 +21,7 @@ interface ExpensesPageProps {
 }
 
 async function ExpensesContent({ searchParams }: ExpensesPageProps) {
+  await requireStaff();
   const params = await searchParams;
 
   const [categories, campaigns, expensesResult] = await Promise.all([

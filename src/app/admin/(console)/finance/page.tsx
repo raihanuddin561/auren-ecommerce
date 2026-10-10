@@ -6,6 +6,7 @@ import {
   getFinanceOverviewForAdmin,
   getProfitAndLossReportForAdmin,
 } from '@/modules/finance/queries';
+import { requireStaff } from '@/lib/staff';
 import type { PAndLGrouping, PAndLRecognitionMode } from '@/modules/finance/types';
 
 export const metadata: Metadata = { title: 'P&L Statement | Finance' };
@@ -20,6 +21,7 @@ interface FinancePageProps {
 }
 
 async function FinanceContent({ searchParams }: FinancePageProps) {
+  await requireStaff();
   const params = await searchParams;
 
   const recognitionMode: PAndLRecognitionMode =

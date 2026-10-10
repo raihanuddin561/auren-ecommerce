@@ -6,8 +6,6 @@ import { getDraftPageBySlug, getPublishedPageBySlug } from '@/modules/content/qu
 import { SectionRenderer } from '@/components/content/section-renderer';
 import { buildPageMetadata } from '@/lib/seo/metadata';
 
-export const dynamic = 'force-dynamic';
-
 interface PageProps {
   params: Promise<{ slug: string }>;
 }
