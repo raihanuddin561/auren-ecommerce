@@ -234,6 +234,7 @@
   --surface-sunken: var(--color-stone-100);
   --fg: var(--color-ink);
   --fg-muted: var(--color-stone-600);
+  --fg-subtle: var(--color-stone-500);
   --fg-inverse: var(--color-ivory);
   --line: var(--color-stone-200);
   --line-strong: var(--color-stone-500);
@@ -259,6 +260,7 @@
   --surface-sunken: #0f0f0f;
   --fg: var(--color-ivory);
   --fg-muted: #a9a397;
+  --fg-subtle: #8a857b;
   --fg-inverse: var(--color-ink);
   --line: #34322e;
   --line-strong: #8a857b;
@@ -277,6 +279,7 @@
   --surface-sunken: var(--color-ink);
   --fg: var(--color-ivory);
   --fg-muted: var(--color-stone-400);
+  --fg-subtle: var(--color-stone-500);
   --fg-inverse: var(--color-ink);
   --line: #34322e;
   --line-strong: var(--color-stone-500);
@@ -291,8 +294,12 @@
   --color-page: var(--surface-page);
   --color-raised: var(--surface-raised);
   --color-sunken: var(--surface-sunken);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-surface-subtle: var(--surface-sunken);
   --color-fg: var(--fg);
   --color-fg-muted: var(--fg-muted);
+  --color-fg-subtle: var(--fg-subtle);
   --color-fg-inverse: var(--fg-inverse);
   --color-line: var(--line);
   --color-line-strong: var(--line-strong);
@@ -406,10 +413,23 @@
   line-height: var(--text-body--line-height);
 }
 
+@utility type-body-sm {
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
 @utility type-small {
   font-family: var(--font-sans);
   font-size: var(--text-small);
   line-height: var(--text-small--line-height);
+}
+
+@utility type-caption {
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  line-height: 1.4;
+  letter-spacing: 0.01em;
 }
 
 @utility type-admin {

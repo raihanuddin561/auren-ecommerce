@@ -24,7 +24,7 @@ export function CategoryTiles({ categories }: { categories: CategoryTileView[] }
       {categories.map((category) => (
         <li key={category.id}>
           <Link href={`/shop/${category.path}`} className="group block outline-offset-4">
-            <div className="group/tile bg-surface-raised/40 hover:shadow-lg relative aspect-4/5 overflow-hidden rounded-xs border border-line/60 transition-all duration-500 hover:border-gold/70">
+            <div className="group/tile hover:shadow-lg relative aspect-4/5 overflow-hidden rounded-xs border border-line/60 bg-raised/40 transition-all duration-500 hover:border-gold/70">
               {category.image ? (
                 <CatalogImage
                   src={category.image}
@@ -33,12 +33,12 @@ export function CategoryTiles({ categories }: { categories: CategoryTileView[] }
                   className="size-full object-cover transition-transform duration-700 ease-auren group-hover/tile:scale-105"
                 />
               ) : (
-                <div className="from-surface-raised/80 flex size-full flex-col items-center justify-center bg-gradient-to-b via-sunken to-ink/60 p-6 text-center">
-                  <span className="type-caption font-serif tracking-[0.25em] text-accent-text uppercase">
+                <div className="flex size-full flex-col items-center justify-center bg-gradient-to-b from-raised/80 via-sunken to-ink/60 p-6 text-center">
+                  <span className="type-eyebrow font-medium tracking-eyebrow text-accent-text uppercase">
                     Auren Atelier
                   </span>
                   <span className="mt-2.5 type-h3 font-display text-fg">{category.name}</span>
-                  <span className="type-caption mt-4 rounded-xs border border-line/80 px-2.5 py-1 font-medium tracking-wider text-fg-muted uppercase transition-colors group-hover/tile:border-gold/60 group-hover/tile:text-gold">
+                  <span className="mt-4 rounded-xs border border-line/80 px-2.5 py-1 type-caption font-medium tracking-wider text-fg-muted uppercase transition-colors group-hover/tile:border-gold/60 group-hover/tile:text-gold">
                     View Collection
                   </span>
                 </div>
@@ -50,7 +50,7 @@ export function CategoryTiles({ categories }: { categories: CategoryTileView[] }
               <p className="type-h3 text-fg transition-colors duration-200 group-hover:text-gold">
                 {category.name}
               </p>
-              <span className="flex -translate-x-1.5 items-center gap-1 text-xs font-medium tracking-wider text-accent-text uppercase opacity-0 transition-all duration-300 group-hover:translate-x-0 group-hover:opacity-100">
+              <span className="flex -translate-x-1.5 items-center gap-1 type-eyebrow font-medium tracking-eyebrow text-accent-text uppercase opacity-0 transition-all duration-300 group-hover:translate-x-0 group-hover:opacity-100">
                 Explore <span>&rarr;</span>
               </span>
             </div>

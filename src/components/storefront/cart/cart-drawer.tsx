@@ -102,7 +102,7 @@ export function CartDrawer() {
                 <p className="type-caption text-fg-muted">
                   Cash on delivery across 64 districts &middot; Doorstep inspection
                 </p>
-                <div className="text-fg-subtle type-caption flex items-center justify-center gap-1.5 tracking-wider uppercase">
+                <div className="flex items-center justify-center gap-1.5 type-caption tracking-wider text-fg-subtle uppercase">
                   <span>Cash</span>
                   <span>&bull;</span>
                   <span>bKash</span>

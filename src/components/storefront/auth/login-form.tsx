@@ -63,7 +63,7 @@ export function LoginForm() {
       <div className="text-center">
         <span className="type-eyebrow tracking-widest text-accent-text">THE HOUSE OF AUREN</span>
         <h1 className="mt-2 type-h1 font-display text-fg">Client Sign In</h1>
-        <p className="type-body-sm mt-2 text-fg-muted">
+        <p className="mt-2 type-body-sm text-fg-muted">
           Access your wardrobe curation, bespoke orders, and concierge preferences.
         </p>
       </div>
@@ -72,7 +72,7 @@ export function LoginForm() {
         {error ? (
           <div
             role="alert"
-            className="type-body-sm rounded-xs border border-danger/20 bg-danger/5 px-4 py-3 text-danger"
+            className="rounded-xs border border-danger/20 bg-danger/5 px-4 py-3 type-body-sm text-danger"
           >
             {error}
           </div>
@@ -104,7 +104,7 @@ export function LoginForm() {
           )}
         </FormField>
 
-        <div className="type-body-sm flex items-center justify-between">
+        <div className="flex items-center justify-between type-body-sm">
           <Link
             href="/forgot-password"
             className="text-fg-muted underline underline-offset-4 transition-colors hover:text-fg"

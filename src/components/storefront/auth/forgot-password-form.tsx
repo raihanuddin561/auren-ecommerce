@@ -74,7 +74,7 @@ export function ForgotPasswordForm() {
       <div className="text-center">
         <span className="type-eyebrow tracking-widest text-accent-text">ACCOUNT RECOVERY</span>
         <h1 className="mt-2 type-h1 font-display text-fg">Reset Password</h1>
-        <p className="type-body-sm mt-2 text-fg-muted">
+        <p className="mt-2 type-body-sm text-fg-muted">
           Enter your registered email address and our security service will send you a recovery
           link.
         </p>
@@ -84,7 +84,7 @@ export function ForgotPasswordForm() {
         {error ? (
           <div
             role="alert"
-            className="type-body-sm rounded-xs border border-danger/20 bg-danger/5 px-4 py-3 text-danger"
+            className="rounded-xs border border-danger/20 bg-danger/5 px-4 py-3 type-body-sm text-danger"
           >
             {error}
           </div>

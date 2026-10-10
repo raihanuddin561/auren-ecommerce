@@ -41,7 +41,7 @@ export function TrustRow() {
         {['Cash on delivery', 'bKash', 'Nagad', 'Visa', 'Mastercard'].map((mark) => (
           <span
             key={mark}
-            className="type-caption rounded-xs border border-line bg-sunken/80 px-2 py-0.5 font-medium text-fg-muted"
+            className="rounded-xs border border-line bg-sunken/80 px-2 py-0.5 type-caption font-medium text-fg-muted"
           >
             {mark}
           </span>

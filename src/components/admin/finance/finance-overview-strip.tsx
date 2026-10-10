@@ -34,7 +34,7 @@ export function FinanceOverviewStrip({ metrics }: FinanceOverviewStripProps) {
           <span className="text-stone text-xs font-medium tracking-wider uppercase">
             Gross Profit (MTD)
           </span>
-          <div className="bg-surface-subtle rounded-sm p-1.5 text-ink">
+          <div className="rounded-sm bg-surface-subtle p-1.5 text-ink">
             <Sparkles className="h-4 w-4" />
           </div>
         </div>

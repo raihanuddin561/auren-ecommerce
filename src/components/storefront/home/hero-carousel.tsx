@@ -136,7 +136,7 @@ export function HeroCarousel({ settings, className }: HeroCarouselProps) {
       onTouchEnd={handleTouchEnd}
       className={cn(
         'group relative flex w-full flex-col justify-between overflow-hidden bg-page pt-(--header-height) text-fg outline-none select-none focus-visible:ring-1 focus-visible:ring-gold/60',
-        'min-h-[520px] md:min-h-[560px] lg:h-[600px] lg:min-h-[600px]',
+        'min-h-[540px] md:min-h-[580px] lg:min-h-[640px]',
         className,
       )}
     >
@@ -200,7 +200,7 @@ export function HeroCarousel({ settings, className }: HeroCarouselProps) {
                       </p>
                     ) : null}
 
-                    <h1 className="mt-3 type-display-xl font-display leading-[1.04] tracking-tight text-fg">
+                    <h1 className="mt-3 type-display-xl font-display leading-[1.04] tracking-tight text-balance text-fg">
                       {slide.title}
                     </h1>
 
@@ -235,17 +235,21 @@ export function HeroCarousel({ settings, className }: HeroCarouselProps) {
                     </div>
 
                     {/* Customer reassurance trust pills */}
-                    <div className="mt-7 flex flex-wrap items-center gap-3.5 border-t border-line/40 pt-4 type-small text-fg-muted">
+                    <div className="mt-7 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-line/40 pt-4 type-small text-fg-muted">
                       <span className="inline-flex items-center gap-1.5 text-fg/90">
                         <Icon icon={Truck} size={15} className="text-accent-text" />
                         <span>All 64 Districts COD</span>
                       </span>
-                      <span>·</span>
+                      <span className="hidden text-line-strong sm:inline" aria-hidden="true">
+                        ·
+                      </span>
                       <span className="inline-flex items-center gap-1.5 text-fg/90">
                         <Icon icon={ShieldCheck} size={15} className="text-accent-text" />
                         <span>Doorstep Inspection</span>
                       </span>
-                      <span>·</span>
+                      <span className="hidden text-line-strong sm:inline" aria-hidden="true">
+                        ·
+                      </span>
                       <span className="inline-flex items-center gap-1.5 text-fg/90">
                         <Icon icon={RefreshCw} size={15} className="text-accent-text" />
                         <span>7-Day Fit Exchange</span>
@@ -259,7 +263,7 @@ export function HeroCarousel({ settings, className }: HeroCarouselProps) {
 
           {/* Right Column: Permanently Anchored Showcase Stage - Identical Image Sizing, Zero Position Jump */}
           <div className="order-1 flex items-center justify-center lg:order-2 lg:col-span-6 xl:col-span-5">
-            <div className="group/frame bg-surface-raised/50 hover:shadow-2xl relative mx-auto flex aspect-[4/5] w-[270px] items-center justify-center overflow-hidden rounded-xs border border-line/80 shadow-float backdrop-blur-xs transition-all duration-500 hover:border-gold/70 sm:w-[320px] md:w-[360px] lg:w-[390px] xl:w-[420px]">
+            <div className="group/frame hover:shadow-2xl relative mx-auto flex aspect-[4/5] w-[270px] items-center justify-center overflow-hidden rounded-xs border border-line/80 bg-raised/70 shadow-float backdrop-blur-xs transition-all duration-500 hover:border-gold/70 sm:w-[320px] md:w-[360px] lg:w-[390px] xl:w-[420px]">
               {slides.map((slide, index) => {
                 const isActive = index === currentIndex;
                 const isBroken = Boolean(brokenImages[slide.id || index]);
@@ -336,7 +340,7 @@ export function HeroCarousel({ settings, className }: HeroCarouselProps) {
               })}
 
               {/* Floating Atelier Badge */}
-              <div className="type-caption pointer-events-none absolute top-3.5 right-3.5 z-20 rounded-xs border border-line/80 bg-page/90 px-2 py-0.5 font-medium tracking-wider text-accent-text uppercase backdrop-blur-xs">
+              <div className="pointer-events-none absolute top-3.5 right-3.5 z-20 rounded-xs border border-line/80 bg-page/90 px-2 py-0.5 type-caption font-medium tracking-wider text-accent-text uppercase backdrop-blur-xs">
                 Auren Atelier
               </div>
             </div>

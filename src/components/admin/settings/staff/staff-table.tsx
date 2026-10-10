@@ -118,7 +118,7 @@ export function StaffTable({ staffList, currentStaffId }: StaffTableProps) {
                     <span className="flex items-center gap-1.5 font-medium text-fg">
                       <span>{member.name}</span>
                       {isSelf ? (
-                        <Badge tone="neutral" className="type-caption px-1 py-0">
+                        <Badge tone="neutral" className="px-1 py-0 type-caption">
                           You
                         </Badge>
                       ) : null}

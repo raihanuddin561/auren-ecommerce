@@ -88,7 +88,7 @@ export function HealthDashboard({ data }: HealthDashboardProps) {
             <span className="type-caption text-fg-muted">round-trip ping</span>
           </div>
 
-          <p className="type-caption text-fg-subtle mt-auto border-t border-line/60 pt-2">
+          <p className="mt-auto border-t border-line/60 pt-2 type-caption text-fg-subtle">
             Direct connection via PostgreSQL driver
           </p>
         </div>
@@ -108,15 +108,15 @@ export function HealthDashboard({ data }: HealthDashboardProps) {
           <div className="mt-2 flex items-baseline gap-4">
             <div>
               <span className="type-display-sm font-mono text-fg">{data.outbox.pending}</span>
-              <span className="type-caption block text-fg-muted">pending</span>
+              <span className="block type-caption text-fg-muted">pending</span>
             </div>
             <div>
               <span className="type-display-sm font-mono text-fg">{data.outbox.dispatched}</span>
-              <span className="type-caption block text-fg-muted">dispatched</span>
+              <span className="block type-caption text-fg-muted">dispatched</span>
             </div>
           </div>
 
-          <div className="type-caption text-fg-subtle mt-auto flex items-center justify-between border-t border-line/60 pt-2">
+          <div className="mt-auto flex items-center justify-between border-t border-line/60 pt-2 type-caption text-fg-subtle">
             <span>Oldest Pending:</span>
             <span>
               {data.outbox.oldestPendingAgeMinutes !== null
@@ -143,7 +143,7 @@ export function HealthDashboard({ data }: HealthDashboardProps) {
             <span className="type-caption text-fg-muted">deduplicated events</span>
           </div>
 
-          <p className="type-caption text-fg-subtle mt-auto border-t border-line/60 pt-2">
+          <p className="mt-auto border-t border-line/60 pt-2 type-caption text-fg-subtle">
             Guarantees zero double-sends for orders & emails
           </p>
         </div>

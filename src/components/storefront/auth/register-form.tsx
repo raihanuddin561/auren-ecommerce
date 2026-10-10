@@ -110,7 +110,7 @@ export function RegisterForm() {
       <div className="text-center">
         <span className="type-eyebrow tracking-widest text-accent-text">JOIN THE INNER CIRCLE</span>
         <h1 className="mt-2 type-h1 font-display text-fg">Create Client Account</h1>
-        <p className="type-body-sm mt-2 text-fg-muted">
+        <p className="mt-2 type-body-sm text-fg-muted">
           Enjoy expedited atelier appointments, doorstep exchange privileges, and bespoke sizing.
         </p>
       </div>
@@ -119,7 +119,7 @@ export function RegisterForm() {
         {error ? (
           <div
             role="alert"
-            className="type-body-sm rounded-xs border border-danger/20 bg-danger/5 px-4 py-3 text-danger"
+            className="rounded-xs border border-danger/20 bg-danger/5 px-4 py-3 type-body-sm text-danger"
           >
             {error}
           </div>

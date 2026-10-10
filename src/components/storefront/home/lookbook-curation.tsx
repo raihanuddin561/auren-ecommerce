@@ -59,37 +59,37 @@ export function LookbookCuration() {
               <div className="mt-6 space-y-3 border-t border-line pt-5">
                 <Link
                   href="/shop/shirts"
-                  className="group flex items-center justify-between py-2 text-fg transition-colors hover:text-gold"
+                  className="group flex items-center justify-between py-2 text-fg transition-colors hover:text-accent-text"
                 >
                   <span className="type-small font-medium">01 / The Sand Linen Overshirt</span>
                   <Icon
                     icon={ArrowUpRight}
                     size={16}
-                    className="text-fg-muted transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-gold"
+                    className="text-fg-muted transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-accent-text"
                   />
                 </Link>
 
                 <Link
                   href="/shop/trousers"
-                  className="group flex items-center justify-between py-2 text-fg transition-colors hover:text-gold"
+                  className="group flex items-center justify-between py-2 text-fg transition-colors hover:text-accent-text"
                 >
                   <span className="type-small font-medium">02 / The Tailored Formal Trouser</span>
                   <Icon
                     icon={ArrowUpRight}
                     size={16}
-                    className="text-fg-muted transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-gold"
+                    className="text-fg-muted transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-accent-text"
                   />
                 </Link>
 
                 <Link
                   href="/shop"
-                  className="group flex items-center justify-between py-2 text-fg transition-colors hover:text-gold"
+                  className="group flex items-center justify-between py-2 text-fg transition-colors hover:text-accent-text"
                 >
                   <span className="type-small font-medium">03 / Pure Cotton Undershirt</span>
                   <Icon
                     icon={ArrowUpRight}
                     size={16}
-                    className="text-fg-muted transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-gold"
+                    className="text-fg-muted transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-accent-text"
                   />
                 </Link>
               </div>

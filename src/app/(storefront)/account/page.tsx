@@ -60,8 +60,8 @@ export default async function AccountOverviewPage() {
             {data.defaultAddress ? (
               <div className="mt-4">
                 <h3 className="type-h3 font-display text-fg">{data.defaultAddress.fullName}</h3>
-                <p className="type-body-sm mt-1 text-fg-muted">{data.defaultAddress.phone}</p>
-                <p className="type-body-sm mt-2 text-fg-muted">
+                <p className="mt-1 type-body-sm text-fg-muted">{data.defaultAddress.phone}</p>
+                <p className="mt-2 type-body-sm text-fg-muted">
                   {data.defaultAddress.line1}
                   {data.defaultAddress.area ? `, ${data.defaultAddress.area}` : ''}
                 </p>

@@ -48,8 +48,8 @@ interface SectionRendererProps {
 export function SectionRenderer({ sections }: SectionRendererProps) {
   if (!sections || sections.length === 0) {
     return (
-      <div className="text-stone py-24 text-center">
-        <p className="text-sm">This page has no active sections configured yet.</p>
+      <div className="py-24 text-center text-fg-muted">
+        <p className="type-body-sm">This page has no active sections configured yet.</p>
       </div>
     );
   }
@@ -106,7 +106,7 @@ function HeroBannerSection({ props }: { props: HeroBannerProps }) {
   return (
     <div
       className={`relative flex min-h-[60vh] items-center justify-center overflow-hidden px-6 py-20 md:min-h-[75vh] ${
-        isInk ? 'text-canvas bg-ink' : 'bg-canvas text-ink'
+        isInk ? 'bg-ink text-ivory' : 'bg-page text-fg'
       }`}
     >
       {props.mediaUrl && (
@@ -120,7 +120,7 @@ function HeroBannerSection({ props }: { props: HeroBannerProps }) {
             sizes="100vw"
           />
           <div
-            className={`absolute inset-0 ${isInk ? 'bg-ink' : 'bg-canvas'}`}
+            className={`absolute inset-0 ${isInk ? 'bg-ink' : 'bg-page'}`}
             style={{ opacity: (props.overlayOpacity ?? 30) / 100 }}
           />
         </div>
@@ -136,7 +136,7 @@ function HeroBannerSection({ props }: { props: HeroBannerProps }) {
         {props.subtitle && (
           <p
             className={`mx-auto max-w-2xl text-sm leading-relaxed font-light md:text-base ${
-              isInk ? 'text-canvas/80' : 'text-stone'
+              isInk ? 'text-ivory/80' : 'text-fg-muted'
             }`}
           >
             {props.subtitle}
@@ -153,7 +153,7 @@ function HeroBannerSection({ props }: { props: HeroBannerProps }) {
               asChild
               variant="secondary"
               size="lg"
-              className={isInk ? 'text-canvas hover:bg-canvas/10 border-line' : ''}
+              className={isInk ? 'border-line text-ivory hover:bg-ivory/10' : ''}
             >
               <Link href={props.secondaryCtaUrl}>{props.secondaryCtaLabel}</Link>
             </Button>
@@ -171,17 +171,17 @@ function HeroBannerSection({ props }: { props: HeroBannerProps }) {
 function EditorialQuoteSection({ props }: { props: EditorialQuoteProps }) {
   return (
     <div className="mx-auto max-w-4xl px-6 py-12 text-center">
-      <span className="block font-serif text-4xl leading-none text-gold select-none md:text-6xl">
+      <span className="block font-serif text-4xl leading-none text-accent-text select-none md:text-6xl">
         &ldquo;
       </span>
-      <blockquote className="mt-2 font-serif text-xl leading-relaxed font-light text-ink italic md:text-3xl">
+      <blockquote className="mt-2 font-serif text-xl leading-relaxed font-light text-fg italic md:text-3xl">
         {props.quote}
       </blockquote>
       <div className="mt-6 space-y-1">
         {props.author && (
-          <p className="text-xs font-semibold tracking-widest text-ink uppercase">{props.author}</p>
+          <p className="text-xs font-semibold tracking-widest text-fg uppercase">{props.author}</p>
         )}
-        {props.title && <p className="text-stone text-xs tracking-wide">{props.title}</p>}
+        {props.title && <p className="text-xs tracking-wide text-fg-muted">{props.title}</p>}
       </div>
     </div>
   );
@@ -197,11 +197,11 @@ function BrandPerksSection({ props }: { props: BrandPerksProps }) {
       {(props.headline || props.subtitle) && (
         <div className="mx-auto mb-12 max-w-2xl space-y-2 text-center">
           {props.headline && (
-            <h2 className="font-serif text-2xl font-medium text-ink md:text-3xl">
+            <h2 className="font-serif text-2xl font-medium text-fg md:text-3xl">
               {props.headline}
             </h2>
           )}
-          {props.subtitle && <p className="text-stone text-xs md:text-sm">{props.subtitle}</p>}
+          {props.subtitle && <p className="text-xs text-fg-muted md:text-sm">{props.subtitle}</p>}
         </div>
       )}
       <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
@@ -210,13 +210,13 @@ function BrandPerksSection({ props }: { props: BrandPerksProps }) {
           return (
             <div
               key={index}
-              className="bg-surface/30 space-y-4 rounded-sm border border-line p-8 text-center transition-colors hover:border-gold/40"
+              className="space-y-4 rounded-sm border border-line bg-raised/40 p-8 text-center transition-colors hover:border-gold/40"
             >
-              <div className="inline-flex rounded-xs bg-gold/10 p-3 text-gold">
+              <div className="inline-flex rounded-xs bg-gold/10 p-3 text-accent-text">
                 <Icon className="h-5 w-5" />
               </div>
-              <h3 className="font-serif text-base font-semibold text-ink">{item.title}</h3>
-              <p className="text-stone text-xs leading-relaxed">{item.description}</p>
+              <h3 className="font-serif text-base font-semibold text-fg">{item.title}</h3>
+              <p className="text-xs leading-relaxed text-fg-muted">{item.description}</p>
             </div>
           );
         })}
@@ -245,20 +245,20 @@ function NewsletterStripSection({ props }: { props: NewsletterStripProps }) {
 
   return (
     <div className="mx-auto max-w-4xl px-6">
-      <div className="bg-canvas space-y-6 rounded-sm border border-line p-10 text-center md:p-14">
+      <div className="space-y-6 rounded-sm border border-line bg-page p-10 text-center md:p-14">
         <Badge tone="gold" className="px-2.5 py-0.5 tracking-widest uppercase">
           Private Invitation
         </Badge>
-        <h2 className="font-serif text-2xl font-light tracking-tight text-ink md:text-3xl">
+        <h2 className="font-serif text-2xl font-light tracking-tight text-fg md:text-3xl">
           {props.headline}
         </h2>
         {props.subtitle && (
-          <p className="text-stone mx-auto max-w-xl text-xs leading-relaxed md:text-sm">
+          <p className="mx-auto max-w-xl text-xs leading-relaxed text-fg-muted md:text-sm">
             {props.subtitle}
           </p>
         )}
         {subscribed ? (
-          <div className="rounded-xs bg-gold/10 p-4 text-xs font-medium text-gold">
+          <div className="rounded-xs bg-gold/10 p-4 text-xs font-medium text-accent-text">
             Thank you. Your atelier invitation has been registered.
           </div>
         ) : (
@@ -271,20 +271,20 @@ function NewsletterStripSection({ props }: { props: NewsletterStripProps }) {
               placeholder="Enter your private email..."
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="bg-surface h-10 border-line text-xs"
+              className="h-10 border-line bg-raised text-xs text-fg"
               required
             />
             <Button
               type="submit"
               size="sm"
-              className="text-canvas h-10 bg-ink px-6 whitespace-nowrap hover:bg-ink/90"
+              className="h-10 bg-ink px-6 whitespace-nowrap text-ivory hover:bg-ink/90"
             >
               {props.buttonLabel ?? 'Request Access'}
             </Button>
           </form>
         )}
         {props.disclaimer && (
-          <p className="text-stone/80 text-xs tracking-wider uppercase">{props.disclaimer}</p>
+          <p className="text-xs tracking-wider text-fg-subtle uppercase">{props.disclaimer}</p>
         )}
       </div>
     </div>
@@ -303,15 +303,15 @@ function RichTextSection({ props }: { props: RichTextProps }) {
       {(props.headline || props.subtitle) && (
         <div className={`mb-8 space-y-2 ${isCentered ? 'text-center' : 'text-left'}`}>
           {props.headline && (
-            <h2 className="font-serif text-2xl font-medium text-ink md:text-3xl">
+            <h2 className="font-serif text-2xl font-medium text-fg md:text-3xl">
               {props.headline}
             </h2>
           )}
-          {props.subtitle && <p className="text-stone text-xs md:text-sm">{props.subtitle}</p>}
+          {props.subtitle && <p className="text-xs text-fg-muted md:text-sm">{props.subtitle}</p>}
         </div>
       )}
       <div
-        className={`prose prose-stone space-y-4 text-xs leading-relaxed text-ink/90 md:text-sm ${
+        className={`prose prose-stone space-y-4 text-xs leading-relaxed text-fg md:text-sm ${
           isCentered ? 'mx-auto text-center' : 'text-left'
         }`}
       >
@@ -339,11 +339,11 @@ function FaqAccordionSection({ props }: { props: FaqAccordionProps }) {
       {(props.headline || props.subtitle) && (
         <div className="mb-10 space-y-2 text-center">
           {props.headline && (
-            <h2 className="font-serif text-2xl font-medium text-ink md:text-3xl">
+            <h2 className="font-serif text-2xl font-medium text-fg md:text-3xl">
               {props.headline}
             </h2>
           )}
-          {props.subtitle && <p className="text-stone text-xs md:text-sm">{props.subtitle}</p>}
+          {props.subtitle && <p className="text-xs text-fg-muted md:text-sm">{props.subtitle}</p>}
         </div>
       )}
       <div className="divide-y divide-line border-y border-line">
@@ -354,18 +354,18 @@ function FaqAccordionSection({ props }: { props: FaqAccordionProps }) {
               <button
                 type="button"
                 onClick={() => toggle(index)}
-                className="flex w-full items-center justify-between py-1 text-left font-serif text-sm font-medium text-ink transition-colors hover:text-gold"
+                className="flex w-full items-center justify-between py-1 text-left font-serif text-sm font-medium text-fg transition-colors hover:text-accent-text"
                 aria-expanded={isOpen}
               >
                 <span>{item.question}</span>
                 <ChevronDown
-                  className={`text-stone h-4 w-4 transition-transform duration-200 ${
-                    isOpen ? 'rotate-180 text-gold' : ''
+                  className={`h-4 w-4 text-fg-muted transition-transform duration-200 ${
+                    isOpen ? 'rotate-180 text-accent-text' : ''
                   }`}
                 />
               </button>
               {isOpen && (
-                <div className="text-stone mt-3 pr-6 text-xs leading-relaxed">{item.answer}</div>
+                <div className="mt-3 pr-6 text-xs leading-relaxed text-fg-muted">{item.answer}</div>
               )}
             </div>
           );
@@ -390,7 +390,7 @@ function SplitBannerSection({ props }: { props: SplitBannerProps }) {
         }`}
       >
         <div
-          className={`bg-surface relative aspect-[4/3] overflow-hidden rounded-sm border border-line md:aspect-[4/5] ${isMediaRight ? 'md:col-start-2' : ''}`}
+          className={`relative aspect-[4/3] overflow-hidden rounded-sm border border-line bg-raised md:aspect-[4/5] ${isMediaRight ? 'md:col-start-2' : ''}`}
         >
           <Image
             src={props.mediaUrl}
@@ -406,13 +406,13 @@ function SplitBannerSection({ props }: { props: SplitBannerProps }) {
               {props.eyebrow}
             </Badge>
           )}
-          <h2 className="font-serif text-2xl leading-tight font-light tracking-tight text-ink md:text-4xl">
+          <h2 className="font-serif text-2xl leading-tight font-light tracking-tight text-fg md:text-4xl">
             {props.headline}
           </h2>
-          <p className="text-stone text-xs leading-relaxed md:text-sm">{props.description}</p>
+          <p className="text-xs leading-relaxed text-fg-muted md:text-sm">{props.description}</p>
           {props.ctaLabel && props.ctaUrl && (
             <div className="pt-2">
-              <Button asChild size="sm" className="text-canvas gap-2 bg-ink hover:bg-ink/90">
+              <Button asChild size="sm" className="gap-2 bg-ink text-ivory hover:bg-ink/90">
                 <Link href={props.ctaUrl}>
                   {props.ctaLabel} <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
@@ -435,15 +435,15 @@ function LookbookStripSection({ props }: { props: LookbookStripProps }) {
       {(props.headline || props.subtitle) && (
         <div className="mx-auto mb-10 max-w-2xl space-y-2 text-center">
           {props.headline && (
-            <h2 className="font-serif text-2xl font-medium text-ink md:text-3xl">
+            <h2 className="font-serif text-2xl font-medium text-fg md:text-3xl">
               {props.headline}
             </h2>
           )}
-          {props.subtitle && <p className="text-stone text-xs md:text-sm">{props.subtitle}</p>}
+          {props.subtitle && <p className="text-xs text-fg-muted md:text-sm">{props.subtitle}</p>}
         </div>
       )}
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:gap-8">
-        <div className="bg-surface group relative aspect-[4/5] overflow-hidden rounded-sm border border-line">
+        <div className="group relative aspect-[4/5] overflow-hidden rounded-sm border border-line bg-raised">
           <Image
             src={props.image1Url}
             alt="Lookbook editorial frame 1"
@@ -452,7 +452,7 @@ function LookbookStripSection({ props }: { props: LookbookStripProps }) {
             sizes="(max-width: 768px) 100vw, 50vw"
           />
         </div>
-        <div className="bg-surface group relative aspect-[4/5] overflow-hidden rounded-sm border border-line">
+        <div className="group relative aspect-[4/5] overflow-hidden rounded-sm border border-line bg-raised">
           <Image
             src={props.image2Url}
             alt="Lookbook editorial frame 2"
@@ -485,14 +485,14 @@ function VideoSpotlightSection({ props }: { props: VideoSpotlightProps }) {
       {(props.headline || props.subtitle) && (
         <div className="space-y-2">
           {props.headline && (
-            <h2 className="font-serif text-2xl font-medium text-ink md:text-3xl">
+            <h2 className="font-serif text-2xl font-medium text-fg md:text-3xl">
               {props.headline}
             </h2>
           )}
-          {props.subtitle && <p className="text-stone text-xs md:text-sm">{props.subtitle}</p>}
+          {props.subtitle && <p className="text-xs text-fg-muted md:text-sm">{props.subtitle}</p>}
         </div>
       )}
-      <div className="bg-surface relative aspect-video overflow-hidden rounded-sm border border-line">
+      <div className="relative aspect-video overflow-hidden rounded-sm border border-line bg-raised">
         <video
           src={props.videoUrl}
           poster={props.posterUrl}
@@ -502,7 +502,7 @@ function VideoSpotlightSection({ props }: { props: VideoSpotlightProps }) {
       </div>
       {props.ctaLabel && props.ctaUrl && (
         <div>
-          <Button asChild size="sm" className="text-canvas bg-ink hover:bg-ink/90">
+          <Button asChild size="sm" className="bg-ink text-ivory hover:bg-ink/90">
             <Link href={props.ctaUrl}>{props.ctaLabel}</Link>
           </Button>
         </div>

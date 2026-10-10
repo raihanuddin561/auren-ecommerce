@@ -66,7 +66,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
           {error && (
             <div
               role="alert"
-              className="type-body-sm rounded-xs border border-danger/20 bg-danger/5 px-4 py-3 text-danger"
+              className="rounded-xs border border-danger/20 bg-danger/5 px-4 py-3 type-body-sm text-danger"
             >
               {error}
             </div>
@@ -120,7 +120,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
           {memberSince && (
             <div className="rounded-xs border border-line/60 bg-page p-4">
               <span className="type-eyebrow text-accent-text">MEMBERSHIP STATUS</span>
-              <p className="type-body-sm mt-1 font-medium text-fg">AUREN Private Client</p>
+              <p className="mt-1 type-body-sm font-medium text-fg">AUREN Private Client</p>
               <p className="type-body-xs text-fg-muted">Member since {memberSince}</p>
             </div>
           )}

@@ -56,7 +56,7 @@ export function AccountNav({ user }: AccountNavProps) {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  'type-body-sm flex items-center gap-3 rounded-xs px-3 py-2.5 transition-colors',
+                  'flex items-center gap-3 rounded-xs px-3 py-2.5 type-body-sm transition-colors',
                   isActive
                     ? 'border-l-2 border-accent-text bg-page font-medium text-fg'
                     : 'text-fg-muted hover:bg-page/50 hover:text-fg',
@@ -75,7 +75,7 @@ export function AccountNav({ user }: AccountNavProps) {
             type="button"
             onClick={handleSignOut}
             disabled={signingOut}
-            className="type-body-sm mt-4 flex w-full items-center gap-3 rounded-xs px-3 py-2.5 text-left text-fg-muted transition-colors hover:bg-danger/5 hover:text-danger"
+            className="mt-4 flex w-full items-center gap-3 rounded-xs px-3 py-2.5 text-left type-body-sm text-fg-muted transition-colors hover:bg-danger/5 hover:text-danger"
           >
             <Icon icon={LogOut} className="size-4 shrink-0 text-fg-muted" />
             <span>{signingOut ? 'Signing out...' : 'Sign Out'}</span>

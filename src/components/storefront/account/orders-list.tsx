@@ -41,12 +41,12 @@ interface OrdersListProps {
 
 const STATUS_BADGES: Record<string, { label: string; className: string }> = {
   draft: { label: 'Draft', className: 'bg-sunken text-fg-muted' },
-  verification: { label: 'Under Verification', className: 'bg-accent-muted text-accent-text' },
-  confirmed: { label: 'Confirmed', className: 'bg-accent-muted text-accent-text' },
-  processing: { label: 'In Atelier Prep', className: 'bg-page text-fg' },
-  dispatched: { label: 'Dispatched', className: 'bg-blue-900/10 text-blue-400' },
-  delivered: { label: 'Delivered', className: 'bg-emerald-900/10 text-emerald-400' },
-  cancelled: { label: 'Cancelled', className: 'bg-danger/10 text-danger' },
+  verification: { label: 'Under Verification', className: 'bg-gold/15 text-accent-text' },
+  confirmed: { label: 'Confirmed', className: 'bg-gold/15 text-accent-text' },
+  processing: { label: 'In Atelier Prep', className: 'bg-sunken text-fg font-medium' },
+  dispatched: { label: 'Dispatched', className: 'bg-gold/15 text-accent-text' },
+  delivered: { label: 'Delivered', className: 'bg-success/15 text-success-text' },
+  cancelled: { label: 'Cancelled', className: 'bg-danger/15 text-danger-text' },
   returned: { label: 'Returned', className: 'bg-sunken text-fg-muted' },
 };
 
@@ -56,7 +56,7 @@ export function OrdersList({ orders }: OrdersListProps) {
       <div className="rounded-xs border border-dashed border-line bg-page p-12 text-center">
         <Icon icon={Package} className="mx-auto size-12 stroke-1 text-fg-muted/40" />
         <h2 className="mt-4 type-h3 font-display text-fg">No Orders Yet</h2>
-        <p className="type-body-sm mx-auto mt-2 max-w-sm text-fg-muted">
+        <p className="mx-auto mt-2 max-w-sm type-body-sm text-fg-muted">
           Your personal commissions, lookbook orders, and sartorial purchases will appear here.
         </p>
         <Link href="/shop" className="mt-6 inline-block">
@@ -155,7 +155,7 @@ export function OrdersList({ orders }: OrdersListProps) {
                       </div>
 
                       <div className="min-w-0 flex-1">
-                        <h4 className="type-body-sm truncate font-medium text-fg">
+                        <h4 className="truncate type-body-sm font-medium text-fg">
                           {item.titleSnapshot}
                         </h4>
                         {item.variantTitleSnapshot && (

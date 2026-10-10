@@ -96,11 +96,11 @@ export function AuditLogTable({ logs, totalCount, page, totalPages, baseUrl }: A
                         <span className="type-caption text-fg-muted">{item.actorEmail}</span>
                       </div>
                     ) : item.actorId ? (
-                      <span className="type-caption inline-block max-w-[140px] truncate font-mono text-fg-muted">
+                      <span className="inline-block max-w-[140px] truncate type-caption font-mono text-fg-muted">
                         {item.actorId}
                       </span>
                     ) : (
-                      <span className="type-caption text-fg-subtle inline-flex items-center gap-1 italic">
+                      <span className="inline-flex items-center gap-1 type-caption text-fg-subtle italic">
                         <Icon icon={ShieldCheck} size={13} />
                         System Job
                       </span>
@@ -116,7 +116,7 @@ export function AuditLogTable({ logs, totalCount, page, totalPages, baseUrl }: A
                       <span className="type-caption font-medium tracking-wider text-fg uppercase">
                         {item.entityType}
                       </span>
-                      <span className="type-caption max-w-[140px] truncate font-mono text-fg-muted">
+                      <span className="max-w-[140px] truncate type-caption font-mono text-fg-muted">
                         {item.entityId}
                       </span>
                     </div>
@@ -210,7 +210,7 @@ export function AuditLogTable({ logs, totalCount, page, totalPages, baseUrl }: A
                   <span className="type-caption font-semibold tracking-wider text-fg-muted uppercase">
                     State Before Modification
                   </span>
-                  <pre className="rounded type-caption overflow-x-auto border border-line bg-sunken p-3 font-mono text-fg">
+                  <pre className="rounded overflow-x-auto border border-line bg-sunken p-3 type-caption font-mono text-fg">
                     {JSON.stringify(inspectingItem.before, null, 2)}
                   </pre>
                 </div>
@@ -221,7 +221,7 @@ export function AuditLogTable({ logs, totalCount, page, totalPages, baseUrl }: A
                   <span className="type-caption font-semibold tracking-wider text-fg-muted uppercase">
                     State After Modification
                   </span>
-                  <pre className="rounded type-caption overflow-x-auto border border-line bg-sunken p-3 font-mono text-fg">
+                  <pre className="rounded overflow-x-auto border border-line bg-sunken p-3 type-caption font-mono text-fg">
                     {JSON.stringify(inspectingItem.after, null, 2)}
                   </pre>
                 </div>

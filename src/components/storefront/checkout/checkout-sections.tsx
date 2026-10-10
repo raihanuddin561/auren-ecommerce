@@ -167,9 +167,7 @@ export function AddressSection({
             {manualMode ? '← Choose from dropdown list' : "Can't find your area? Type manually →"}
           </Button>
         ) : (
-          <span className="type-caption text-amber-600 dark:text-amber-400">
-            Manual entry mode enabled
-          </span>
+          <span className="type-caption text-warning-text">Manual entry mode enabled</span>
         )}
       </div>
 
@@ -519,17 +517,17 @@ export function PaymentSection({
               description="Pay only when your parcel arrives at your doorstep."
             />
             <div className="mt-2 flex flex-wrap items-center gap-1.5 pl-6">
-              <span className="type-caption mr-1 text-fg-muted">Accepted:</span>
-              <span className="rounded bg-surface-raised type-caption border border-line px-2 py-0.5 font-medium tracking-wide text-fg">
+              <span className="mr-1 type-caption text-fg-muted">Accepted:</span>
+              <span className="rounded border border-line bg-raised px-2 py-0.5 type-caption font-medium tracking-wide text-fg">
                 Cash
               </span>
-              <span className="rounded border-accent/30 bg-accent/10 type-caption border px-2 py-0.5 font-semibold text-accent-text">
+              <span className="rounded border border-gold/30 bg-gold/10 px-2 py-0.5 type-caption font-semibold text-accent-text">
                 bKash
               </span>
-              <span className="rounded border-accent/30 bg-accent/10 type-caption border px-2 py-0.5 font-semibold text-accent-text">
+              <span className="rounded border border-gold/30 bg-gold/10 px-2 py-0.5 type-caption font-semibold text-accent-text">
                 Nagad
               </span>
-              <span className="rounded bg-surface-raised type-caption border border-line px-2 py-0.5 font-medium text-fg-muted">
+              <span className="rounded border border-line bg-raised px-2 py-0.5 type-caption font-medium text-fg-muted">
                 Card at Doorstep
               </span>
             </div>

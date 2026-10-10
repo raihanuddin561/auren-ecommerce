@@ -499,7 +499,7 @@ export function CarouselSettingsManager({ initialSettings }: CarouselSettingsMan
                                     onClick={() =>
                                       updateSlide(index, { primaryCtaLink: quickLink })
                                     }
-                                    className="type-caption rounded-xs border border-line bg-page px-1.5 py-0.5 text-fg-muted hover:border-fg hover:text-fg"
+                                    className="rounded-xs border border-line bg-page px-1.5 py-0.5 type-caption text-fg-muted hover:border-fg hover:text-fg"
                                   >
                                     {quickLink}
                                   </button>

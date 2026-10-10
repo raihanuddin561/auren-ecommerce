@@ -193,7 +193,7 @@ export function AddressBook({ addresses, divisions, districts }: AddressBookProp
             {errorMessage && (
               <div
                 role="alert"
-                className="type-body-sm rounded-xs border border-danger/20 bg-danger/5 px-4 py-3 text-danger"
+                className="rounded-xs border border-danger/20 bg-danger/5 px-4 py-3 type-body-sm text-danger"
               >
                 {errorMessage}
               </div>
@@ -340,7 +340,7 @@ export function AddressBook({ addresses, divisions, districts }: AddressBookProp
                 defaultChecked={editingAddress?.isDefault ?? addresses.length === 0}
                 className="size-4 accent-accent-text"
               />
-              <label htmlFor="isDefault" className="type-body-sm cursor-pointer text-fg">
+              <label htmlFor="isDefault" className="cursor-pointer type-body-sm text-fg">
                 Set as my default delivery destination
               </label>
             </div>
@@ -394,7 +394,7 @@ export function AddressBook({ addresses, divisions, districts }: AddressBookProp
                   <h3 className="mt-2 type-h3 font-display text-fg">{addr.fullName}</h3>
                   <p className="type-body-sm text-fg-muted">{addr.phone}</p>
 
-                  <div className="type-body-sm mt-3 space-y-0.5 border-t border-line/50 pt-3 text-fg-muted">
+                  <div className="mt-3 space-y-0.5 border-t border-line/50 pt-3 type-body-sm text-fg-muted">
                     <p>{addr.line1}</p>
                     {addr.area && <p>{addr.area}</p>}
                     {addr.thanaName && <p>{addr.thanaName}</p>}

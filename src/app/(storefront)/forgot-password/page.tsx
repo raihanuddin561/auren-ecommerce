@@ -13,7 +13,7 @@ export default function ForgotPasswordPage() {
     <main className="flex min-h-[75vh] items-center justify-center px-4 py-16 sm:px-6 lg:px-8">
       <Suspense
         fallback={
-          <div className="type-body-sm mx-auto w-full max-w-md animate-pulse py-12 text-center text-fg-muted">
+          <div className="mx-auto w-full max-w-md animate-pulse py-12 text-center type-body-sm text-fg-muted">
             Loading recovery form...
           </div>
         }

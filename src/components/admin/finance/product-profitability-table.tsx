@@ -75,7 +75,7 @@ export function ProductProfitabilityTable({ products }: ProductProfitabilityTabl
                                 className="object-cover"
                               />
                             ) : (
-                              <div className="bg-surface-subtle h-full w-full" />
+                              <div className="h-full w-full bg-surface-subtle" />
                             )}
                           </div>
                           <div>

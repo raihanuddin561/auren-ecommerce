@@ -57,7 +57,7 @@ export function AuditFilterBar({
   return (
     <div className="flex flex-wrap items-center gap-3 border border-line bg-raised/50 p-4">
       <div className="w-56">
-        <label className="type-caption mb-1 block text-fg-muted">Entity Type</label>
+        <label className="mb-1 block type-caption text-fg-muted">Entity Type</label>
         <Select value={selectedEntityType ?? 'all'} onValueChange={handleEntityChange}>
           <SelectTrigger>
             <SelectValue placeholder="All Entities" />
@@ -74,7 +74,7 @@ export function AuditFilterBar({
       </div>
 
       <div className="w-64">
-        <label className="type-caption mb-1 block text-fg-muted">Action</label>
+        <label className="mb-1 block type-caption text-fg-muted">Action</label>
         <Select value={selectedAction ?? 'all'} onValueChange={handleActionChange}>
           <SelectTrigger>
             <SelectValue placeholder="All Actions" />

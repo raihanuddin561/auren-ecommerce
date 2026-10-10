@@ -102,7 +102,7 @@ export function ResetPasswordForm() {
       <div className="text-center">
         <span className="type-eyebrow tracking-widest text-accent-text">SECURITY PROTOCOL</span>
         <h1 className="mt-2 type-h1 font-display text-fg">Set New Password</h1>
-        <p className="type-body-sm mt-2 text-fg-muted">
+        <p className="mt-2 type-body-sm text-fg-muted">
           Create a new password of at least 10 characters to safeguard your client account.
         </p>
       </div>
@@ -111,7 +111,7 @@ export function ResetPasswordForm() {
         {error ? (
           <div
             role="alert"
-            className="type-body-sm rounded-xs border border-danger/20 bg-danger/5 px-4 py-3 text-danger"
+            className="rounded-xs border border-danger/20 bg-danger/5 px-4 py-3 type-body-sm text-danger"
           >
             {error}
           </div>

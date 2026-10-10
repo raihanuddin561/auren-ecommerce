@@ -131,7 +131,7 @@ export function ProductSelectModal({
                 return (
                   <div
                     key={product.id}
-                    className="group hover:bg-surface-raised/40 flex items-center justify-between gap-3 rounded-xs border border-line bg-page p-2.5 transition-all hover:border-gold"
+                    className="group flex items-center justify-between gap-3 rounded-xs border border-line bg-page p-2.5 transition-all hover:border-gold hover:bg-surface-raised/40"
                   >
                     <div className="flex min-w-0 items-center gap-3">
                       {/* Product Thumbnail */}
@@ -145,7 +145,7 @@ export function ProductSelectModal({
                             loading="lazy"
                           />
                         ) : (
-                          <div className="type-caption flex size-full items-center justify-center text-fg-muted">
+                          <div className="flex size-full items-center justify-center type-caption text-fg-muted">
                             No photo
                           </div>
                         )}
@@ -159,7 +159,7 @@ export function ProductSelectModal({
                             {product.status}
                           </Badge>
                         </div>
-                        <p className="type-caption truncate text-accent-text">
+                        <p className="truncate type-caption text-accent-text">
                           /products/{product.slug}
                         </p>
                         {product.subtitle ? (
