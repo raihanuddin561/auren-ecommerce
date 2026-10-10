@@ -171,32 +171,29 @@ export function HeroCarousel({ settings, className }: HeroCarouselProps) {
         })}
       </div>
 
-      {/* Main Slide Content Stage - Consistent Unified Structure Across All Slides */}
+      {/* Main Slide Content Stage - Unified Stable Architecture Across All Slides */}
       <div className="relative z-10 container-page flex flex-1 flex-col justify-center py-6 md:py-8 lg:py-10">
-        <div className="grid w-full items-center">
-          {slides.map((slide, index) => {
-            const isActive = index === currentIndex;
-            const isBroken = Boolean(brokenImages[slide.id || index]);
-            const isContain = slide.imageFit === 'contain';
+        <div className="grid w-full items-center gap-8 lg:grid-cols-12 lg:gap-14">
+          {/* Left Column: Stacked Editorial Storytelling (Stable Container, Zero Image Displacement) */}
+          <div className="order-2 flex flex-col justify-center text-left lg:order-1 lg:col-span-6 xl:col-span-7">
+            <div className="grid w-full">
+              {slides.map((slide, index) => {
+                const isActive = index === currentIndex;
 
-            return (
-              <div
-                key={`slide-${slide.id || index}`}
-                role="group"
-                aria-roledescription="slide"
-                aria-label={`Slide ${index + 1} of ${total}: ${slide.title}`}
-                aria-hidden={!isActive}
-                className={cn(
-                  'col-start-1 row-start-1 transition-all duration-700 ease-out',
-                  isActive
-                    ? 'translate-y-0 opacity-100'
-                    : 'pointer-events-none translate-y-4 opacity-0',
-                )}
-              >
-                {/* Standardized 12-Column Editorial Split Layout */}
-                <div className="grid items-center gap-8 lg:grid-cols-12 lg:gap-14">
-                  {/* Left Column: Editorial Storytelling & Action */}
-                  <div className="order-2 flex flex-col justify-center text-left lg:order-1 lg:col-span-6 xl:col-span-7">
+                return (
+                  <div
+                    key={`text-${slide.id || index}`}
+                    role="group"
+                    aria-roledescription="slide"
+                    aria-label={`Slide ${index + 1} of ${total}: ${slide.title}`}
+                    aria-hidden={!isActive}
+                    className={cn(
+                      'col-start-1 row-start-1 flex flex-col justify-center transition-all duration-700 ease-out',
+                      isActive
+                        ? 'translate-y-0 opacity-100'
+                        : 'pointer-events-none translate-y-2 opacity-0',
+                    )}
+                  >
                     {slide.eyebrow ? (
                       <p className="type-eyebrow font-medium tracking-eyebrow text-accent-text uppercase">
                         {slide.eyebrow}
@@ -255,40 +252,95 @@ export function HeroCarousel({ settings, className }: HeroCarouselProps) {
                       </span>
                     </div>
                   </div>
+                );
+              })}
+            </div>
+          </div>
 
-                  {/* Right Column: Uniform Fixed-Silhouette Atelier Showcase Frame */}
-                  <div className="order-1 flex items-center justify-center lg:order-2 lg:col-span-6 xl:col-span-5">
-                    <div className="group/frame bg-surface-raised/50 hover:shadow-2xl relative mx-auto flex aspect-[4/5] w-[260px] items-center justify-center overflow-hidden rounded-xs border border-line/80 shadow-float backdrop-blur-xs transition-all duration-500 hover:border-gold/70 sm:w-[320px] md:w-[360px] lg:w-[390px]">
-                      {!isBroken && slide.imageUrl ? (
+          {/* Right Column: Permanently Anchored Showcase Stage - Identical Image Sizing, Zero Position Jump */}
+          <div className="order-1 flex items-center justify-center lg:order-2 lg:col-span-6 xl:col-span-5">
+            <div className="group/frame bg-surface-raised/50 hover:shadow-2xl relative mx-auto flex aspect-[4/5] w-[270px] items-center justify-center overflow-hidden rounded-xs border border-line/80 shadow-float backdrop-blur-xs transition-all duration-500 hover:border-gold/70 sm:w-[320px] md:w-[360px] lg:w-[390px] xl:w-[420px]">
+              {slides.map((slide, index) => {
+                const isActive = index === currentIndex;
+                const isBroken = Boolean(brokenImages[slide.id || index]);
+                const isContain = slide.imageFit === 'contain';
+
+                return (
+                  <div
+                    key={`img-${slide.id || index}`}
+                    aria-hidden={!isActive}
+                    className={cn(
+                      'absolute inset-0 size-full overflow-hidden transition-all duration-700 ease-out',
+                      isActive
+                        ? 'z-10 scale-100 opacity-100'
+                        : 'pointer-events-none z-0 scale-[1.02] opacity-0',
+                    )}
+                  >
+                    {!isBroken && slide.imageUrl ? (
+                      isContain ? (
+                        <>
+                          {/* Ambient blurred backdrop: fills the entire 4:5 frame so canvas presence is always identical */}
+                          <div className="absolute inset-0 scale-125 opacity-35 blur-xl">
+                            <CatalogImage
+                              src={slide.imageUrl}
+                              alt=""
+                              sizes="400px"
+                              className="size-full object-cover"
+                            />
+                          </div>
+                          <div className="via-stone-950/40 to-stone-950/80 absolute inset-0 bg-radial from-transparent" />
+
+                          {/* Centered foreground garment/product on ambient pedestal */}
+                          <div className="relative z-10 flex size-full items-center justify-center p-4 sm:p-6">
+                            <CatalogImage
+                              src={slide.imageUrl}
+                              alt={slide.imageAlt || slide.title}
+                              sizes="(max-width: 640px) 270px, (max-width: 1024px) 360px, 420px"
+                              priority={index === 0}
+                              onError={() =>
+                                setBrokenImages((prev) => ({
+                                  ...prev,
+                                  [slide.id || index]: true,
+                                }))
+                              }
+                              className="size-full object-contain drop-shadow-xl transition-transform duration-700 ease-auren group-hover/frame:scale-[1.03]"
+                            />
+                          </div>
+                        </>
+                      ) : (
+                        /* Uniform full-bleed cover for editorial campaign photography */
                         <CatalogImage
                           src={slide.imageUrl}
                           alt={slide.imageAlt || slide.title}
-                          sizes="(max-width: 640px) 260px, (max-width: 1024px) 360px, 390px"
+                          sizes="(max-width: 640px) 270px, (max-width: 1024px) 360px, 420px"
                           priority={index === 0}
                           onError={() =>
-                            setBrokenImages((prev) => ({ ...prev, [slide.id || index]: true }))
+                            setBrokenImages((prev) => ({
+                              ...prev,
+                              [slide.id || index]: true,
+                            }))
                           }
-                          className={cn(
-                            'size-full transition-transform duration-700 ease-auren group-hover/frame:scale-[1.03]',
-                            isContain ? 'object-contain p-3.5 sm:p-5' : 'object-cover object-top',
-                          )}
+                          className="size-full object-cover object-center transition-transform duration-700 ease-auren group-hover/frame:scale-[1.03]"
                         />
-                      ) : (
-                        <div className="flex size-full items-center justify-center bg-sunken p-6 text-center type-small text-fg-muted">
-                          Photography unavailable
-                        </div>
-                      )}
-
-                      {/* Floating Atelier Badge */}
-                      <div className="type-caption absolute top-3.5 right-3.5 rounded-xs border border-line/80 bg-page/90 px-2 py-0.5 font-medium tracking-wider text-accent-text uppercase backdrop-blur-xs">
-                        Auren Atelier
+                      )
+                    ) : (
+                      <div className="flex size-full items-center justify-center bg-sunken p-6 text-center type-small text-fg-muted">
+                        Photography unavailable
                       </div>
-                    </div>
+                    )}
+
+                    {/* Subtle luxury edge vignette */}
+                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-page/60 via-transparent to-page/10" />
                   </div>
-                </div>
+                );
+              })}
+
+              {/* Floating Atelier Badge */}
+              <div className="type-caption pointer-events-none absolute top-3.5 right-3.5 z-20 rounded-xs border border-line/80 bg-page/90 px-2 py-0.5 font-medium tracking-wider text-accent-text uppercase backdrop-blur-xs">
+                Auren Atelier
               </div>
-            );
-          })}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -388,20 +440,40 @@ export function HeroCarouselSkeleton() {
     <section
       data-tone="ink"
       aria-hidden="true"
-      className="relative flex min-h-[520px] w-full animate-pulse flex-col justify-center bg-page pt-(--header-height) text-fg md:min-h-[560px] lg:h-[600px] lg:min-h-[600px]"
+      className="relative flex min-h-[520px] w-full animate-pulse flex-col justify-between bg-page pt-(--header-height) text-fg md:min-h-[560px] lg:h-[600px] lg:min-h-[600px]"
     >
-      <div className="container-page grid items-center gap-8 py-8 lg:grid-cols-12 lg:py-10">
-        <div className="flex flex-col gap-4 lg:col-span-6 xl:col-span-7">
-          <div className="h-4 w-32 rounded-xs bg-line/60" />
-          <div className="h-12 w-3/4 rounded-xs bg-line/80" />
-          <div className="h-16 w-full max-w-lg rounded-xs bg-line/40" />
-          <div className="flex gap-4 pt-3">
-            <div className="h-11 w-36 rounded-xs bg-line" />
-            <div className="h-11 w-28 rounded-xs bg-line/50" />
+      <div className="container-page flex flex-1 flex-col justify-center py-6 md:py-8 lg:py-10">
+        <div className="grid w-full items-center gap-8 lg:grid-cols-12 lg:gap-14">
+          <div className="order-2 flex flex-col gap-4 lg:order-1 lg:col-span-6 xl:col-span-7">
+            <div className="h-4 w-32 rounded-xs bg-line/60" />
+            <div className="h-12 w-3/4 rounded-xs bg-line/80" />
+            <div className="h-16 w-full max-w-lg rounded-xs bg-line/40" />
+            <div className="flex gap-4 pt-3">
+              <div className="h-11 w-36 rounded-xs bg-line" />
+              <div className="h-11 w-28 rounded-xs bg-line/50" />
+            </div>
+            <div className="mt-7 flex gap-4 border-t border-line/40 pt-4">
+              <div className="h-4 w-28 rounded-xs bg-line/40" />
+              <div className="h-4 w-28 rounded-xs bg-line/40" />
+              <div className="h-4 w-28 rounded-xs bg-line/40" />
+            </div>
+          </div>
+          <div className="order-1 flex items-center justify-center lg:order-2 lg:col-span-6 xl:col-span-5">
+            <div className="aspect-[4/5] w-[270px] rounded-xs bg-line/40 sm:w-[320px] md:w-[360px] lg:w-[390px] xl:w-[420px]" />
           </div>
         </div>
-        <div className="flex justify-center lg:col-span-6 xl:col-span-5">
-          <div className="aspect-[4/5] w-[260px] rounded-xs bg-line/40 sm:w-[320px] md:w-[360px] lg:w-[390px]" />
+      </div>
+      <div className="container-page pb-6 md:pb-10">
+        <div className="flex items-center justify-between border-t border-line/40 pt-5">
+          <div className="flex gap-3">
+            <div className="h-2 w-16 rounded-xs bg-line/40" />
+            <div className="h-2 w-16 rounded-xs bg-line/40" />
+            <div className="h-2 w-16 rounded-xs bg-line/40" />
+          </div>
+          <div className="flex gap-3">
+            <div className="size-9 rounded-xs bg-line/40" />
+            <div className="size-9 rounded-xs bg-line/40" />
+          </div>
         </div>
       </div>
     </section>

@@ -71,7 +71,7 @@ export function CarouselSettingsManager({ initialSettings }: CarouselSettingsMan
         imageUrl: product.imageUrl || '/seed/charcoal.svg',
         imageAlt: product.title,
         primaryCtaLink: `/products/${product.slug}`,
-        imageFit: 'contain',
+        imageFit: 'cover',
         ...(slides[targetSlideIndex]?.title.includes('New Season') ||
         slides[targetSlideIndex]?.title.includes('Campaign')
           ? {
@@ -543,8 +543,8 @@ export function CarouselSettingsManager({ initialSettings }: CarouselSettingsMan
                       <div>
                         <p className="type-small font-medium text-fg">Campaign Imagery</p>
                         <div className="mt-2 flex gap-4">
-                          {/* Image preview box */}
-                          <div className="relative aspect-[16/9] w-40 overflow-hidden border border-line bg-page">
+                          {/* Image preview box (standardized 4:5 atelier portrait) */}
+                          <div className="relative aspect-[4/5] w-28 shrink-0 overflow-hidden border border-line bg-page">
                             {slide.imageUrl ? (
                               // eslint-disable-next-line @next/next/no-img-element
                               <img
@@ -661,7 +661,7 @@ export function CarouselSettingsManager({ initialSettings }: CarouselSettingsMan
 
                       <FormField
                         label="Image Sizing & Fit"
-                        hint="Choose how the photography fits within the 4:5 showcase card."
+                        hint="All images maintain identical 4:5 silhouette sizing with zero position jumps."
                       >
                         {() => (
                           <div className="flex border border-line bg-page">
@@ -675,7 +675,7 @@ export function CarouselSettingsManager({ initialSettings }: CarouselSettingsMan
                                   : 'text-fg-muted hover:text-fg',
                               )}
                             >
-                              Uniform Frame Fill (Consistent)
+                              Uniform Full Bleed (Default)
                             </button>
                             <button
                               type="button"
@@ -687,7 +687,7 @@ export function CarouselSettingsManager({ initialSettings }: CarouselSettingsMan
                                   : 'text-fg-muted hover:text-fg',
                               )}
                             >
-                              Fit Within Frame
+                              Ambient Pedestal (Fit)
                             </button>
                           </div>
                         )}
