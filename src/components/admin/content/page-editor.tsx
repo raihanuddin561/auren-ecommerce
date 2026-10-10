@@ -222,6 +222,7 @@ export function PageEditor({ initialPage }: PageEditorProps) {
                   (typeof props.headline === 'string' ? props.headline : null) ||
                   (typeof props.quote === 'string' ? props.quote : null) ||
                   section.blockType;
+                const subtitle = typeof props.subtitle === 'string' ? props.subtitle : null;
 
                 return (
                   <div
@@ -243,10 +244,8 @@ export function PageEditor({ initialPage }: PageEditorProps) {
                             <Badge tone="neutral">{section.blockType.replace(/_/g, ' ')}</Badge>
                             {!section.isVisible && <Badge tone="warning">Hidden</Badge>}
                           </div>
-                          {props.subtitle && (
-                            <p className="text-stone mt-0.5 line-clamp-1 text-xs">
-                              {props.subtitle}
-                            </p>
+                          {subtitle && (
+                            <p className="text-stone mt-0.5 line-clamp-1 text-xs">{subtitle}</p>
                           )}
                         </div>
                       </div>
