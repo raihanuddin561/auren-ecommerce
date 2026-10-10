@@ -87,31 +87,31 @@ export function CategoriesTable({ categories }: CategoriesTableProps) {
 
   return (
     <div className="space-y-4">
-      <div className="bg-canvas flex items-center justify-between rounded-sm border border-line p-4">
+      <div className="flex items-center justify-between rounded-sm border border-line bg-raised p-4">
         <div>
-          <h2 className="text-sm font-semibold text-ink">Expense Cost Centers</h2>
-          <p className="text-stone text-xs">
+          <h2 className="text-sm font-semibold text-fg">Expense Cost Centers</h2>
+          <p className="text-xs text-fg-muted">
             Configure direct product cost categories vs operating expenditure (OpEx) centers.
           </p>
         </div>
 
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button size="sm" className="text-canvas gap-1.5 bg-ink text-xs hover:bg-ink/90">
+            <Button size="sm" className="gap-1.5 bg-ink text-xs text-ivory hover:bg-ink/90">
               <Plus className="h-3.5 w-3.5" />
               Add Category
             </Button>
           </DialogTrigger>
-          <DialogContent className="bg-canvas max-w-md border-line">
+          <DialogContent className="max-w-md border-line bg-raised">
             <form onSubmit={handleSubmit} className="space-y-4">
               <DialogHeader>
-                <DialogTitle className="font-serif text-lg text-ink">
+                <DialogTitle className="font-serif text-lg text-fg">
                   Add Cost Center Category
                 </DialogTitle>
               </DialogHeader>
 
               <div className="space-y-1.5">
-                <Label htmlFor="catName" className="text-stone text-xs">
+                <Label htmlFor="catName" className="text-xs text-fg-muted">
                   Category Name *
                 </Label>
                 <Input
@@ -120,19 +120,19 @@ export function CategoriesTable({ categories }: CategoriesTableProps) {
                   placeholder="e.g. Master Tailoring & Silks"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="bg-surface h-9 border-line text-xs"
+                  className="h-9 border-line bg-page text-xs"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="catType" className="text-stone text-xs">
+                <Label htmlFor="catType" className="text-xs text-fg-muted">
                   Account Type *
                 </Label>
                 <select
                   id="catType"
                   value={type}
                   onChange={(e) => setType(e.target.value as ExpenseCategoryType)}
-                  className="bg-surface h-9 w-full rounded-sm border border-line px-3 text-xs text-ink focus:ring-1 focus:ring-gold focus:outline-hidden"
+                  className="h-9 w-full rounded-sm border border-line bg-page px-3 text-xs text-fg focus:ring-1 focus:ring-gold focus:outline-hidden"
                 >
                   <option value="marketing">Marketing & Digital Ads</option>
                   <option value="payroll">Payroll & Artisan Wages</option>
@@ -154,15 +154,15 @@ export function CategoriesTable({ categories }: CategoriesTableProps) {
                   id="isCogs"
                   checked={isCogs}
                   onChange={(e) => setIsCogs(e.target.checked)}
-                  className="h-4 w-4 rounded-sm border-line text-ink focus:ring-gold"
+                  className="h-4 w-4 rounded-sm border-line text-fg focus:ring-gold"
                 />
-                <Label htmlFor="isCogs" className="cursor-pointer text-xs font-medium text-ink">
+                <Label htmlFor="isCogs" className="cursor-pointer text-xs font-medium text-fg">
                   Classify as Direct Cost of Goods Sold (COGS)
                 </Label>
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="catDesc" className="text-stone text-xs">
+                <Label htmlFor="catDesc" className="text-xs text-fg-muted">
                   Description
                 </Label>
                 <Input
@@ -170,7 +170,7 @@ export function CategoriesTable({ categories }: CategoriesTableProps) {
                   placeholder="Notes on usage..."
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="bg-surface h-9 border-line text-xs"
+                  className="h-9 border-line bg-page text-xs"
                 />
               </div>
 
@@ -188,7 +188,7 @@ export function CategoriesTable({ categories }: CategoriesTableProps) {
                   type="submit"
                   size="sm"
                   disabled={isSubmitting}
-                  className="text-canvas bg-ink text-xs hover:bg-ink/90"
+                  className="bg-ink text-xs text-ivory hover:bg-ink/90"
                 >
                   {isSubmitting ? 'Saving...' : 'Create Category'}
                 </Button>
@@ -198,10 +198,10 @@ export function CategoriesTable({ categories }: CategoriesTableProps) {
         </Dialog>
       </div>
 
-      <div className="bg-canvas overflow-hidden rounded-sm border border-line">
+      <div className="overflow-hidden rounded-sm border border-line bg-raised">
         <table className="w-full text-xs">
           <thead>
-            <tr className="bg-surface/50 text-stone border-b border-line text-left">
+            <tr className="border-b border-line bg-sunken/50 text-left text-fg-muted">
               <th className="px-4 py-2.5 font-medium tracking-wider uppercase">Category</th>
               <th className="px-4 py-2.5 font-medium tracking-wider uppercase">Classification</th>
               <th className="px-4 py-2.5 font-medium tracking-wider uppercase">Type Code</th>
@@ -218,10 +218,10 @@ export function CategoriesTable({ categories }: CategoriesTableProps) {
           </thead>
           <tbody className="divide-y divide-line/60">
             {categories.map((c) => (
-              <tr key={c.id} className="hover:bg-surface/30 transition-colors">
+              <tr key={c.id} className="transition-colors hover:bg-sunken/40">
                 <td className="px-4 py-3">
-                  <div className="font-semibold text-ink">{c.name}</div>
-                  {c.description && <div className="text-stone text-xs">{c.description}</div>}
+                  <div className="font-semibold text-fg">{c.name}</div>
+                  {c.description && <div className="text-xs text-fg-muted">{c.description}</div>}
                 </td>
                 <td className="px-4 py-3">
                   {c.isCogs ? (
@@ -230,9 +230,9 @@ export function CategoriesTable({ categories }: CategoriesTableProps) {
                     <Badge tone="neutral">Operating OpEx</Badge>
                   )}
                 </td>
-                <td className="text-stone px-4 py-3 font-mono">{c.type}</td>
-                <td className="text-stone px-4 py-3">{c.expenseCount} entries</td>
-                <td className="px-4 py-3 text-right font-mono font-semibold whitespace-nowrap text-ink">
+                <td className="px-4 py-3 font-mono text-fg-muted">{c.type}</td>
+                <td className="px-4 py-3 text-fg-muted">{c.expenseCount} entries</td>
+                <td className="px-4 py-3 text-right font-mono font-semibold whitespace-nowrap text-fg">
                   {c.totalSpentFormatted}
                 </td>
                 <td className="px-4 py-3 text-right">
@@ -241,7 +241,7 @@ export function CategoriesTable({ categories }: CategoriesTableProps) {
                     size="sm"
                     disabled={deletingId === c.id || c.expenseCount > 0}
                     onClick={() => handleDelete(c.id, c.name)}
-                    className="text-stone h-7 w-7 p-0 hover:text-oxblood disabled:opacity-30"
+                    className="h-7 w-7 p-0 text-fg-muted hover:text-oxblood disabled:opacity-30"
                     title={
                       c.expenseCount > 0
                         ? 'Cannot delete category with recorded expenses'

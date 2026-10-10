@@ -57,7 +57,7 @@ export function DiscountsTable({ discounts, total, canManage }: DiscountsTablePr
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="rounded bg-surface overflow-x-auto border border-line">
+      <div className="overflow-x-auto rounded-sm border border-line bg-raised">
         <table className="w-full text-left text-sm">
           <thead className="bg-subtle border-b border-line text-xs font-medium tracking-wider text-fg-muted uppercase">
             <tr>
@@ -102,7 +102,7 @@ export function DiscountsTable({ discounts, total, canManage }: DiscountsTablePr
                               </button>
                             </span>
                           ) : (
-                            <span className="rounded bg-stone-200 px-1.5 py-0.5 text-xs text-stone-700">
+                            <span className="rounded-xs border border-line bg-page px-1.5 py-0.5 text-xs text-fg-muted">
                               Automatic Rule
                             </span>
                           )}

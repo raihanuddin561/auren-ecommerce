@@ -27,6 +27,7 @@
   --color-stone-700: #55514a;
   --color-stone-800: #47433e;
   --color-stone-900: #3d3a35;
+  --color-stone: #6b665d;
 
   /* Accent only: active states, underlines, small badges, focus ring. Never large fills. */
   --color-gold: #a8875a;
@@ -294,6 +295,8 @@
   --color-page: var(--surface-page);
   --color-raised: var(--surface-raised);
   --color-sunken: var(--surface-sunken);
+  --color-canvas: var(--surface-raised);
+  --color-surface: var(--surface-sunken);
   --color-surface-raised: var(--surface-raised);
   --color-surface-sunken: var(--surface-sunken);
   --color-surface-subtle: var(--surface-sunken);

@@ -148,10 +148,10 @@ export function PageEditor({ initialPage }: PageEditorProps) {
   return (
     <div className="space-y-8">
       {/* Top Header Bar */}
-      <div className="bg-canvas flex flex-col justify-between gap-4 rounded-sm border border-line p-4 sm:flex-row sm:items-center">
+      <div className="flex flex-col justify-between gap-4 rounded-sm border border-line bg-raised p-4 sm:flex-row sm:items-center">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <h1 className="font-serif text-xl font-semibold text-ink">{page.title}</h1>
+            <h1 className="font-serif text-xl font-semibold text-fg">{page.title}</h1>
             <Badge
               tone={
                 page.status === 'published'
@@ -164,8 +164,8 @@ export function PageEditor({ initialPage }: PageEditorProps) {
               {page.status}
             </Badge>
           </div>
-          <p className="text-stone font-mono text-xs">
-            Public Route: <strong className="text-ink">/pages/{page.slug}</strong>
+          <p className="font-mono text-xs text-fg-muted">
+            Public Route: <strong className="text-fg">/pages/{page.slug}</strong>
           </p>
         </div>
 
@@ -187,8 +187,8 @@ export function PageEditor({ initialPage }: PageEditorProps) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Layers className="h-4 w-4 text-gold" />
-              <h2 className="text-sm font-semibold text-ink">Page Section Blocks</h2>
-              <span className="text-stone text-xs">({page.sections.length} blocks)</span>
+              <h2 className="text-sm font-semibold text-fg">Page Section Blocks</h2>
+              <span className="text-xs text-fg-muted">({page.sections.length} blocks)</span>
             </div>
             <SectionEditorDialog
               pageId={page.id}
@@ -202,10 +202,10 @@ export function PageEditor({ initialPage }: PageEditorProps) {
           </div>
 
           {page.sections.length === 0 ? (
-            <div className="bg-surface/20 space-y-3 rounded-sm border border-dashed border-line p-12 text-center">
-              <Sparkles className="text-stone/50 mx-auto h-8 w-8" />
-              <p className="text-sm font-medium text-ink">No section blocks configured yet</p>
-              <p className="text-stone mx-auto max-w-sm text-xs">
+            <div className="space-y-3 rounded-sm border border-dashed border-line bg-page/40 p-12 text-center">
+              <Sparkles className="mx-auto h-8 w-8 text-fg-muted/50" />
+              <p className="text-sm font-medium text-fg">No section blocks configured yet</p>
+              <p className="mx-auto max-w-sm text-xs text-fg-muted">
                 Add a Hero Banner, Editorial Quote, Brand Perks, or Lookbook Strip to begin
                 designing this page.
               </p>
@@ -229,23 +229,23 @@ export function PageEditor({ initialPage }: PageEditorProps) {
                     key={section.id}
                     className={`rounded-sm border p-4 transition-all ${
                       section.isVisible
-                        ? 'bg-canvas border-line'
-                        : 'bg-surface/40 border-line/60 opacity-70'
+                        ? 'border-line bg-raised'
+                        : 'border-line/60 bg-page/40 opacity-70'
                     }`}
                   >
                     <div className="flex items-center justify-between gap-4">
                       <div className="flex items-center gap-3">
-                        <span className="bg-surface text-stone flex h-6 w-6 items-center justify-center rounded-xs border border-line font-mono text-xs">
+                        <span className="flex h-6 w-6 items-center justify-center rounded-xs border border-line bg-page font-mono text-xs text-fg-muted">
                           {index + 1}
                         </span>
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="text-xs font-semibold text-ink">{previewTitle}</span>
+                            <span className="text-xs font-semibold text-fg">{previewTitle}</span>
                             <Badge tone="neutral">{section.blockType.replace(/_/g, ' ')}</Badge>
                             {!section.isVisible && <Badge tone="warning">Hidden</Badge>}
                           </div>
                           {subtitle && (
-                            <p className="text-stone mt-0.5 line-clamp-1 text-xs">{subtitle}</p>
+                            <p className="mt-0.5 line-clamp-1 text-xs text-fg-muted">{subtitle}</p>
                           )}
                         </div>
                       </div>
@@ -257,7 +257,7 @@ export function PageEditor({ initialPage }: PageEditorProps) {
                           size="sm"
                           disabled={index === 0}
                           onClick={() => handleMove(index, 'up')}
-                          className="text-stone h-7 w-7 p-0 hover:text-ink disabled:opacity-20"
+                          className="h-7 w-7 p-0 text-fg-muted hover:text-fg disabled:opacity-20"
                           title="Move Up"
                         >
                           <ArrowUp className="h-3.5 w-3.5" />
@@ -267,7 +267,7 @@ export function PageEditor({ initialPage }: PageEditorProps) {
                           size="sm"
                           disabled={index === page.sections.length - 1}
                           onClick={() => handleMove(index, 'down')}
-                          className="text-stone h-7 w-7 p-0 hover:text-ink disabled:opacity-20"
+                          className="h-7 w-7 p-0 text-fg-muted hover:text-fg disabled:opacity-20"
                           title="Move Down"
                         >
                           <ArrowDown className="h-3.5 w-3.5" />
@@ -276,7 +276,7 @@ export function PageEditor({ initialPage }: PageEditorProps) {
                           variant="ghost"
                           size="sm"
                           onClick={() => handleToggleVisibility(section)}
-                          className="text-stone h-7 w-7 p-0 hover:text-ink"
+                          className="h-7 w-7 p-0 text-fg-muted hover:text-fg"
                           title={section.isVisible ? 'Hide Section' : 'Show Section'}
                         >
                           {section.isVisible ? (
@@ -293,7 +293,7 @@ export function PageEditor({ initialPage }: PageEditorProps) {
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="text-stone h-7 w-7 p-0 hover:text-ink"
+                              className="h-7 w-7 p-0 text-fg-muted hover:text-fg"
                               title="Edit Section"
                             >
                               <Edit className="h-3.5 w-3.5" />
@@ -306,7 +306,7 @@ export function PageEditor({ initialPage }: PageEditorProps) {
                           variant="ghost"
                           size="sm"
                           onClick={() => handleDeleteSection(section)}
-                          className="text-stone h-7 w-7 p-0 hover:text-oxblood"
+                          className="h-7 w-7 p-0 text-fg-muted hover:text-danger-text"
                           title="Delete Section"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
@@ -322,45 +322,45 @@ export function PageEditor({ initialPage }: PageEditorProps) {
 
         {/* Right Col: Page Settings & SEO */}
         <div className="space-y-4">
-          <div className="bg-canvas space-y-4 rounded-sm border border-line p-5">
-            <h2 className="text-sm font-semibold text-ink">Page Configuration</h2>
+          <div className="space-y-4 rounded-sm border border-line bg-raised p-5">
+            <h2 className="text-sm font-semibold text-fg">Page Configuration</h2>
 
             <form onSubmit={handleSavePageSettings} className="space-y-3">
               <div className="space-y-1">
-                <Label htmlFor="title" className="text-stone text-xs">
+                <Label htmlFor="title" className="text-xs text-fg-muted">
                   Title
                 </Label>
                 <Input
                   id="title"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="bg-surface h-9 border-line text-xs"
+                  className="h-9 border-line bg-page text-xs"
                   required
                 />
               </div>
 
               <div className="space-y-1">
-                <Label htmlFor="slug" className="text-stone text-xs">
+                <Label htmlFor="slug" className="text-xs text-fg-muted">
                   Slug
                 </Label>
                 <Input
                   id="slug"
                   value={slug}
                   onChange={(e) => setSlug(e.target.value)}
-                  className="bg-surface h-9 border-line font-mono text-xs"
+                  className="h-9 border-line bg-page font-mono text-xs"
                   required
                 />
               </div>
 
               <div className="space-y-1">
-                <Label htmlFor="status" className="text-stone text-xs">
+                <Label htmlFor="status" className="text-xs text-fg-muted">
                   Status
                 </Label>
                 <select
                   id="status"
                   value={status}
                   onChange={(e) => setStatus(e.target.value as PageStatus)}
-                  className="bg-surface h-9 w-full rounded-sm border border-line px-3 text-xs text-ink focus:ring-1 focus:ring-gold focus:outline-hidden"
+                  className="h-9 w-full rounded-sm border border-line bg-page px-3 text-xs text-fg focus:ring-1 focus:ring-gold focus:outline-hidden"
                 >
                   <option value="draft">Draft (Private)</option>
                   <option value="published">Published (Live to public)</option>
@@ -370,21 +370,21 @@ export function PageEditor({ initialPage }: PageEditorProps) {
               </div>
 
               <div className="space-y-1">
-                <Label htmlFor="desc" className="text-stone text-xs">
+                <Label htmlFor="desc" className="text-xs text-fg-muted">
                   Description
                 </Label>
                 <Textarea
                   id="desc"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="bg-surface min-h-[60px] border-line text-xs"
+                  className="min-h-[60px] border-line bg-page text-xs"
                 />
               </div>
 
               <div className="space-y-3 border-t border-line pt-2">
-                <span className="block text-xs font-semibold text-ink">SEO Metadata</span>
+                <span className="block text-xs font-semibold text-fg">SEO Metadata</span>
                 <div className="space-y-1">
-                  <Label htmlFor="seoTitle" className="text-stone text-xs">
+                  <Label htmlFor="seoTitle" className="text-xs text-fg-muted">
                     Meta Title
                   </Label>
                   <Input
@@ -392,12 +392,12 @@ export function PageEditor({ initialPage }: PageEditorProps) {
                     placeholder="Page Title | AUREN"
                     value={seoTitle}
                     onChange={(e) => setSeoTitle(e.target.value)}
-                    className="bg-surface h-9 border-line text-xs"
+                    className="h-9 border-line bg-page text-xs"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <Label htmlFor="seoDesc" className="text-stone text-xs">
+                  <Label htmlFor="seoDesc" className="text-xs text-fg-muted">
                     Meta Description
                   </Label>
                   <Textarea
@@ -405,12 +405,12 @@ export function PageEditor({ initialPage }: PageEditorProps) {
                     placeholder="Search snippet text..."
                     value={seoDescription}
                     onChange={(e) => setSeoDescription(e.target.value)}
-                    className="bg-surface min-h-[60px] border-line text-xs"
+                    className="min-h-[60px] border-line bg-page text-xs"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <Label htmlFor="ogImage" className="text-stone text-xs">
+                  <Label htmlFor="ogImage" className="text-xs text-fg-muted">
                     OG Image URL
                   </Label>
                   <Input
@@ -418,7 +418,7 @@ export function PageEditor({ initialPage }: PageEditorProps) {
                     placeholder="https://..."
                     value={ogImageUrl}
                     onChange={(e) => setOgImageUrl(e.target.value)}
-                    className="bg-surface h-9 border-line font-mono text-xs"
+                    className="h-9 border-line bg-page font-mono text-xs"
                   />
                 </div>
               </div>
@@ -427,7 +427,7 @@ export function PageEditor({ initialPage }: PageEditorProps) {
                 type="submit"
                 size="sm"
                 disabled={isSavingPage}
-                className="text-canvas mt-2 w-full gap-1.5 bg-ink text-xs hover:bg-ink/90"
+                className="mt-2 w-full gap-1.5 bg-ink text-xs text-ivory hover:bg-ink/90"
               >
                 <Save className="h-3.5 w-3.5" />
                 {isSavingPage ? 'Saving Settings...' : 'Save Page Settings'}

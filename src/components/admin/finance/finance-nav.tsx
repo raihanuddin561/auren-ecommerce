@@ -42,8 +42,8 @@ export function FinanceNav() {
             className={cn(
               'flex items-center gap-2 border-b-2 px-3.5 py-2 text-xs font-medium whitespace-nowrap transition-colors',
               isActive
-                ? 'border-gold font-semibold text-ink'
-                : 'text-stone border-transparent hover:border-line hover:text-ink',
+                ? 'border-gold font-semibold text-fg'
+                : 'border-transparent text-fg-muted hover:border-line hover:text-fg',
             )}
           >
             <Icon className="h-3.5 w-3.5" />

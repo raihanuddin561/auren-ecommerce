@@ -88,18 +88,18 @@ export function PnLView({ report }: PnLViewProps) {
   return (
     <div className="space-y-6">
       {/* Control bar */}
-      <div className="bg-canvas flex flex-col items-start justify-between gap-4 rounded-sm border border-line p-4 sm:flex-row sm:items-center">
+      <div className="flex flex-col items-start justify-between gap-4 rounded-sm border border-line bg-raised p-4 sm:flex-row sm:items-center">
         <div className="flex items-center gap-2">
-          <span className="text-stone text-xs font-medium">Revenue Recognition:</span>
-          <div className="bg-surface inline-flex rounded-sm border border-line p-0.5">
+          <span className="text-xs font-medium text-fg-muted">Revenue Recognition:</span>
+          <div className="inline-flex rounded-sm border border-line bg-sunken p-0.5">
             <button
               type="button"
               onClick={() => handleModeChange('delivered')}
               disabled={isPending}
               className={`rounded-sm px-3 py-1 text-xs font-medium transition-colors ${
                 currentMode === 'delivered'
-                  ? 'text-canvas shadow-xs bg-ink font-semibold'
-                  : 'text-stone hover:text-ink'
+                  ? 'shadow-xs bg-ink font-semibold text-ivory'
+                  : 'text-fg-muted hover:text-fg'
               }`}
             >
               Delivered (Accrual)
@@ -110,8 +110,8 @@ export function PnLView({ report }: PnLViewProps) {
               disabled={isPending}
               className={`rounded-sm px-3 py-1 text-xs font-medium transition-colors ${
                 currentMode === 'placed'
-                  ? 'text-canvas shadow-xs bg-ink font-semibold'
-                  : 'text-stone hover:text-ink'
+                  ? 'shadow-xs bg-ink font-semibold text-ivory'
+                  : 'text-fg-muted hover:text-fg'
               }`}
             >
               Placed (Pipeline)
@@ -120,38 +120,38 @@ export function PnLView({ report }: PnLViewProps) {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <div className="bg-surface flex items-center gap-1 rounded-sm border border-line p-0.5 text-xs">
+          <div className="flex items-center gap-1 rounded-sm border border-line bg-sunken p-0.5 text-xs">
             <button
               type="button"
               onClick={() => handleQuickPeriod('today')}
-              className="text-stone px-2.5 py-1 transition-colors hover:text-ink"
+              className="px-2.5 py-1 text-fg-muted transition-colors hover:text-fg"
             >
               Today
             </button>
             <button
               type="button"
               onClick={() => handleQuickPeriod('7d')}
-              className="text-stone px-2.5 py-1 transition-colors hover:text-ink"
+              className="px-2.5 py-1 text-fg-muted transition-colors hover:text-fg"
             >
               7 Days
             </button>
             <button
               type="button"
               onClick={() => handleQuickPeriod('this_month')}
-              className="text-stone px-2.5 py-1 font-medium transition-colors hover:text-ink"
+              className="px-2.5 py-1 font-medium text-fg-muted transition-colors hover:text-fg"
             >
               This Month
             </button>
             <button
               type="button"
               onClick={() => handleQuickPeriod('last_month')}
-              className="text-stone px-2.5 py-1 transition-colors hover:text-ink"
+              className="px-2.5 py-1 text-fg-muted transition-colors hover:text-fg"
             >
               Last Month
             </button>
           </div>
 
-          <div className="text-stone bg-surface flex items-center gap-1.5 rounded-sm border border-line px-2.5 py-1.5 text-xs">
+          <div className="flex items-center gap-1.5 rounded-sm border border-line bg-sunken px-2.5 py-1.5 text-xs text-fg-muted">
             <Calendar className="h-3.5 w-3.5 text-gold" />
             <span>
               {report.dateFrom} → {report.dateTo}
@@ -176,13 +176,13 @@ export function PnLView({ report }: PnLViewProps) {
       </div>
 
       {/* Financial Statement Card */}
-      <div className="bg-canvas overflow-hidden rounded-sm border border-line">
-        <div className="bg-surface/50 flex items-center justify-between border-b border-line px-6 py-4">
+      <div className="overflow-hidden rounded-sm border border-line bg-raised">
+        <div className="flex items-center justify-between border-b border-line bg-sunken/50 px-6 py-4">
           <div>
-            <h2 className="font-serif text-base font-semibold text-ink">
+            <h2 className="font-serif text-base font-semibold text-fg">
               Statement of Profit or Loss
             </h2>
-            <p className="text-stone mt-0.5 text-xs">
+            <p className="mt-0.5 text-xs text-fg-muted">
               Comprehensive atelier earnings statement across all revenue channels and cost centers.
             </p>
           </div>
@@ -196,7 +196,7 @@ export function PnLView({ report }: PnLViewProps) {
         <div className="p-6">
           <table className="w-full text-xs">
             <thead>
-              <tr className="text-stone border-b border-line text-left">
+              <tr className="border-b border-line text-left text-fg-muted">
                 <th className="pb-2.5 font-medium tracking-wider uppercase">Line Item</th>
                 <th className="w-44 pb-2.5 text-right font-medium tracking-wider uppercase">
                   Amount (BDT)
@@ -208,54 +208,54 @@ export function PnLView({ report }: PnLViewProps) {
             </thead>
             <tbody className="divide-y divide-line/60">
               {/* REVENUE */}
-              <tr className="bg-surface/30">
+              <tr className="bg-sunken/40">
                 <td
                   colSpan={3}
-                  className="py-2.5 text-xs font-semibold tracking-wider text-ink uppercase"
+                  className="py-2.5 text-xs font-semibold tracking-wider text-fg uppercase"
                 >
-                  1. Revenue & Invoiced Sales
+                  1. Revenue &amp; Invoiced Sales
                 </td>
               </tr>
               <tr>
-                <td className="text-stone py-2 pl-4">Gross Merchandise Value (GMV)</td>
-                <td className="py-2 text-right font-mono text-ink">{s.grossSalesFormatted}</td>
-                <td className="text-stone py-2 text-right font-mono">-</td>
+                <td className="py-2 pl-4 text-fg-muted">Gross Merchandise Value (GMV)</td>
+                <td className="py-2 text-right font-mono text-fg">{s.grossSalesFormatted}</td>
+                <td className="py-2 text-right font-mono text-fg-muted">-</td>
               </tr>
               <tr>
-                <td className="text-stone py-2 pl-4">Discounts & Promo Redemptions</td>
+                <td className="py-2 pl-4 text-fg-muted">Discounts &amp; Promo Redemptions</td>
                 <td className="py-2 text-right font-mono text-oxblood">-{s.discountsFormatted}</td>
-                <td className="text-stone py-2 text-right font-mono">-</td>
+                <td className="py-2 text-right font-mono text-fg-muted">-</td>
               </tr>
               <tr>
-                <td className="text-stone py-2 pl-4">Settled Refunds</td>
+                <td className="py-2 pl-4 text-fg-muted">Settled Refunds</td>
                 <td className="py-2 text-right font-mono text-oxblood">-{s.refundsFormatted}</td>
-                <td className="text-stone py-2 text-right font-mono">-</td>
+                <td className="py-2 text-right font-mono text-fg-muted">-</td>
               </tr>
-              <tr className="bg-surface/40 font-semibold">
-                <td className="py-2.5 pl-4 text-ink">Net Recognized Sales</td>
-                <td className="py-2.5 text-right font-mono text-sm text-ink">
+              <tr className="bg-sunken/60 font-semibold">
+                <td className="py-2.5 pl-4 text-fg">Net Recognized Sales</td>
+                <td className="py-2.5 text-right font-mono text-sm text-fg">
                   {s.netSalesFormatted}
                 </td>
-                <td className="py-2.5 text-right font-mono text-ink">100.0%</td>
+                <td className="py-2.5 text-right font-mono text-fg">100.0%</td>
               </tr>
 
               {/* COGS */}
-              <tr className="bg-surface/30">
+              <tr className="bg-sunken/40">
                 <td
                   colSpan={3}
-                  className="py-2.5 text-xs font-semibold tracking-wider text-ink uppercase"
+                  className="py-2.5 text-xs font-semibold tracking-wider text-fg uppercase"
                 >
                   2. Cost of Goods Sold (COGS)
                 </td>
               </tr>
               <tr>
-                <td className="text-stone py-2 pl-4">
-                  Artisan Fabric, Raw Materials & Finished Tailoring
+                <td className="py-2 pl-4 text-fg-muted">
+                  Artisan Fabric, Raw Materials &amp; Finished Tailoring
                 </td>
                 <td className="py-2 text-right font-mono text-oxblood">-{s.cogsFormatted}</td>
-                <td className="text-stone py-2 text-right font-mono">-</td>
+                <td className="py-2 text-right font-mono text-fg-muted">-</td>
               </tr>
-              <tr className="bg-gold/5 font-semibold">
+              <tr className="bg-gold/10 font-semibold">
                 <td className="py-2.5 pl-4 text-gold">Gross Operating Profit</td>
                 <td className="py-2.5 text-right font-mono text-sm text-gold">
                   {s.grossProfitFormatted}
@@ -266,110 +266,130 @@ export function PnLView({ report }: PnLViewProps) {
               </tr>
 
               {/* VARIABLE FULFILLMENT */}
-              <tr className="bg-surface/30">
+              <tr className="bg-sunken/40">
                 <td
                   colSpan={3}
-                  className="py-2.5 text-xs font-semibold tracking-wider text-ink uppercase"
+                  className="py-2.5 text-xs font-semibold tracking-wider text-fg uppercase"
                 >
-                  3. Variable Order Fulfillment & Delivery Logistics
+                  3. Variable Order Fulfillment &amp; Delivery Logistics
                 </td>
               </tr>
               <tr>
-                <td className="text-stone py-2 pl-4">
-                  Courier Transport & Delivery (Pathao / Steadfast)
+                <td className="py-2 pl-4 text-fg-muted">
+                  Courier Transport &amp; Delivery (Pathao / Steadfast)
                 </td>
-                <td className="text-stone py-2 text-right font-mono">-{s.shippingCostFormatted}</td>
-                <td className="text-stone py-2 text-right font-mono">-</td>
+                <td className="py-2 text-right font-mono text-fg-muted">
+                  -{s.shippingCostFormatted}
+                </td>
+                <td className="py-2 text-right font-mono text-fg-muted">-</td>
               </tr>
               <tr>
-                <td className="text-stone py-2 pl-4">Payment Gateway & Acquiring Fees</td>
-                <td className="text-stone py-2 text-right font-mono">-{s.gatewayFeesFormatted}</td>
-                <td className="text-stone py-2 text-right font-mono">-</td>
+                <td className="py-2 pl-4 text-fg-muted">Payment Gateway &amp; Acquiring Fees</td>
+                <td className="py-2 text-right font-mono text-fg-muted">
+                  -{s.gatewayFeesFormatted}
+                </td>
+                <td className="py-2 text-right font-mono text-fg-muted">-</td>
               </tr>
               <tr>
-                <td className="text-stone py-2 pl-4">Cash on Delivery (COD) Remittance Charges</td>
-                <td className="text-stone py-2 text-right font-mono">-{s.codFeesFormatted}</td>
-                <td className="text-stone py-2 text-right font-mono">-</td>
+                <td className="py-2 pl-4 text-fg-muted">
+                  Cash on Delivery (COD) Remittance Charges
+                </td>
+                <td className="py-2 text-right font-mono text-fg-muted">-{s.codFeesFormatted}</td>
+                <td className="py-2 text-right font-mono text-fg-muted">-</td>
               </tr>
               <tr>
-                <td className="text-stone py-2 pl-4">Luxury Presentation Boxes & Packaging</td>
-                <td className="text-stone py-2 text-right font-mono">-{s.packagingFormatted}</td>
-                <td className="text-stone py-2 text-right font-mono">-</td>
+                <td className="py-2 pl-4 text-fg-muted">
+                  Luxury Presentation Boxes &amp; Packaging
+                </td>
+                <td className="py-2 text-right font-mono text-fg-muted">-{s.packagingFormatted}</td>
+                <td className="py-2 text-right font-mono text-fg-muted">-</td>
               </tr>
               <tr>
-                <td className="text-stone py-2 pl-4">Return Delivery & RTO Restocking Losses</td>
-                <td className="text-stone py-2 text-right font-mono">
+                <td className="py-2 pl-4 text-fg-muted">
+                  Return Delivery &amp; RTO Restocking Losses
+                </td>
+                <td className="py-2 text-right font-mono text-fg-muted">
                   -{s.returnsAndRtoCostFormatted}
                 </td>
-                <td className="text-stone py-2 text-right font-mono">-</td>
+                <td className="py-2 text-right font-mono text-fg-muted">-</td>
               </tr>
-              <tr className="bg-surface/40 font-semibold">
-                <td className="py-2.5 pl-4 text-ink">Order Contribution Margin</td>
-                <td className="py-2.5 text-right font-mono text-sm text-ink">
+              <tr className="bg-sunken/60 font-semibold">
+                <td className="py-2.5 pl-4 text-fg">Order Contribution Margin</td>
+                <td className="py-2.5 text-right font-mono text-sm text-fg">
                   {s.contributionMarginFormatted}
                 </td>
-                <td className="py-2.5 text-right font-mono text-ink">
+                <td className="py-2.5 text-right font-mono text-fg">
                   {s.contributionMarginPercent}
                 </td>
               </tr>
 
               {/* OPERATING EXPENSES */}
-              <tr className="bg-surface/30">
+              <tr className="bg-sunken/40">
                 <td
                   colSpan={3}
-                  className="py-2.5 text-xs font-semibold tracking-wider text-ink uppercase"
+                  className="py-2.5 text-xs font-semibold tracking-wider text-fg uppercase"
                 >
                   4. Atelier Operating Expenses (OpEx)
                 </td>
               </tr>
               <tr>
-                <td className="text-stone py-2 pl-4">Performance Advertising & Social Campaigns</td>
-                <td className="text-stone py-2 text-right font-mono">
+                <td className="py-2 pl-4 text-fg-muted">
+                  Performance Advertising &amp; Social Campaigns
+                </td>
+                <td className="py-2 text-right font-mono text-fg-muted">
                   -{s.marketingSpendFormatted}
                 </td>
-                <td className="text-stone py-2 text-right font-mono">-</td>
+                <td className="py-2 text-right font-mono text-fg-muted">-</td>
               </tr>
               <tr>
-                <td className="text-stone py-2 pl-4">Master Tailors, Artisans & Staff Payroll</td>
-                <td className="text-stone py-2 text-right font-mono">-{s.payrollFormatted}</td>
-                <td className="text-stone py-2 text-right font-mono">-</td>
-              </tr>
-              <tr>
-                <td className="text-stone py-2 pl-4">Banani Atelier Studio & Showroom Lease</td>
-                <td className="text-stone py-2 text-right font-mono">-{s.rentFormatted}</td>
-                <td className="text-stone py-2 text-right font-mono">-</td>
-              </tr>
-              <tr>
-                <td className="text-stone py-2 pl-4">Studio Utilities, Power & Generator Diesel</td>
-                <td className="text-stone py-2 text-right font-mono">-{s.utilitiesFormatted}</td>
-                <td className="text-stone py-2 text-right font-mono">-</td>
-              </tr>
-              <tr>
-                <td className="text-stone py-2 pl-4">
-                  Cloud Infrastructure & Software Subscriptions
+                <td className="py-2 pl-4 text-fg-muted">
+                  Master Tailors, Artisans &amp; Staff Payroll
                 </td>
-                <td className="text-stone py-2 text-right font-mono">-{s.softwareFormatted}</td>
-                <td className="text-stone py-2 text-right font-mono">-</td>
+                <td className="py-2 text-right font-mono text-fg-muted">-{s.payrollFormatted}</td>
+                <td className="py-2 text-right font-mono text-fg-muted">-</td>
               </tr>
               <tr>
-                <td className="text-stone py-2 pl-4">
-                  Audit, Legal, Editorial Photography & Sundries
+                <td className="py-2 pl-4 text-fg-muted">
+                  Banani Atelier Studio &amp; Showroom Lease
                 </td>
-                <td className="text-stone py-2 text-right font-mono">-{s.otherOpexFormatted}</td>
-                <td className="text-stone py-2 text-right font-mono">-</td>
+                <td className="py-2 text-right font-mono text-fg-muted">-{s.rentFormatted}</td>
+                <td className="py-2 text-right font-mono text-fg-muted">-</td>
               </tr>
-              <tr className="bg-surface/40 font-semibold">
+              <tr>
+                <td className="py-2 pl-4 text-fg-muted">
+                  Studio Utilities, Power &amp; Generator Diesel
+                </td>
+                <td className="py-2 text-right font-mono text-fg-muted">-{s.utilitiesFormatted}</td>
+                <td className="py-2 text-right font-mono text-fg-muted">-</td>
+              </tr>
+              <tr>
+                <td className="py-2 pl-4 text-fg-muted">
+                  Cloud Infrastructure &amp; Software Subscriptions
+                </td>
+                <td className="py-2 text-right font-mono text-fg-muted">-{s.softwareFormatted}</td>
+                <td className="py-2 text-right font-mono text-fg-muted">-</td>
+              </tr>
+              <tr>
+                <td className="py-2 pl-4 text-fg-muted">
+                  Audit, Legal, Editorial Photography &amp; Sundries
+                </td>
+                <td className="py-2 text-right font-mono text-fg-muted">-{s.otherOpexFormatted}</td>
+                <td className="py-2 text-right font-mono text-fg-muted">-</td>
+              </tr>
+              <tr className="bg-sunken/60 font-semibold">
                 <td className="py-2.5 pl-4 text-oxblood">Total Operating Expenses</td>
                 <td className="py-2.5 text-right font-mono text-sm text-oxblood">
                   -{s.totalOpexFormatted}
                 </td>
-                <td className="text-stone py-2.5 text-right font-mono">-</td>
+                <td className="py-2.5 text-right font-mono text-fg-muted">-</td>
               </tr>
 
               {/* BOTTOM LINE */}
-              <tr className="text-canvas bg-ink font-bold">
-                <td className="py-3 pl-4 text-sm tracking-wider uppercase">Net Operating Income</td>
-                <td className="py-3 text-right font-mono text-base font-medium">
+              <tr className="bg-ink font-bold text-ivory">
+                <td className="py-3 pl-4 text-sm tracking-wider text-ivory uppercase">
+                  Net Operating Income
+                </td>
+                <td className="py-3 text-right font-mono text-base font-medium text-ivory">
                   {s.netProfitFormatted}
                 </td>
                 <td className="py-3 text-right font-mono text-sm text-gold">

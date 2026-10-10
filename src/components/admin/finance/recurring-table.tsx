@@ -132,10 +132,10 @@ export function RecurringTable({ recurring, categories }: RecurringTableProps) {
 
   return (
     <div className="space-y-4">
-      <div className="bg-canvas flex items-center justify-between rounded-sm border border-line p-4">
+      <div className="flex items-center justify-between rounded-sm border border-line bg-raised p-4">
         <div>
-          <h2 className="text-sm font-semibold text-ink">Recurring Atelier Commitments</h2>
-          <p className="text-stone text-xs">
+          <h2 className="text-sm font-semibold text-fg">Recurring Atelier Commitments</h2>
+          <p className="text-xs text-fg-muted">
             Automated recurring expenses (rent, utilities, software, artisan retainers) generated
             via background cron.
           </p>
@@ -143,28 +143,28 @@ export function RecurringTable({ recurring, categories }: RecurringTableProps) {
 
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button size="sm" className="text-canvas gap-1.5 bg-ink text-xs hover:bg-ink/90">
+            <Button size="sm" className="gap-1.5 bg-ink text-xs text-ivory hover:bg-ink/90">
               <Plus className="h-3.5 w-3.5" />
               Add Recurring OpEx
             </Button>
           </DialogTrigger>
-          <DialogContent className="bg-canvas max-w-md border-line">
+          <DialogContent className="max-w-md border-line bg-raised">
             <form onSubmit={handleSubmit} className="space-y-4">
               <DialogHeader>
-                <DialogTitle className="font-serif text-lg text-ink">
+                <DialogTitle className="font-serif text-lg text-fg">
                   Schedule Recurring Expense
                 </DialogTitle>
               </DialogHeader>
 
               <div className="space-y-1.5">
-                <Label htmlFor="recCategory" className="text-stone text-xs">
+                <Label htmlFor="recCategory" className="text-xs text-fg-muted">
                   Category *
                 </Label>
                 <select
                   id="recCategory"
                   value={categoryId}
                   onChange={(e) => setCategoryId(e.target.value)}
-                  className="bg-surface h-9 w-full rounded-sm border border-line px-3 text-xs text-ink focus:ring-1 focus:ring-gold focus:outline-hidden"
+                  className="h-9 w-full rounded-sm border border-line bg-page px-3 text-xs text-fg focus:ring-1 focus:ring-gold focus:outline-hidden"
                 >
                   {categories.map((c) => (
                     <option key={c.id} value={c.id}>
@@ -176,7 +176,7 @@ export function RecurringTable({ recurring, categories }: RecurringTableProps) {
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label htmlFor="recVendor" className="text-stone text-xs">
+                  <Label htmlFor="recVendor" className="text-xs text-fg-muted">
                     Vendor / Landlord *
                   </Label>
                   <Input
@@ -185,12 +185,12 @@ export function RecurringTable({ recurring, categories }: RecurringTableProps) {
                     placeholder="e.g. Banani Holdings"
                     value={vendor}
                     onChange={(e) => setVendor(e.target.value)}
-                    className="bg-surface h-9 border-line text-xs"
+                    className="h-9 border-line bg-page text-xs"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label htmlFor="recAmount" className="text-stone text-xs">
+                  <Label htmlFor="recAmount" className="text-xs text-fg-muted">
                     Amount (BDT ৳) *
                   </Label>
                   <Input
@@ -202,21 +202,21 @@ export function RecurringTable({ recurring, categories }: RecurringTableProps) {
                     placeholder="120000.00"
                     value={amountBdt}
                     onChange={(e) => setAmountBdt(e.target.value)}
-                    className="bg-surface h-9 border-line font-mono text-xs"
+                    className="h-9 border-line bg-page font-mono text-xs"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label htmlFor="cadence" className="text-stone text-xs">
+                  <Label htmlFor="cadence" className="text-xs text-fg-muted">
                     Frequency *
                   </Label>
                   <select
                     id="cadence"
                     value={cadence}
                     onChange={(e) => setCadence(e.target.value as RecurringExpenseCadence)}
-                    className="bg-surface h-9 w-full rounded-sm border border-line px-3 text-xs text-ink focus:ring-1 focus:ring-gold focus:outline-hidden"
+                    className="h-9 w-full rounded-sm border border-line bg-page px-3 text-xs text-fg focus:ring-1 focus:ring-gold focus:outline-hidden"
                   >
                     <option value="monthly">Monthly</option>
                     <option value="weekly">Weekly</option>
@@ -225,7 +225,7 @@ export function RecurringTable({ recurring, categories }: RecurringTableProps) {
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label htmlFor="dayOfPeriod" className="text-stone text-xs">
+                  <Label htmlFor="dayOfPeriod" className="text-xs text-fg-muted">
                     Day of Month (1–31)
                   </Label>
                   <Input
@@ -235,14 +235,14 @@ export function RecurringTable({ recurring, categories }: RecurringTableProps) {
                     max="31"
                     value={dayOfPeriod}
                     onChange={(e) => setDayOfPeriod(parseInt(e.target.value) || 1)}
-                    className="bg-surface h-9 border-line text-xs"
+                    className="h-9 border-line bg-page text-xs"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label htmlFor="recStartsOn" className="text-stone text-xs">
+                  <Label htmlFor="recStartsOn" className="text-xs text-fg-muted">
                     Effective From *
                   </Label>
                   <Input
@@ -251,12 +251,12 @@ export function RecurringTable({ recurring, categories }: RecurringTableProps) {
                     required
                     value={startsOn}
                     onChange={(e) => setStartsOn(e.target.value)}
-                    className="bg-surface h-9 border-line text-xs"
+                    className="h-9 border-line bg-page text-xs"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label htmlFor="recEndsOn" className="text-stone text-xs">
+                  <Label htmlFor="recEndsOn" className="text-xs text-fg-muted">
                     Expires On (Optional)
                   </Label>
                   <Input
@@ -264,7 +264,7 @@ export function RecurringTable({ recurring, categories }: RecurringTableProps) {
                     type="date"
                     value={endsOn}
                     onChange={(e) => setEndsOn(e.target.value)}
-                    className="bg-surface h-9 border-line text-xs"
+                    className="h-9 border-line bg-page text-xs"
                   />
                 </div>
               </div>
@@ -283,7 +283,7 @@ export function RecurringTable({ recurring, categories }: RecurringTableProps) {
                   type="submit"
                   size="sm"
                   disabled={isSubmitting}
-                  className="text-canvas bg-ink text-xs hover:bg-ink/90"
+                  className="bg-ink text-xs text-ivory hover:bg-ink/90"
                 >
                   {isSubmitting ? 'Saving...' : 'Set Schedule'}
                 </Button>
@@ -293,10 +293,10 @@ export function RecurringTable({ recurring, categories }: RecurringTableProps) {
         </Dialog>
       </div>
 
-      <div className="bg-canvas overflow-hidden rounded-sm border border-line">
+      <div className="overflow-hidden rounded-sm border border-line bg-raised">
         <table className="w-full text-xs">
           <thead>
-            <tr className="bg-surface/50 text-stone border-b border-line text-left">
+            <tr className="border-b border-line bg-sunken/50 text-left text-fg-muted">
               <th className="px-4 py-2.5 font-medium tracking-wider uppercase">
                 Vendor / Commitment
               </th>
@@ -315,20 +315,20 @@ export function RecurringTable({ recurring, categories }: RecurringTableProps) {
           <tbody className="divide-y divide-line/60">
             {recurring.length === 0 ? (
               <tr>
-                <td colSpan={7} className="text-stone py-8 text-center">
+                <td colSpan={7} className="py-8 text-center text-fg-muted">
                   No recurring expense commitments scheduled yet.
                 </td>
               </tr>
             ) : (
               recurring.map((item) => (
-                <tr key={item.id} className="hover:bg-surface/30 transition-colors">
-                  <td className="px-4 py-3 font-semibold text-ink">{item.vendor}</td>
-                  <td className="text-stone px-4 py-3">{item.categoryName}</td>
-                  <td className="px-4 py-3 font-medium text-ink capitalize">
+                <tr key={item.id} className="transition-colors hover:bg-sunken/40">
+                  <td className="px-4 py-3 font-semibold text-fg">{item.vendor}</td>
+                  <td className="px-4 py-3 text-fg-muted">{item.categoryName}</td>
+                  <td className="px-4 py-3 font-medium text-fg capitalize">
                     <Badge tone="neutral">{item.cadence}</Badge>
                   </td>
-                  <td className="text-stone px-4 py-3 font-mono">Day {item.dayOfPeriod}</td>
-                  <td className="px-4 py-3 text-right font-mono font-semibold whitespace-nowrap text-ink">
+                  <td className="px-4 py-3 font-mono text-fg-muted">Day {item.dayOfPeriod}</td>
+                  <td className="px-4 py-3 text-right font-mono font-semibold whitespace-nowrap text-fg">
                     {item.amountFormatted}
                   </td>
                   <td className="px-4 py-3">
@@ -344,7 +344,7 @@ export function RecurringTable({ recurring, categories }: RecurringTableProps) {
                         variant="ghost"
                         size="sm"
                         onClick={() => handleToggleActive(item)}
-                        className="text-stone h-7 w-7 p-0 hover:text-ink"
+                        className="h-7 w-7 p-0 text-fg-muted hover:text-fg"
                         title={item.isActive ? 'Pause' : 'Activate'}
                       >
                         <Power className="h-3.5 w-3.5" />
@@ -355,7 +355,7 @@ export function RecurringTable({ recurring, categories }: RecurringTableProps) {
                         size="sm"
                         disabled={deletingId === item.id}
                         onClick={() => handleDelete(item.id, item.vendor)}
-                        className="text-stone h-7 w-7 p-0 hover:text-oxblood"
+                        className="h-7 w-7 p-0 text-fg-muted hover:text-oxblood"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                         <span className="sr-only">Delete</span>

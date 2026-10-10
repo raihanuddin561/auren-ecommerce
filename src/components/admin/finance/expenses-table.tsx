@@ -121,15 +121,15 @@ export function ExpensesTable({
   return (
     <div className="space-y-4">
       {/* Top Filter and Actions Bar */}
-      <div className="bg-canvas flex flex-col items-start justify-between gap-3 rounded-sm border border-line p-4 sm:flex-row sm:items-center">
+      <div className="flex flex-col items-start justify-between gap-3 rounded-sm border border-line bg-raised p-4 sm:flex-row sm:items-center">
         <div className="flex flex-1 flex-wrap items-center gap-2.5">
           <form onSubmit={handleSearch} className="relative max-w-xs flex-1">
-            <Search className="text-stone absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2" />
+            <Search className="absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-fg-muted" />
             <Input
               placeholder="Search vendor, desc, ref..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="bg-surface h-9 border-line pl-8 text-xs"
+              className="h-9 border-line bg-page pl-8 text-xs"
             />
           </form>
 
@@ -137,7 +137,7 @@ export function ExpensesTable({
             value={selectedCategory ?? ''}
             onChange={(e) => handleCategoryFilter(e.target.value)}
             disabled={isPending}
-            className="bg-surface h-9 rounded-sm border border-line px-3 text-xs text-ink focus:ring-1 focus:ring-gold focus:outline-hidden"
+            className="h-9 rounded-sm border border-line bg-page px-3 text-xs text-fg focus:ring-1 focus:ring-gold focus:outline-hidden"
           >
             <option value="">All Categories</option>
             {categories.map((c) => (
@@ -147,8 +147,8 @@ export function ExpensesTable({
             ))}
           </select>
 
-          <span className="text-stone text-xs">
-            Showing <strong className="text-ink">{totalCount}</strong> entries ({totalSumFormatted}{' '}
+          <span className="text-xs text-fg-muted">
+            Showing <strong className="text-fg">{totalCount}</strong> entries ({totalSumFormatted}{' '}
             total)
           </span>
         </div>
@@ -174,15 +174,15 @@ export function ExpensesTable({
       </div>
 
       {/* Expenses Table */}
-      <div className="bg-canvas overflow-hidden rounded-sm border border-line">
+      <div className="overflow-hidden rounded-sm border border-line bg-raised">
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead>
-              <tr className="bg-surface/50 text-stone border-b border-line text-left">
+              <tr className="border-b border-line bg-sunken/50 text-left text-fg-muted">
                 <th className="w-24 px-4 py-2.5 font-medium tracking-wider uppercase">Date</th>
                 <th className="px-4 py-2.5 font-medium tracking-wider uppercase">Category</th>
                 <th className="px-4 py-2.5 font-medium tracking-wider uppercase">
-                  Vendor & Description
+                  Vendor &amp; Description
                 </th>
                 <th className="px-4 py-2.5 font-medium tracking-wider uppercase">Campaign</th>
                 <th className="px-4 py-2.5 font-medium tracking-wider uppercase">Method</th>
@@ -197,19 +197,19 @@ export function ExpensesTable({
             <tbody className="divide-y divide-line/60">
               {items.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="text-stone py-8 text-center">
+                  <td colSpan={7} className="py-8 text-center text-fg-muted">
                     No expense entries found matching this criteria.
                   </td>
                 </tr>
               ) : (
                 items.map((item) => (
-                  <tr key={item.id} className="hover:bg-surface/30 transition-colors">
-                    <td className="text-stone px-4 py-2.5 font-mono whitespace-nowrap">
+                  <tr key={item.id} className="transition-colors hover:bg-sunken/40">
+                    <td className="px-4 py-2.5 font-mono whitespace-nowrap text-fg-muted">
                       {item.expenseDate}
                     </td>
                     <td className="px-4 py-2.5">
                       <div className="flex items-center gap-1.5">
-                        <span className="font-medium text-ink">{item.categoryName}</span>
+                        <span className="font-medium text-fg">{item.categoryName}</span>
                         {item.isCogs && (
                           <Badge tone="gold" className="px-1 py-0">
                             COGS
@@ -218,19 +218,21 @@ export function ExpensesTable({
                       </div>
                     </td>
                     <td className="px-4 py-2.5">
-                      <div className="font-semibold text-ink">{item.vendor}</div>
-                      <div className="text-stone max-w-sm truncate">{item.description}</div>
+                      <div className="font-semibold text-fg">{item.vendor}</div>
+                      <div className="max-w-sm truncate text-fg-muted">{item.description}</div>
                       {item.reference && (
-                        <span className="text-stone font-mono text-xs">Ref: {item.reference}</span>
+                        <span className="font-mono text-xs text-fg-muted">
+                          Ref: {item.reference}
+                        </span>
                       )}
                     </td>
-                    <td className="text-stone px-4 py-2.5">
+                    <td className="px-4 py-2.5 text-fg-muted">
                       {item.campaignName ? <Badge tone="neutral">{item.campaignName}</Badge> : '-'}
                     </td>
-                    <td className="text-stone px-4 py-2.5 capitalize">
+                    <td className="px-4 py-2.5 text-fg-muted capitalize">
                       {item.paymentMethod.replace(/_/g, ' ')}
                     </td>
-                    <td className="px-4 py-2.5 text-right font-mono font-semibold whitespace-nowrap text-ink">
+                    <td className="px-4 py-2.5 text-right font-mono font-semibold whitespace-nowrap text-fg">
                       {item.amountFormatted}
                     </td>
                     <td className="px-4 py-2.5 text-right">
@@ -239,7 +241,7 @@ export function ExpensesTable({
                         size="sm"
                         disabled={deletingId === item.id}
                         onClick={() => handleDelete(item.id, item.description)}
-                        className="text-stone h-7 w-7 p-0 hover:text-oxblood"
+                        className="h-7 w-7 p-0 text-fg-muted hover:text-oxblood"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                         <span className="sr-only">Delete expense</span>

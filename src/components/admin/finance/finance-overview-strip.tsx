@@ -9,19 +9,19 @@ interface FinanceOverviewStripProps {
 export function FinanceOverviewStrip({ metrics }: FinanceOverviewStripProps) {
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      <div className="bg-canvas rounded-sm border border-line p-4">
+      <div className="rounded-sm border border-line bg-raised p-4">
         <div className="flex items-center justify-between">
-          <span className="text-stone text-xs font-medium tracking-wider uppercase">
+          <span className="text-xs font-medium tracking-wider text-fg-muted uppercase">
             Net Sales (MTD)
           </span>
           <div className="rounded-sm bg-gold/10 p-1.5 text-gold">
             <TrendingUp className="h-4 w-4" />
           </div>
         </div>
-        <p className="mt-2 font-serif text-xl font-medium tracking-tight text-ink">
+        <p className="mt-2 font-serif text-xl font-medium tracking-tight text-fg">
           {metrics.currentMonthNetSales}
         </p>
-        <div className="text-stone mt-1 flex items-center gap-1.5 text-xs">
+        <div className="mt-1 flex items-center gap-1.5 text-xs text-fg-muted">
           <span>Gross Margin:</span>
           <Badge tone="gold" className="px-1.5 py-0">
             {metrics.currentMonthGrossMarginPercent}
@@ -29,49 +29,49 @@ export function FinanceOverviewStrip({ metrics }: FinanceOverviewStripProps) {
         </div>
       </div>
 
-      <div className="bg-canvas rounded-sm border border-line p-4">
+      <div className="rounded-sm border border-line bg-raised p-4">
         <div className="flex items-center justify-between">
-          <span className="text-stone text-xs font-medium tracking-wider uppercase">
+          <span className="text-xs font-medium tracking-wider text-fg-muted uppercase">
             Gross Profit (MTD)
           </span>
-          <div className="rounded-sm bg-surface-subtle p-1.5 text-ink">
+          <div className="rounded-sm bg-sunken p-1.5 text-fg">
             <Sparkles className="h-4 w-4" />
           </div>
         </div>
-        <p className="mt-2 font-serif text-xl font-medium tracking-tight text-ink">
+        <p className="mt-2 font-serif text-xl font-medium tracking-tight text-fg">
           {metrics.currentMonthGrossProfit}
         </p>
-        <p className="text-stone mt-1 text-xs">Revenue minus product COGS</p>
+        <p className="mt-1 text-xs text-fg-muted">Revenue minus product COGS</p>
       </div>
 
-      <div className="bg-canvas rounded-sm border border-line p-4">
+      <div className="rounded-sm border border-line bg-raised p-4">
         <div className="flex items-center justify-between">
-          <span className="text-stone text-xs font-medium tracking-wider uppercase">
+          <span className="text-xs font-medium tracking-wider text-fg-muted uppercase">
             Total OpEx (MTD)
           </span>
           <div className="rounded-sm bg-oxblood/10 p-1.5 text-oxblood">
             <ArrowDownRight className="h-4 w-4" />
           </div>
         </div>
-        <p className="mt-2 font-serif text-xl font-medium tracking-tight text-ink">
+        <p className="mt-2 font-serif text-xl font-medium tracking-tight text-fg">
           {metrics.currentMonthTotalExpenses}
         </p>
-        <p className="text-stone mt-1 text-xs">Recurring: {metrics.monthlyRecurringSpend}/mo</p>
+        <p className="mt-1 text-xs text-fg-muted">Recurring: {metrics.monthlyRecurringSpend}/mo</p>
       </div>
 
-      <div className="bg-canvas rounded-sm border border-line p-4">
+      <div className="rounded-sm border border-line bg-raised p-4">
         <div className="flex items-center justify-between">
-          <span className="text-stone text-xs font-medium tracking-wider uppercase">
+          <span className="text-xs font-medium tracking-wider text-fg-muted uppercase">
             Net Operating Income
           </span>
           <div className="rounded-sm bg-success/10 p-1.5 text-success">
             <Wallet className="h-4 w-4" />
           </div>
         </div>
-        <p className="mt-2 font-serif text-xl font-medium tracking-tight text-ink">
+        <p className="mt-2 font-serif text-xl font-medium tracking-tight text-fg">
           {metrics.currentMonthNetProfit}
         </p>
-        <div className="text-stone mt-1 flex items-center gap-1.5 text-xs">
+        <div className="mt-1 flex items-center gap-1.5 text-xs text-fg-muted">
           <span>Net Margin:</span>
           <Badge tone="success" className="px-1.5 py-0">
             {metrics.currentMonthNetMarginPercent}

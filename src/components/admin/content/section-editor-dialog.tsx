@@ -245,15 +245,15 @@ export function SectionEditorDialog({
         {trigger ? (
           trigger
         ) : (
-          <Button size="sm" className="text-canvas gap-1.5 bg-ink text-xs hover:bg-ink/90">
+          <Button size="sm" className="gap-1.5 bg-ink text-xs text-ivory hover:bg-ink/90">
             <Plus className="h-3.5 w-3.5" />
             Add Section Block
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="bg-canvas max-h-[90vh] max-w-lg overflow-y-auto border-line">
+      <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto border-line bg-raised">
         <DialogHeader>
-          <DialogTitle className="font-serif text-base font-semibold text-ink">
+          <DialogTitle className="font-serif text-base font-semibold text-fg">
             {isEditing ? 'Edit Section Block' : 'Add Section Block'}
           </DialogTitle>
         </DialogHeader>
@@ -261,14 +261,14 @@ export function SectionEditorDialog({
         <form onSubmit={handleSubmit} className="space-y-4 pt-2">
           {!isEditing && (
             <div className="space-y-1.5">
-              <Label htmlFor="blockType" className="text-stone text-xs">
+              <Label htmlFor="blockType" className="text-xs text-fg-muted">
                 Block Type *
               </Label>
               <select
                 id="blockType"
                 value={blockType}
                 onChange={(e) => setBlockType(e.target.value as BlockType)}
-                className="bg-surface h-9 w-full rounded-sm border border-line px-3 text-xs text-ink focus:ring-1 focus:ring-gold focus:outline-hidden"
+                className="h-9 w-full rounded-sm border border-line bg-page px-3 text-xs text-fg focus:ring-1 focus:ring-gold focus:outline-hidden"
               >
                 {BLOCK_OPTIONS.map((opt) => (
                   <option key={opt.type} value={opt.type}>
@@ -280,7 +280,7 @@ export function SectionEditorDialog({
           )}
 
           <div className="space-y-1.5">
-            <Label htmlFor="blockName" className="text-stone text-xs">
+            <Label htmlFor="blockName" className="text-xs text-fg-muted">
               Admin Label (Optional identifier)
             </Label>
             <Input
@@ -288,7 +288,7 @@ export function SectionEditorDialog({
               placeholder="e.g. Master Hero Banner"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="bg-surface h-9 border-line text-xs"
+              className="h-9 border-line bg-page text-xs"
             />
           </div>
 
@@ -302,7 +302,7 @@ export function SectionEditorDialog({
             blockType === 'faq_accordion' ||
             blockType === 'video_spotlight') && (
             <div className="space-y-1.5">
-              <Label htmlFor="headline" className="text-stone text-xs">
+              <Label htmlFor="headline" className="text-xs text-fg-muted">
                 Headline
               </Label>
               <Input
@@ -310,7 +310,7 @@ export function SectionEditorDialog({
                 placeholder="Section title or headline..."
                 value={headline}
                 onChange={(e) => setHeadline(e.target.value)}
-                className="bg-surface h-9 border-line text-xs"
+                className="h-9 border-line bg-page text-xs"
               />
             </div>
           )}
@@ -323,7 +323,7 @@ export function SectionEditorDialog({
             blockType === 'faq_accordion' ||
             blockType === 'video_spotlight') && (
             <div className="space-y-1.5">
-              <Label htmlFor="subtitle" className="text-stone text-xs">
+              <Label htmlFor="subtitle" className="text-xs text-fg-muted">
                 Subtitle / Description
               </Label>
               <Input
@@ -331,7 +331,7 @@ export function SectionEditorDialog({
                 placeholder="Secondary descriptive copy..."
                 value={subtitle}
                 onChange={(e) => setSubtitle(e.target.value)}
-                className="bg-surface h-9 border-line text-xs"
+                className="h-9 border-line bg-page text-xs"
               />
             </div>
           )}
@@ -339,7 +339,7 @@ export function SectionEditorDialog({
           {blockType === 'editorial_quote' && (
             <>
               <div className="space-y-1.5">
-                <Label htmlFor="quote" className="text-stone text-xs">
+                <Label htmlFor="quote" className="text-xs text-fg-muted">
                   Quote Text *
                 </Label>
                 <Textarea
@@ -347,12 +347,12 @@ export function SectionEditorDialog({
                   placeholder="Enter the quote text..."
                   value={quote}
                   onChange={(e) => setQuote(e.target.value)}
-                  className="bg-surface min-h-[90px] border-line text-xs"
+                  className="min-h-[90px] border-line bg-page text-xs"
                   required
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="author" className="text-stone text-xs">
+                <Label htmlFor="author" className="text-xs text-fg-muted">
                   Author / Atelier Citation
                 </Label>
                 <Input
@@ -360,7 +360,7 @@ export function SectionEditorDialog({
                   placeholder="e.g. Master Tailor"
                   value={author}
                   onChange={(e) => setAuthor(e.target.value)}
-                  className="bg-surface h-9 border-line text-xs"
+                  className="h-9 border-line bg-page text-xs"
                 />
               </div>
             </>
@@ -368,7 +368,7 @@ export function SectionEditorDialog({
 
           {blockType === 'rich_text' && (
             <div className="space-y-1.5">
-              <Label htmlFor="content" className="text-stone text-xs">
+              <Label htmlFor="content" className="text-xs text-fg-muted">
                 Body Content (Paragraphs) *
               </Label>
               <Textarea
@@ -376,7 +376,7 @@ export function SectionEditorDialog({
                 placeholder="Enter story paragraphs..."
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
-                className="bg-surface min-h-[120px] border-line text-xs"
+                className="min-h-[120px] border-line bg-page text-xs"
                 required
               />
             </div>
@@ -384,7 +384,7 @@ export function SectionEditorDialog({
 
           {blockType === 'split_banner' && (
             <div className="space-y-1.5">
-              <Label htmlFor="description" className="text-stone text-xs">
+              <Label htmlFor="description" className="text-xs text-fg-muted">
                 Description *
               </Label>
               <Textarea
@@ -392,7 +392,7 @@ export function SectionEditorDialog({
                 placeholder="Detailed story copy..."
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="bg-surface min-h-[90px] border-line text-xs"
+                className="min-h-[90px] border-line bg-page text-xs"
                 required
               />
             </div>
@@ -400,7 +400,7 @@ export function SectionEditorDialog({
 
           {(blockType === 'hero_banner' || blockType === 'split_banner') && (
             <div className="space-y-1.5">
-              <Label htmlFor="mediaUrl" className="text-stone text-xs">
+              <Label htmlFor="mediaUrl" className="text-xs text-fg-muted">
                 Media / Image URL
               </Label>
               <Input
@@ -408,7 +408,7 @@ export function SectionEditorDialog({
                 placeholder="https://images.unsplash.com/..."
                 value={mediaUrl}
                 onChange={(e) => setMediaUrl(e.target.value)}
-                className="bg-surface h-9 border-line font-mono text-xs"
+                className="h-9 border-line bg-page font-mono text-xs"
               />
             </div>
           )}
@@ -416,7 +416,7 @@ export function SectionEditorDialog({
           {blockType === 'lookbook_strip' && (
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label htmlFor="image1" className="text-stone text-xs">
+                <Label htmlFor="image1" className="text-xs text-fg-muted">
                   Lookbook Image 1 URL *
                 </Label>
                 <Input
@@ -424,12 +424,12 @@ export function SectionEditorDialog({
                   placeholder="https://..."
                   value={image1Url}
                   onChange={(e) => setImage1Url(e.target.value)}
-                  className="bg-surface h-9 border-line font-mono text-xs"
+                  className="h-9 border-line bg-page font-mono text-xs"
                   required
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="image2" className="text-stone text-xs">
+                <Label htmlFor="image2" className="text-xs text-fg-muted">
                   Lookbook Image 2 URL *
                 </Label>
                 <Input
@@ -437,7 +437,7 @@ export function SectionEditorDialog({
                   placeholder="https://..."
                   value={image2Url}
                   onChange={(e) => setImage2Url(e.target.value)}
-                  className="bg-surface h-9 border-line font-mono text-xs"
+                  className="h-9 border-line bg-page font-mono text-xs"
                   required
                 />
               </div>
@@ -446,7 +446,7 @@ export function SectionEditorDialog({
 
           {blockType === 'video_spotlight' && (
             <div className="space-y-1.5">
-              <Label htmlFor="videoUrl" className="text-stone text-xs">
+              <Label htmlFor="videoUrl" className="text-xs text-fg-muted">
                 Video Stream URL (MP4 / WebM) *
               </Label>
               <Input
@@ -454,7 +454,7 @@ export function SectionEditorDialog({
                 placeholder="https://.../video.mp4"
                 value={videoUrl}
                 onChange={(e) => setVideoUrl(e.target.value)}
-                className="bg-surface h-9 border-line font-mono text-xs"
+                className="h-9 border-line bg-page font-mono text-xs"
                 required
               />
             </div>
@@ -466,7 +466,7 @@ export function SectionEditorDialog({
             blockType === 'video_spotlight') && (
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label htmlFor="ctaLabel" className="text-stone text-xs">
+                <Label htmlFor="ctaLabel" className="text-xs text-fg-muted">
                   CTA Button Label
                 </Label>
                 <Input
@@ -474,11 +474,11 @@ export function SectionEditorDialog({
                   placeholder="e.g. Explore Pieces"
                   value={ctaLabel}
                   onChange={(e) => setCtaLabel(e.target.value)}
-                  className="bg-surface h-9 border-line text-xs"
+                  className="h-9 border-line bg-page text-xs"
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="ctaUrl" className="text-stone text-xs">
+                <Label htmlFor="ctaUrl" className="text-xs text-fg-muted">
                   CTA Destination URL
                 </Label>
                 <Input
@@ -486,7 +486,7 @@ export function SectionEditorDialog({
                   placeholder="e.g. /shop"
                   value={ctaUrl}
                   onChange={(e) => setCtaUrl(e.target.value)}
-                  className="bg-surface h-9 border-line text-xs"
+                  className="h-9 border-line bg-page text-xs"
                 />
               </div>
             </div>
@@ -506,7 +506,7 @@ export function SectionEditorDialog({
               type="submit"
               size="sm"
               disabled={isSubmitting}
-              className="text-canvas bg-ink text-xs hover:bg-ink/90"
+              className="bg-ink text-xs text-ivory hover:bg-ink/90"
             >
               {isSubmitting ? 'Saving...' : isEditing ? 'Update Block' : 'Add Block'}
             </Button>

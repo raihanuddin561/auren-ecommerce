@@ -53,7 +53,7 @@ export default function ExpensesPage(props: ExpensesPageProps) {
   return (
     <Suspense
       fallback={
-        <div className="text-stone p-8 text-center text-xs">Loading atelier expenses log...</div>
+        <div className="p-8 text-center text-xs text-fg-muted">Loading atelier expenses log...</div>
       }
     >
       <ExpensesContent {...props} />

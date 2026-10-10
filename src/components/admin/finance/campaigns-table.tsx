@@ -103,10 +103,10 @@ export function CampaignsTable({ campaigns }: CampaignsTableProps) {
 
   return (
     <div className="space-y-4">
-      <div className="bg-canvas flex items-center justify-between rounded-sm border border-line p-4">
+      <div className="flex items-center justify-between rounded-sm border border-line bg-raised p-4">
         <div>
-          <h2 className="text-sm font-semibold text-ink">Marketing Campaigns & ROAS</h2>
-          <p className="text-stone text-xs">
+          <h2 className="text-sm font-semibold text-fg">Marketing Campaigns &amp; ROAS</h2>
+          <p className="text-xs text-fg-muted">
             Track performance advertising spend, UTM attribution, orders, and Return On Ad Spend
             (ROAS).
           </p>
@@ -114,21 +114,21 @@ export function CampaignsTable({ campaigns }: CampaignsTableProps) {
 
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button size="sm" className="text-canvas gap-1.5 bg-ink text-xs hover:bg-ink/90">
+            <Button size="sm" className="gap-1.5 bg-ink text-xs text-ivory hover:bg-ink/90">
               <Plus className="h-3.5 w-3.5" />
               Launch Campaign
             </Button>
           </DialogTrigger>
-          <DialogContent className="bg-canvas max-w-md border-line">
+          <DialogContent className="max-w-md border-line bg-raised">
             <form onSubmit={handleSubmit} className="space-y-4">
               <DialogHeader>
-                <DialogTitle className="font-serif text-lg text-ink">
+                <DialogTitle className="font-serif text-lg text-fg">
                   Register Marketing Campaign
                 </DialogTitle>
               </DialogHeader>
 
               <div className="space-y-1.5">
-                <Label htmlFor="campName" className="text-stone text-xs">
+                <Label htmlFor="campName" className="text-xs text-fg-muted">
                   Campaign Name *
                 </Label>
                 <Input
@@ -137,20 +137,20 @@ export function CampaignsTable({ campaigns }: CampaignsTableProps) {
                   placeholder="e.g. Autumn Riviera Linen Drop"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="bg-surface h-9 border-line text-xs"
+                  className="h-9 border-line bg-page text-xs"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label htmlFor="channel" className="text-stone text-xs">
+                  <Label htmlFor="channel" className="text-xs text-fg-muted">
                     Ad Channel *
                   </Label>
                   <select
                     id="channel"
                     value={channel}
                     onChange={(e) => setChannel(e.target.value as MarketingCampaignChannel)}
-                    className="bg-surface h-9 w-full rounded-sm border border-line px-3 text-xs text-ink focus:ring-1 focus:ring-gold focus:outline-hidden"
+                    className="h-9 w-full rounded-sm border border-line bg-page px-3 text-xs text-fg focus:ring-1 focus:ring-gold focus:outline-hidden"
                   >
                     <option value="meta">Meta Ads (Instagram / FB)</option>
                     <option value="google">Google Performance Max</option>
@@ -162,7 +162,7 @@ export function CampaignsTable({ campaigns }: CampaignsTableProps) {
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label htmlFor="utmCampaign" className="text-stone text-xs">
+                  <Label htmlFor="utmCampaign" className="text-xs text-fg-muted">
                     UTM Campaign Tag
                   </Label>
                   <Input
@@ -170,14 +170,14 @@ export function CampaignsTable({ campaigns }: CampaignsTableProps) {
                     placeholder="autumn_linen_2026"
                     value={utmCampaign}
                     onChange={(e) => setUtmCampaign(e.target.value)}
-                    className="bg-surface h-9 border-line font-mono text-xs"
+                    className="h-9 border-line bg-page font-mono text-xs"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label htmlFor="startsOn" className="text-stone text-xs">
+                  <Label htmlFor="startsOn" className="text-xs text-fg-muted">
                     Start Date *
                   </Label>
                   <Input
@@ -186,12 +186,12 @@ export function CampaignsTable({ campaigns }: CampaignsTableProps) {
                     required
                     value={startsOn}
                     onChange={(e) => setStartsOn(e.target.value)}
-                    className="bg-surface h-9 border-line text-xs"
+                    className="h-9 border-line bg-page text-xs"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label htmlFor="endsOn" className="text-stone text-xs">
+                  <Label htmlFor="endsOn" className="text-xs text-fg-muted">
                     End Date (Optional)
                   </Label>
                   <Input
@@ -199,13 +199,13 @@ export function CampaignsTable({ campaigns }: CampaignsTableProps) {
                     type="date"
                     value={endsOn}
                     onChange={(e) => setEndsOn(e.target.value)}
-                    className="bg-surface h-9 border-line text-xs"
+                    className="h-9 border-line bg-page text-xs"
                   />
                 </div>
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="budgetBdt" className="text-stone text-xs">
+                <Label htmlFor="budgetBdt" className="text-xs text-fg-muted">
                   Allocated Budget (BDT ৳)
                 </Label>
                 <Input
@@ -216,7 +216,7 @@ export function CampaignsTable({ campaigns }: CampaignsTableProps) {
                   placeholder="50000.00"
                   value={budgetBdt}
                   onChange={(e) => setBudgetBdt(e.target.value)}
-                  className="bg-surface h-9 border-line font-mono text-xs"
+                  className="h-9 border-line bg-page font-mono text-xs"
                 />
               </div>
 
@@ -234,7 +234,7 @@ export function CampaignsTable({ campaigns }: CampaignsTableProps) {
                   type="submit"
                   size="sm"
                   disabled={isSubmitting}
-                  className="text-canvas bg-ink text-xs hover:bg-ink/90"
+                  className="bg-ink text-xs text-ivory hover:bg-ink/90"
                 >
                   {isSubmitting ? 'Registering...' : 'Save Campaign'}
                 </Button>
@@ -244,11 +244,11 @@ export function CampaignsTable({ campaigns }: CampaignsTableProps) {
         </Dialog>
       </div>
 
-      <div className="bg-canvas overflow-hidden rounded-sm border border-line">
+      <div className="overflow-hidden rounded-sm border border-line bg-raised">
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead>
-              <tr className="bg-surface/50 text-stone border-b border-line text-left">
+              <tr className="border-b border-line bg-sunken/50 text-left text-fg-muted">
                 <th className="px-4 py-2.5 font-medium tracking-wider uppercase">Campaign</th>
                 <th className="px-4 py-2.5 font-medium tracking-wider uppercase">Channel</th>
                 <th className="px-4 py-2.5 font-medium tracking-wider uppercase">UTM Tag</th>
@@ -276,33 +276,33 @@ export function CampaignsTable({ campaigns }: CampaignsTableProps) {
             <tbody className="divide-y divide-line/60">
               {campaigns.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="text-stone py-8 text-center">
+                  <td colSpan={10} className="py-8 text-center text-fg-muted">
                     No marketing campaigns registered yet.
                   </td>
                 </tr>
               ) : (
                 campaigns.map((camp) => (
-                  <tr key={camp.id} className="hover:bg-surface/30 transition-colors">
-                    <td className="px-4 py-3 font-semibold text-ink">{camp.name}</td>
+                  <tr key={camp.id} className="transition-colors hover:bg-sunken/40">
+                    <td className="px-4 py-3 font-semibold text-fg">{camp.name}</td>
                     <td className="px-4 py-3 capitalize">
                       <Badge tone="neutral">{camp.channel}</Badge>
                     </td>
-                    <td className="text-stone px-4 py-3 font-mono text-xs">
+                    <td className="px-4 py-3 font-mono text-xs text-fg-muted">
                       {camp.utmCampaign ?? '-'}
                     </td>
-                    <td className="text-stone px-4 py-3 font-mono text-xs">
+                    <td className="px-4 py-3 font-mono text-xs text-fg-muted">
                       {camp.startsOn} {camp.endsOn ? `→ ${camp.endsOn}` : '(Ongoing)'}
                     </td>
-                    <td className="text-stone px-4 py-3 text-right font-mono whitespace-nowrap">
+                    <td className="px-4 py-3 text-right font-mono whitespace-nowrap text-fg-muted">
                       {camp.budgetFormatted}
                     </td>
-                    <td className="px-4 py-3 text-right font-mono font-medium whitespace-nowrap text-ink">
+                    <td className="px-4 py-3 text-right font-mono font-medium whitespace-nowrap text-fg">
                       {camp.spendFormatted}
                     </td>
-                    <td className="text-stone px-4 py-3 text-right font-mono">
+                    <td className="px-4 py-3 text-right font-mono text-fg-muted">
                       {camp.attributedOrdersCount}
                     </td>
-                    <td className="px-4 py-3 text-right font-mono font-semibold whitespace-nowrap text-ink">
+                    <td className="px-4 py-3 text-right font-mono font-semibold whitespace-nowrap text-fg">
                       {camp.attributedRevenueFormatted}
                     </td>
                     <td className="px-4 py-3 text-right">
@@ -311,7 +311,7 @@ export function CampaignsTable({ campaigns }: CampaignsTableProps) {
                           {camp.roas}
                         </Badge>
                       ) : (
-                        <span className="text-stone">-</span>
+                        <span className="text-fg-muted">-</span>
                       )}
                     </td>
                     <td className="px-4 py-3 text-right">
@@ -320,7 +320,7 @@ export function CampaignsTable({ campaigns }: CampaignsTableProps) {
                         size="sm"
                         disabled={deletingId === camp.id}
                         onClick={() => handleDelete(camp.id, camp.name)}
-                        className="text-stone h-7 w-7 p-0 hover:text-oxblood"
+                        className="h-7 w-7 p-0 text-fg-muted hover:text-oxblood"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                         <span className="sr-only">Delete campaign</span>

@@ -9,23 +9,23 @@ interface ProductProfitabilityTableProps {
 export function ProductProfitabilityTable({ products }: ProductProfitabilityTableProps) {
   return (
     <div className="space-y-4">
-      <div className="bg-canvas flex items-center justify-between rounded-sm border border-line p-4">
+      <div className="flex items-center justify-between rounded-sm border border-line bg-raised p-4">
         <div>
-          <h2 className="text-sm font-semibold text-ink">Product & Collection Margin Matrix</h2>
-          <p className="text-stone text-xs">
+          <h2 className="text-sm font-semibold text-fg">Product & Collection Margin Matrix</h2>
+          <p className="text-xs text-fg-muted">
             Per-piece sales volume, landed cost of goods, return rates, and true gross contribution.
           </p>
         </div>
-        <span className="text-stone text-xs">
-          Ranked by <strong className="text-ink">Gross Revenue</strong>
+        <span className="text-xs text-fg-muted">
+          Ranked by <strong className="text-fg">Gross Revenue</strong>
         </span>
       </div>
 
-      <div className="bg-canvas overflow-hidden rounded-sm border border-line">
+      <div className="overflow-hidden rounded-sm border border-line bg-raised">
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead>
-              <tr className="bg-surface/50 text-stone border-b border-line text-left">
+              <tr className="border-b border-line bg-page/50 text-left text-fg-muted">
                 <th className="px-4 py-2.5 font-medium tracking-wider uppercase">Garment Piece</th>
                 <th className="px-4 py-2.5 font-medium tracking-wider uppercase">Category</th>
                 <th className="w-24 px-4 py-2.5 text-right font-medium tracking-wider uppercase">
@@ -51,7 +51,7 @@ export function ProductProfitabilityTable({ products }: ProductProfitabilityTabl
             <tbody className="divide-y divide-line/60">
               {products.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="text-stone py-8 text-center">
+                  <td colSpan={8} className="py-8 text-center text-fg-muted">
                     No confirmed or delivered sales recorded yet.
                   </td>
                 </tr>
@@ -62,10 +62,10 @@ export function ProductProfitabilityTable({ products }: ProductProfitabilityTabl
                     marginNum >= 60 ? 'gold' : marginNum >= 40 ? 'neutral' : 'warning';
 
                   return (
-                    <tr key={p.productId} className="hover:bg-surface/30 transition-colors">
+                    <tr key={p.productId} className="transition-colors hover:bg-page/40">
                       <td className="px-4 py-2.5">
                         <div className="flex items-center gap-3">
-                          <div className="bg-surface relative h-10 w-8 flex-shrink-0 overflow-hidden rounded-xs border border-line">
+                          <div className="relative h-10 w-8 flex-shrink-0 overflow-hidden rounded-xs border border-line bg-page">
                             {p.thumbnailUrl ? (
                               <Image
                                 src={p.thumbnailUrl}
@@ -79,25 +79,25 @@ export function ProductProfitabilityTable({ products }: ProductProfitabilityTabl
                             )}
                           </div>
                           <div>
-                            <div className="font-semibold text-ink">{p.productTitle}</div>
-                            <div className="text-stone text-xs capitalize">{p.productType}</div>
+                            <div className="font-semibold text-fg">{p.productTitle}</div>
+                            <div className="text-xs text-fg-muted capitalize">{p.productType}</div>
                           </div>
                         </div>
                       </td>
-                      <td className="text-stone px-4 py-2.5">{p.categoryName}</td>
-                      <td className="px-4 py-2.5 text-right font-mono font-medium text-ink">
+                      <td className="px-4 py-2.5 text-fg-muted">{p.categoryName}</td>
+                      <td className="px-4 py-2.5 text-right font-mono font-medium text-fg">
                         {p.unitsSold}
                       </td>
-                      <td className="text-stone px-4 py-2.5 text-right font-mono">
+                      <td className="px-4 py-2.5 text-right font-mono text-fg-muted">
                         {p.returnRatePercent}
                       </td>
-                      <td className="px-4 py-2.5 text-right font-mono font-medium whitespace-nowrap text-ink">
+                      <td className="px-4 py-2.5 text-right font-mono font-medium whitespace-nowrap text-fg">
                         {p.grossRevenueFormatted}
                       </td>
-                      <td className="text-stone px-4 py-2.5 text-right font-mono whitespace-nowrap">
+                      <td className="px-4 py-2.5 text-right font-mono whitespace-nowrap text-fg-muted">
                         {p.cogsFormatted}
                       </td>
-                      <td className="px-4 py-2.5 text-right font-mono font-semibold whitespace-nowrap text-ink">
+                      <td className="px-4 py-2.5 text-right font-mono font-semibold whitespace-nowrap text-fg">
                         {p.grossProfitFormatted}
                       </td>
                       <td className="px-4 py-2.5 text-right">

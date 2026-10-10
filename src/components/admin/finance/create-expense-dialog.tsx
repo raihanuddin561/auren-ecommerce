@@ -91,22 +91,20 @@ export function CreateExpenseDialog({ categories, campaigns }: CreateExpenseDial
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" className="text-canvas gap-1.5 bg-ink text-xs hover:bg-ink/90">
+        <Button size="sm" className="gap-1.5 bg-ink text-xs text-ivory hover:bg-ink/90">
           <Plus className="h-3.5 w-3.5" />
           Record Expense
         </Button>
       </DialogTrigger>
-      <DialogContent className="bg-canvas max-w-lg border-line">
+      <DialogContent className="max-w-lg border-line bg-raised">
         <form onSubmit={handleSubmit} className="space-y-4">
           <DialogHeader>
-            <DialogTitle className="font-serif text-lg text-ink">
-              Record Atelier Expense
-            </DialogTitle>
+            <DialogTitle className="font-serif text-lg text-fg">Record Atelier Expense</DialogTitle>
           </DialogHeader>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="expenseDate" className="text-stone text-xs">
+              <Label htmlFor="expenseDate" className="text-xs text-fg-muted">
                 Expense Date *
               </Label>
               <Input
@@ -115,12 +113,12 @@ export function CreateExpenseDialog({ categories, campaigns }: CreateExpenseDial
                 required
                 value={expenseDate}
                 onChange={(e) => setExpenseDate(e.target.value)}
-                className="bg-surface h-9 border-line text-xs"
+                className="h-9 border-line bg-page text-xs"
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="categoryId" className="text-stone text-xs">
+              <Label htmlFor="categoryId" className="text-xs text-fg-muted">
                 Expense Category *
               </Label>
               <select
@@ -128,7 +126,7 @@ export function CreateExpenseDialog({ categories, campaigns }: CreateExpenseDial
                 required
                 value={categoryId}
                 onChange={(e) => setCategoryId(e.target.value)}
-                className="bg-surface h-9 w-full rounded-sm border border-line px-3 text-xs text-ink focus:ring-1 focus:ring-gold focus:outline-hidden"
+                className="h-9 w-full rounded-sm border border-line bg-page px-3 text-xs text-fg focus:ring-1 focus:ring-gold focus:outline-hidden"
               >
                 {categories.map((c) => (
                   <option key={c.id} value={c.id}>
@@ -141,7 +139,7 @@ export function CreateExpenseDialog({ categories, campaigns }: CreateExpenseDial
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="vendor" className="text-stone text-xs">
+              <Label htmlFor="vendor" className="text-xs text-fg-muted">
                 Payee / Vendor *
               </Label>
               <Input
@@ -150,12 +148,12 @@ export function CreateExpenseDialog({ categories, campaigns }: CreateExpenseDial
                 placeholder="e.g. Italian Wool Mills, Banani Electric"
                 value={vendor}
                 onChange={(e) => setVendor(e.target.value)}
-                className="bg-surface h-9 border-line text-xs"
+                className="h-9 border-line bg-page text-xs"
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="amountBdt" className="text-stone text-xs">
+              <Label htmlFor="amountBdt" className="text-xs text-fg-muted">
                 Amount (BDT ৳) *
               </Label>
               <Input
@@ -167,13 +165,13 @@ export function CreateExpenseDialog({ categories, campaigns }: CreateExpenseDial
                 placeholder="15000.00"
                 value={amountBdt}
                 onChange={(e) => setAmountBdt(e.target.value)}
-                className="bg-surface h-9 border-line font-mono text-xs"
+                className="h-9 border-line bg-page font-mono text-xs"
               />
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="description" className="text-stone text-xs">
+            <Label htmlFor="description" className="text-xs text-fg-muted">
               Description / Notes *
             </Label>
             <Input
@@ -182,20 +180,20 @@ export function CreateExpenseDialog({ categories, campaigns }: CreateExpenseDial
               placeholder="e.g. 50 meters superfine Giza 87 Egyptian cotton"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="bg-surface h-9 border-line text-xs"
+              className="h-9 border-line bg-page text-xs"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="paymentMethod" className="text-stone text-xs">
+              <Label htmlFor="paymentMethod" className="text-xs text-fg-muted">
                 Payment Method
               </Label>
               <select
                 id="paymentMethod"
                 value={paymentMethod}
                 onChange={(e) => setPaymentMethod(e.target.value)}
-                className="bg-surface h-9 w-full rounded-sm border border-line px-3 text-xs text-ink focus:ring-1 focus:ring-gold focus:outline-hidden"
+                className="h-9 w-full rounded-sm border border-line bg-page px-3 text-xs text-fg focus:ring-1 focus:ring-gold focus:outline-hidden"
               >
                 <option value="bank_transfer">Bank Transfer (EFT / RTGS)</option>
                 <option value="bkash_corporate">bKash Merchant / Corporate</option>
@@ -206,7 +204,7 @@ export function CreateExpenseDialog({ categories, campaigns }: CreateExpenseDial
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="reference" className="text-stone text-xs">
+              <Label htmlFor="reference" className="text-xs text-fg-muted">
                 Reference / Invoice #
               </Label>
               <Input
@@ -214,20 +212,20 @@ export function CreateExpenseDialog({ categories, campaigns }: CreateExpenseDial
                 placeholder="INV-2026-089"
                 value={reference}
                 onChange={(e) => setReference(e.target.value)}
-                className="bg-surface h-9 border-line text-xs"
+                className="h-9 border-line bg-page text-xs"
               />
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="campaignId" className="text-stone text-xs">
+            <Label htmlFor="campaignId" className="text-xs text-fg-muted">
               Attribute to Marketing Campaign (Optional)
             </Label>
             <select
               id="campaignId"
               value={campaignId}
               onChange={(e) => setCampaignId(e.target.value)}
-              className="bg-surface h-9 w-full rounded-sm border border-line px-3 text-xs text-ink focus:ring-1 focus:ring-gold focus:outline-hidden"
+              className="h-9 w-full rounded-sm border border-line bg-page px-3 text-xs text-fg focus:ring-1 focus:ring-gold focus:outline-hidden"
             >
               <option value="">None / General Operations</option>
               {campaigns.map((c) => (
@@ -252,7 +250,7 @@ export function CreateExpenseDialog({ categories, campaigns }: CreateExpenseDial
               type="submit"
               size="sm"
               disabled={isSubmitting}
-              className="text-canvas bg-ink text-xs hover:bg-ink/90"
+              className="bg-ink text-xs text-ivory hover:bg-ink/90"
             >
               {isSubmitting ? 'Recording...' : 'Save Expense'}
             </Button>

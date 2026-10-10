@@ -197,7 +197,7 @@ export function OptionsGenerator({ product, sizeCharts }: OptionsGeneratorProps)
         keeps matching variants, adds new ones and removes the rest.
       </p>
       {attachedChart && attachedChart.sizes.length > 0 ? (
-        <div className="bg-surface flex flex-col gap-3 border border-line p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 border border-line bg-page p-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
             <p className="type-small font-medium text-fg">
               Attached size chart: <span className="text-fg-muted">{attachedChart.label}</span>

@@ -71,22 +71,22 @@ export function PagesTable({ pages, totalCount }: PagesTableProps) {
   return (
     <div className="space-y-4">
       {/* Search and Action Bar */}
-      <div className="bg-canvas flex flex-col items-stretch justify-between gap-3 rounded-sm border border-line p-4 sm:flex-row sm:items-center">
+      <div className="flex flex-col items-stretch justify-between gap-3 rounded-sm border border-line bg-raised p-4 sm:flex-row sm:items-center">
         <div className="flex flex-1 items-center gap-3">
           <div className="relative max-w-xs flex-1">
-            <Search className="text-stone absolute top-2.5 left-2.5 h-3.5 w-3.5" />
+            <Search className="absolute top-2.5 left-2.5 h-3.5 w-3.5 text-fg-muted" />
             <Input
               placeholder="Search by title or slug..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="bg-surface h-9 border-line pl-8 text-xs"
+              className="h-9 border-line bg-page pl-8 text-xs"
             />
           </div>
 
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="bg-surface h-9 rounded-sm border border-line px-3 text-xs text-ink focus:ring-1 focus:ring-gold focus:outline-hidden"
+            className="h-9 rounded-sm border border-line bg-page px-3 text-xs text-fg focus:ring-1 focus:ring-gold focus:outline-hidden"
           >
             <option value="all">All Statuses</option>
             <option value="published">Published</option>
@@ -95,8 +95,8 @@ export function PagesTable({ pages, totalCount }: PagesTableProps) {
             <option value="archived">Archived</option>
           </select>
 
-          <span className="text-stone hidden text-xs md:inline">
-            Showing <strong className="text-ink">{filteredPages.length}</strong> of {totalCount}{' '}
+          <span className="hidden text-xs text-fg-muted md:inline">
+            Showing <strong className="text-fg">{filteredPages.length}</strong> of {totalCount}{' '}
             pages
           </span>
         </div>
@@ -107,11 +107,11 @@ export function PagesTable({ pages, totalCount }: PagesTableProps) {
       </div>
 
       {/* Pages Table */}
-      <div className="bg-canvas overflow-hidden rounded-sm border border-line">
+      <div className="overflow-hidden rounded-sm border border-line bg-raised">
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead>
-              <tr className="bg-surface/50 text-stone border-b border-line text-left">
+              <tr className="border-b border-line bg-page/50 text-left text-fg-muted">
                 <th className="px-4 py-2.5 font-medium tracking-wider uppercase">
                   Page Title & Slug
                 </th>
@@ -128,18 +128,18 @@ export function PagesTable({ pages, totalCount }: PagesTableProps) {
             <tbody className="divide-y divide-line/60">
               {filteredPages.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="text-stone py-12 text-center">
+                  <td colSpan={5} className="py-12 text-center text-fg-muted">
                     <div className="flex flex-col items-center justify-center space-y-2">
-                      <FileText className="text-stone/60 h-6 w-6" />
+                      <FileText className="h-6 w-6 text-fg-muted/60" />
                       <p className="text-sm">No landing pages match your criteria.</p>
                     </div>
                   </td>
                 </tr>
               ) : (
                 filteredPages.map((page) => (
-                  <tr key={page.id} className="hover:bg-surface/30 transition-colors">
+                  <tr key={page.id} className="transition-colors hover:bg-page/40">
                     <td className="px-4 py-3">
-                      <div className="text-sm font-semibold text-ink">
+                      <div className="text-sm font-semibold text-fg">
                         <Link
                           href={`/admin/content/${page.id}`}
                           className="transition-colors hover:text-gold"
@@ -147,7 +147,7 @@ export function PagesTable({ pages, totalCount }: PagesTableProps) {
                           {page.title}
                         </Link>
                       </div>
-                      <div className="text-stone mt-0.5 flex items-center gap-1.5 font-mono text-xs">
+                      <div className="mt-0.5 flex items-center gap-1.5 font-mono text-xs text-fg-muted">
                         <span>/pages/{page.slug}</span>
                         {page.status === 'published' && (
                           <Link
@@ -161,7 +161,7 @@ export function PagesTable({ pages, totalCount }: PagesTableProps) {
                         )}
                       </div>
                       {page.description && (
-                        <p className="text-stone mt-0.5 line-clamp-1 max-w-md text-xs">
+                        <p className="mt-0.5 line-clamp-1 max-w-md text-xs text-fg-muted">
                           {page.description}
                         </p>
                       )}
@@ -169,11 +169,11 @@ export function PagesTable({ pages, totalCount }: PagesTableProps) {
                     <td className="px-4 py-3 capitalize">
                       <Badge tone={getStatusTone(page.status)}>{page.status}</Badge>
                     </td>
-                    <td className="text-stone px-4 py-3">
-                      <span className="font-mono font-medium text-ink">{page.sectionsCount}</span>{' '}
+                    <td className="px-4 py-3 text-fg-muted">
+                      <span className="font-mono font-medium text-fg">{page.sectionsCount}</span>{' '}
                       blocks
                     </td>
-                    <td className="text-stone px-4 py-3 font-mono text-xs">
+                    <td className="px-4 py-3 font-mono text-xs text-fg-muted">
                       {new Date(page.updatedAt).toLocaleDateString('en-GB', {
                         day: '2-digit',
                         month: 'short',
@@ -186,7 +186,7 @@ export function PagesTable({ pages, totalCount }: PagesTableProps) {
                           asChild
                           variant="ghost"
                           size="sm"
-                          className="text-stone h-7 w-7 p-0 hover:text-ink"
+                          className="h-7 w-7 p-0 text-fg-muted hover:text-fg"
                           title="Edit page sections"
                         >
                           <Link href={`/admin/content/${page.id}`}>
@@ -199,7 +199,7 @@ export function PagesTable({ pages, totalCount }: PagesTableProps) {
                           size="sm"
                           disabled={deletingId === page.id}
                           onClick={() => handleDelete(page.id, page.title)}
-                          className="text-stone h-7 w-7 p-0 hover:text-oxblood"
+                          className="h-7 w-7 p-0 text-fg-muted hover:text-danger-text"
                           title="Delete page"
                         >
                           <Trash2 className="h-3.5 w-3.5" />

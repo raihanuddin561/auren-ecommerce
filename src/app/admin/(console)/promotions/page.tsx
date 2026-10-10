@@ -66,15 +66,15 @@ export default async function PromotionsPage({ searchParams }: PromotionsPagePro
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="rounded bg-surface border border-line p-4">
+        <div className="rounded-sm border border-line bg-raised p-4">
           <p className="type-eyebrow text-fg-muted">Active Promotions</p>
           <p className="type-h2 text-fg">{activeCount}</p>
         </div>
-        <div className="rounded bg-surface border border-line p-4">
+        <div className="rounded-sm border border-line bg-raised p-4">
           <p className="type-eyebrow text-fg-muted">Total Campaigns</p>
           <p className="type-h2 text-fg">{total}</p>
         </div>
-        <div className="rounded bg-surface border border-line p-4">
+        <div className="rounded-sm border border-line bg-raised p-4">
           <p className="type-eyebrow text-fg-muted">Total Redemptions</p>
           <p className="type-h2 text-fg">{totalRedemptions}</p>
         </div>

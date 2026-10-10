@@ -56,18 +56,18 @@ async function PageContent({ params }: PageProps) {
       {isDraft && (
         <aside
           aria-label="Draft mode banner"
-          className="text-canvas shadow-md fixed top-20 right-6 z-50 rounded-sm border border-gold bg-ink px-3.5 py-1.5 font-mono text-xs"
+          className="shadow-md fixed top-20 right-6 z-50 rounded-sm border border-gold bg-ink px-3.5 py-1.5 font-mono text-xs text-ivory"
         >
           Draft Preview Mode Active
         </aside>
       )}
 
       <header className="mx-auto mb-12 max-w-4xl space-y-3 px-6 text-center">
-        <h1 className="font-serif text-3xl font-light tracking-tight text-ink md:text-5xl">
+        <h1 className="font-serif text-3xl font-light tracking-tight text-fg md:text-5xl">
           {page.title}
         </h1>
         {page.description && (
-          <p className="text-stone mx-auto max-w-xl text-xs leading-relaxed md:text-sm">
+          <p className="mx-auto max-w-xl text-xs leading-relaxed text-fg-muted md:text-sm">
             {page.description}
           </p>
         )}

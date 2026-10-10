@@ -51,7 +51,7 @@ export default function FinancePage(props: FinancePageProps) {
   return (
     <Suspense
       fallback={
-        <div className="text-stone p-8 text-center text-xs">
+        <div className="p-8 text-center text-xs text-fg-muted">
           Loading financial statements and ledger metrics...
         </div>
       }

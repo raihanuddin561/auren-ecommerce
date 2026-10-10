@@ -508,7 +508,7 @@ export function PaymentSection({
   return (
     <Section step={4} title="Payment">
       <RadioGroup name="paymentMethod" aria-label="Payment method" value="cod" className="gap-3">
-        <div className="bg-surface/30 border border-fg/80 p-4 transition-colors">
+        <div className="border border-fg/80 bg-surface/30 p-4 transition-colors">
           <div className="flex flex-col gap-2">
             <RadioItem
               value="cod"
@@ -536,7 +536,7 @@ export function PaymentSection({
       </RadioGroup>
 
       {/* Doorstep Inspection Guarantee Card */}
-      <div className="rounded border-line-subtle bg-surface/40 flex items-start gap-3 border p-3.5 text-fg">
+      <div className="rounded border-line-subtle flex items-start gap-3 border bg-surface/40 p-3.5 text-fg">
         <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-accent-text" />
         <div className="text-xs leading-relaxed text-fg-muted">
           <span className="mb-0.5 block font-medium text-fg">

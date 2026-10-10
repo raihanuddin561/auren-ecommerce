@@ -75,21 +75,21 @@ export function CreatePageDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" className="text-canvas gap-1.5 bg-ink text-xs hover:bg-ink/90">
+        <Button size="sm" className="gap-1.5 bg-ink text-xs text-ivory hover:bg-ink/90">
           <Plus className="h-3.5 w-3.5" />
           Create Page
         </Button>
       </DialogTrigger>
-      <DialogContent className="bg-canvas max-w-md border-line">
+      <DialogContent className="max-w-md border-line bg-raised">
         <DialogHeader>
-          <DialogTitle className="font-serif text-base font-semibold text-ink">
+          <DialogTitle className="font-serif text-base font-semibold text-fg">
             Create Landing Page
           </DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 pt-2">
           <div className="space-y-1.5">
-            <Label htmlFor="pageTitle" className="text-stone text-xs">
+            <Label htmlFor="pageTitle" className="text-xs text-fg-muted">
               Page Title *
             </Label>
             <Input
@@ -97,16 +97,16 @@ export function CreatePageDialog() {
               placeholder="e.g. The Sartorial Story"
               value={title}
               onChange={(e) => handleTitleChange(e.target.value)}
-              className="bg-surface h-9 border-line text-xs"
+              className="h-9 border-line bg-page text-xs"
               required
             />
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="pageSlug" className="text-stone text-xs">
+            <Label htmlFor="pageSlug" className="text-xs text-fg-muted">
               URL Slug *
             </Label>
-            <div className="text-stone bg-surface flex items-center gap-1.5 rounded-sm border border-line px-2.5 font-mono text-xs">
+            <div className="flex items-center gap-1.5 rounded-sm border border-line bg-page px-2.5 font-mono text-xs text-fg-muted">
               <span>/pages/</span>
               <Input
                 id="pageSlug"
@@ -120,7 +120,7 @@ export function CreatePageDialog() {
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="pageDesc" className="text-stone text-xs">
+            <Label htmlFor="pageDesc" className="text-xs text-fg-muted">
               Summary / Excerpt
             </Label>
             <Textarea
@@ -128,19 +128,19 @@ export function CreatePageDialog() {
               placeholder="Short description of this editorial page..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="bg-surface min-h-[70px] border-line text-xs"
+              className="min-h-[70px] border-line bg-page text-xs"
             />
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="pageStatus" className="text-stone text-xs">
+            <Label htmlFor="pageStatus" className="text-xs text-fg-muted">
               Initial Status
             </Label>
             <select
               id="pageStatus"
               value={status}
               onChange={(e) => setStatus(e.target.value as PageStatus)}
-              className="bg-surface h-9 w-full rounded-sm border border-line px-3 text-xs text-ink focus:ring-1 focus:ring-gold focus:outline-hidden"
+              className="h-9 w-full rounded-sm border border-line bg-page px-3 text-xs text-fg focus:ring-1 focus:ring-gold focus:outline-hidden"
             >
               <option value="draft">Draft (Private)</option>
               <option value="published">Published (Live)</option>
@@ -162,7 +162,7 @@ export function CreatePageDialog() {
               type="submit"
               size="sm"
               disabled={isSubmitting}
-              className="text-canvas bg-ink text-xs hover:bg-ink/90"
+              className="bg-ink text-xs text-ivory hover:bg-ink/90"
             >
               {isSubmitting ? 'Creating...' : 'Create & Design'}
             </Button>
