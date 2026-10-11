@@ -12,6 +12,8 @@ import { MobileMenu } from './mobile-menu';
 import { BagButton } from './cart/bag-button';
 import { SearchOverlay } from './search/search-overlay';
 import { Wordmark } from './wordmark';
+import { LanguageSwitcher } from './language-switcher';
+import { useTranslation } from '@/lib/i18n/context';
 
 /** Scroll distance after which a transparent header turns solid. */
 export const HEADER_SOLID_AFTER_PX = 80;
@@ -42,6 +44,7 @@ export interface HeaderProps {
  */
 export function Header({ items = PRIMARY_NAV }: HeaderProps = {}) {
   const pathname = usePathname();
+  const { dictionary } = useTranslation();
   const scrolled = useScrolledPast(HEADER_SOLID_AFTER_PX);
   const [openPanel, setOpenPanel] = useState<string | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -82,24 +85,25 @@ export function Header({ items = PRIMARY_NAV }: HeaderProps = {}) {
           <Wordmark />
 
           <div className="flex items-center justify-end">
+            <LanguageSwitcher className="mr-1 hidden sm:inline-flex" />
             <button
               type="button"
               onClick={() => setSearchOpen(true)}
-              aria-label="Search collection"
+              aria-label={dictionary.header.search}
               className={iconLink}
             >
               <Icon icon={Search} />
             </button>
             <Link
               href="/account"
-              aria-label="Account"
+              aria-label={dictionary.header.account}
               className={cn(iconLink, 'hidden sm:inline-flex')}
             >
               <Icon icon={User} />
             </Link>
             <Link
               href="/wishlist"
-              aria-label="Wishlist"
+              aria-label={dictionary.header.wishlist}
               className={cn(iconLink, 'hidden sm:inline-flex')}
             >
               <Icon icon={Heart} />

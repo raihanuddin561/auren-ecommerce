@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { FOOTER_COLUMNS, LEGAL_LINKS, PAYMENT_MARKS, SOCIAL_LINKS } from '@/lib/site';
 import { NewsletterForm } from './newsletter-form';
 import { Wordmark } from './wordmark';
+import { LanguageSwitcher } from './language-switcher';
 
 const linkClass =
   'inline-flex min-h-11 items-center type-small text-fg-muted underline-offset-4 transition-auren-fast hover:text-fg hover:underline';
@@ -90,7 +91,13 @@ export function Footer() {
           </ul>
 
           <div className="flex flex-col gap-2 lg:items-end">
-            <p className="type-small text-fg-muted">Bangladesh · BDT (৳)</p>
+            <div className="flex flex-wrap items-center gap-3">
+              <p className="type-small text-fg-muted">Bangladesh · BDT (৳)</p>
+              <span className="text-line select-none" aria-hidden="true">
+                ·
+              </span>
+              <LanguageSwitcher variant="footer" />
+            </div>
             <ul className="flex gap-5">
               {LEGAL_LINKS.map((link) => (
                 <li key={link.label}>

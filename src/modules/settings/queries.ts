@@ -3,10 +3,12 @@ import { db } from '@/lib/db';
 import { env } from '@/lib/env';
 import { toDecimalString, money } from '@/lib/money';
 import {
+  GENERAL_SETTINGS_CACHE_TAG,
   HERO_CAROUSEL_CACHE_TAG,
   NAVIGATION_CACHE_TAG,
   type HeroCarouselSettings,
   type NavigationSettings,
+  type StoreGeneralSettings,
 } from './schemas';
 import {
   getCheckoutProtection,
@@ -27,6 +29,14 @@ export {
   getVerificationSettings,
 };
 export async function getStoreGeneralSettingsForAdmin() {
+  return getStoreGeneralSettings();
+}
+
+/** Returns general store settings for storefront (cached and tagged). */
+export async function getStoreGeneralSettingsForStorefront(): Promise<StoreGeneralSettings> {
+  'use cache';
+  cacheLife('hours');
+  cacheTag(GENERAL_SETTINGS_CACHE_TAG);
   return getStoreGeneralSettings();
 }
 

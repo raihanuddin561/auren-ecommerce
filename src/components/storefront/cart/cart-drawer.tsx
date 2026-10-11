@@ -20,6 +20,7 @@ import { CartLine } from './cart-line';
 import { closeCartDrawer, setCartView, useCartDrawerOpen, useCartView } from './cart-store';
 import { CartTotals } from './cart-summary';
 import { FreeDeliveryBar } from './free-delivery-bar';
+import { useTranslation } from '@/lib/i18n/context';
 
 /**
  * The bag drawer. It opens after "Add to bag" and from the header bag, and refreshes from the
@@ -28,6 +29,7 @@ import { FreeDeliveryBar } from './free-delivery-bar';
 export function CartDrawer() {
   const open = useCartDrawerOpen();
   const view = useCartView();
+  const { dictionary, isBn } = useTranslation();
 
   useEffect(() => {
     if (!open) return;
@@ -50,7 +52,10 @@ export function CartDrawer() {
     <Sheet open={open} onOpenChange={(next) => (next ? undefined : closeCartDrawer())}>
       <SheetContent side="right" aria-describedby="bag-drawer-description">
         <SheetHeader>
-          <SheetTitle>Your bag{view && view.count > 0 ? ` (${view.count})` : ''}</SheetTitle>
+          <SheetTitle>
+            {dictionary.cart.yourBag}
+            {view && view.count > 0 ? ` (${view.count})` : ''}
+          </SheetTitle>
           <SheetDescription id="bag-drawer-description" className="sr-only">
             The pieces in your bag, with quantity, price and the way to checkout.
           </SheetDescription>
@@ -65,11 +70,11 @@ export function CartDrawer() {
                   <Icon icon={ShoppingBag} size={24} />
                 </div>
               }
-              title="Your Bag Awaits"
-              description="Discover bespoke tailoring, noble fibers, and modern menswear in our seasonal edit."
+              title={dictionary.cart.emptyBagTitle}
+              description={dictionary.cart.emptyBagDesc}
               action={
                 <Button asChild variant="primary" onClick={closeCartDrawer} className="mt-2">
-                  <Link href="/shop">Explore The Collection</Link>
+                  <Link href="/shop">{dictionary.cart.startShopping}</Link>
                 </Button>
               }
             />
@@ -94,17 +99,19 @@ export function CartDrawer() {
                 className={view.hasIssues ? 'pointer-events-none opacity-50' : undefined}
               >
                 <Link href="/checkout" onClick={closeCartDrawer}>
-                  Checkout
+                  {dictionary.cart.checkout}
                 </Link>
               </Button>
               <Button asChild variant="secondary" fullWidth>
                 <Link href="/cart" onClick={closeCartDrawer}>
-                  View bag
+                  {isBn ? 'ব্যাগ দেখুন' : 'View bag'}
                 </Link>
               </Button>
               <div className="flex flex-col items-center gap-1.5 rounded-xs border border-line/60 bg-raised/30 p-2.5 text-center">
                 <p className="type-caption font-medium text-fg">
-                  ✦ Cash on Delivery Across 64 Districts · Doorstep Inspection
+                  {isBn
+                    ? '✦ ৬৪ জেলাজুড়ে ক্যাশ অন ডেলিভারি · হোম ডেলিভারি ও যাচাই সুবিধা'
+                    : '✦ Cash on Delivery Across 64 Districts · Doorstep Inspection'}
                 </p>
                 <div className="flex items-center justify-center gap-2 type-caption font-mono tracking-wider text-gold-strong uppercase dark:text-gold">
                   <span>Cash</span>

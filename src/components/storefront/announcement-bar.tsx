@@ -4,12 +4,13 @@ import { ChevronLeft, ChevronRight, Pause, Play } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Icon } from '@/components/ui/icon';
 import { useReducedMotion } from '@/components/motion/use-reduced-motion';
+import { useTranslation } from '@/lib/i18n/context';
 
 const MAX_MESSAGES = 3;
 const ROTATE_EVERY_MS = 7000;
 
 interface AnnouncementBarProps {
-  messages: string[];
+  messages?: string[];
 }
 
 const controlClass =
@@ -20,7 +21,9 @@ const controlClass =
  * prefer reduced motion, and can be paused or stepped manually.
  */
 export function AnnouncementBar({ messages }: AnnouncementBarProps) {
-  const items = messages.slice(0, MAX_MESSAGES);
+  const { dictionary, isBn } = useTranslation();
+  const rawItems = isBn ? dictionary.announcements : (messages ?? dictionary.announcements);
+  const items = rawItems.slice(0, MAX_MESSAGES);
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const [engaged, setEngaged] = useState(false);

@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from 'next';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { BRAND_COLORS } from '@/lib/brand';
+import { LanguageProvider } from '@/lib/i18n/context';
+import { getStoreGeneralSettingsForStorefront } from '@/modules/settings/queries';
 import { fontClassNames } from './fonts';
 import '@/styles/globals.css';
 
@@ -15,11 +17,21 @@ export const viewport: Viewport = {
   colorScheme: 'light',
 };
 
-export default function RootLayout({ children }: LayoutProps<'/'>) {
+export default async function RootLayout({ children }: LayoutProps<'/'>) {
+  let defaultLocale: 'en' | 'bn' = 'en';
+  try {
+    const settings = await getStoreGeneralSettingsForStorefront();
+    defaultLocale = settings.defaultLanguage ?? 'en';
+  } catch {
+    defaultLocale = 'en';
+  }
+
   return (
-    <html lang="en" className={`${fontClassNames} h-full`} suppressHydrationWarning>
+    <html lang={defaultLocale} className={`${fontClassNames} h-full`} suppressHydrationWarning>
       <body className="flex min-h-full flex-col">
-        <TooltipProvider>{children}</TooltipProvider>
+        <LanguageProvider defaultLocale={defaultLocale}>
+          <TooltipProvider>{children}</TooltipProvider>
+        </LanguageProvider>
         <Toaster />
       </body>
     </html>

@@ -89,6 +89,51 @@ export function GeneralSettingsForm({ initial }: GeneralSettingsFormProps) {
         </div>
       </section>
 
+      {/* Language & Regional Localization */}
+      <section className="border border-line bg-raised p-6">
+        <h2 className="type-h3 font-display text-fg">
+          Language & Regional Localization (ভাষা ও আঞ্চলিক সেটিংস)
+        </h2>
+        <p className="mt-1 type-admin text-fg-muted">
+          Choose the default primary language for the digital storefront. Visitors can also switch
+          between English and Bangla on any screen.
+        </p>
+
+        <div className="mt-6 grid gap-4 sm:grid-cols-2">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="defaultLanguage">Default Storefront Language (প্রাথমিক ভাষা)</Label>
+            <select
+              id="defaultLanguage"
+              value={form.defaultLanguage ?? 'en'}
+              onChange={(e) => update('defaultLanguage', e.target.value as 'en' | 'bn')}
+              disabled={isPending}
+              className="h-10 rounded-sm border border-line bg-page px-3 text-xs text-fg focus:ring-1 focus:ring-gold focus:outline-hidden"
+            >
+              <option value="en">English (English)</option>
+              <option value="bn">বাংলা (Bangla / Bengali)</option>
+            </select>
+            <p className="type-admin text-fg-muted">
+              {form.defaultLanguage === 'bn'
+                ? 'সাইটের প্রাথমিক ভাষা হিসেবে বাংলা সক্রিয় থাকবে।'
+                : 'Site default language is set to English.'}
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="currencyDisplay">Currency & Timezone</Label>
+            <Input
+              id="currencyDisplay"
+              value={`${form.currency} (৳) · ${form.timezone}`}
+              disabled
+              className="bg-page/50 font-mono text-xs text-fg-muted"
+            />
+            <p className="type-admin text-fg-muted">
+              Official store currency is Bangladeshi Taka (BDT).
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* Concierge & Contact */}
       <section className="border border-line bg-raised p-6">
         <h2 className="type-h3 font-display text-fg">Concierge & Contact Details</h2>

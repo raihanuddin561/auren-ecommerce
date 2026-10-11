@@ -21,6 +21,8 @@ import {
 } from '@/components/ui/sheet';
 import type { NavItem } from '@/lib/site';
 import { Wordmark } from './wordmark';
+import { LanguageSwitcher } from './language-switcher';
+import { useTranslation } from '@/lib/i18n/context';
 
 interface MobileMenuProps {
   items: NavItem[];
@@ -31,6 +33,7 @@ const bigLink =
 
 /** Full-screen menu: large serif links, expandable categories, a featured image. */
 export function MobileMenu({ items }: MobileMenuProps) {
+  const { translateNav, isBn } = useTranslation();
   const featured = items.find((item) => item.tile)?.tile;
 
   return (
@@ -64,7 +67,7 @@ export function MobileMenu({ items }: MobileMenuProps) {
                   <AccordionTrigger
                     className={`${bigLink} w-full justify-between py-0 type-h1 font-normal tracking-normal normal-case`}
                   >
-                    {item.label}
+                    {translateNav(item.label)}
                   </AccordionTrigger>
                   <AccordionContent className="pt-2 pb-4">
                     <ul className="flex flex-col gap-1 pl-1">
@@ -74,7 +77,9 @@ export function MobileMenu({ items }: MobileMenuProps) {
                             href={item.href}
                             className="flex min-h-11 items-center type-body text-fg"
                           >
-                            All {item.label.toLowerCase()}
+                            {isBn
+                              ? `সব ${translateNav(item.label)}`
+                              : `All ${item.label.toLowerCase()}`}
                           </Link>
                         </SheetClose>
                       </li>
@@ -86,7 +91,7 @@ export function MobileMenu({ items }: MobileMenuProps) {
                                 href={link.href}
                                 className="flex min-h-11 items-center type-body text-fg-muted hover:text-fg"
                               >
-                                {link.label}
+                                {translateNav(link.label)}
                               </Link>
                             </SheetClose>
                           </li>
@@ -99,7 +104,7 @@ export function MobileMenu({ items }: MobileMenuProps) {
                 <div key={item.label}>
                   <SheetClose asChild>
                     <Link href={item.href} className={bigLink}>
-                      {item.label}
+                      {translateNav(item.label)}
                     </Link>
                   </SheetClose>
                 </div>
@@ -115,32 +120,38 @@ export function MobileMenu({ items }: MobileMenuProps) {
               >
                 <ImageFrame src={featured.image} alt={featured.imageAlt} sizes="112px" />
                 <span>
-                  <span className="block type-eyebrow text-accent-text">{featured.eyebrow}</span>
+                  <span className="block type-eyebrow text-accent-text">
+                    {translateNav(featured.eyebrow)}
+                  </span>
                   <span className="mt-1 block type-h3 font-display font-normal text-fg">
-                    {featured.title}
+                    {translateNav(featured.title)}
                   </span>
                 </span>
               </Link>
             </SheetClose>
           ) : null}
 
-          <ul className="mt-auto flex flex-col pt-8">
-            {[
-              { label: 'Track your order', href: '/track' },
-              { label: 'Wishlist', href: '/wishlist' },
-            ].map((link) => (
-              <li key={link.href}>
-                <SheetClose asChild>
-                  <Link
-                    href={link.href}
-                    className="flex min-h-11 items-center type-small text-fg-muted hover:text-fg"
-                  >
-                    {link.label}
-                  </Link>
-                </SheetClose>
-              </li>
-            ))}
-          </ul>
+          <div className="mt-auto pt-6">
+            <LanguageSwitcher variant="mobile" />
+
+            <ul className="mt-4 flex flex-col">
+              {[
+                { label: translateNav('Track your order'), href: '/track' },
+                { label: translateNav('Wishlist'), href: '/wishlist' },
+              ].map((link) => (
+                <li key={link.href}>
+                  <SheetClose asChild>
+                    <Link
+                      href={link.href}
+                      className="flex min-h-11 items-center type-small text-fg-muted hover:text-fg"
+                    >
+                      {link.label}
+                    </Link>
+                  </SheetClose>
+                </li>
+              ))}
+            </ul>
+          </div>
         </nav>
       </SheetContent>
     </Sheet>

@@ -7,6 +7,7 @@ import { useCallback, useEffect, useId, useRef } from 'react';
 import { Icon } from '@/components/ui/icon';
 import { cn } from '@/lib/cn';
 import type { NavItem } from '@/lib/site';
+import { useTranslation } from '@/lib/i18n/context';
 
 interface MegaMenuProps {
   items: NavItem[];
@@ -30,6 +31,7 @@ const topLevelClass =
  * returns to the button), by moving focus out, or by choosing a link.
  */
 export function MegaMenu({ items, pathname, openLabel, onOpenChange }: MegaMenuProps) {
+  const { translateNav } = useTranslation();
   const baseId = useId();
   const rootRef = useRef<HTMLElement>(null);
   const closeTimer = useRef<number | undefined>(undefined);
@@ -105,7 +107,7 @@ export function MegaMenu({ items, pathname, openLabel, onOpenChange }: MegaMenuP
                   }}
                   className={cn(topLevelClass, active && 'text-fg')}
                 >
-                  {item.label}
+                  {translateNav(item.label)}
                   <Icon
                     icon={ChevronDown}
                     size={14}
@@ -129,7 +131,7 @@ export function MegaMenu({ items, pathname, openLabel, onOpenChange }: MegaMenuP
                   onClick={() => onOpenChange(null)}
                   className={topLevelClass}
                 >
-                  {item.label}
+                  {translateNav(item.label)}
                   <span
                     aria-hidden="true"
                     className={cn(
@@ -151,7 +153,9 @@ export function MegaMenu({ items, pathname, openLabel, onOpenChange }: MegaMenuP
                     <div className="col-span-8 grid grid-cols-3 gap-x-8">
                       {item.columns!.map((column) => (
                         <div key={column.heading}>
-                          <p className="mb-4 type-eyebrow text-fg-muted">{column.heading}</p>
+                          <p className="mb-4 type-eyebrow text-fg-muted">
+                            {translateNav(column.heading)}
+                          </p>
                           <ul className="flex flex-col">
                             {column.links.map((link) => (
                               <li key={`${column.heading}-${link.label}`}>
@@ -160,7 +164,7 @@ export function MegaMenu({ items, pathname, openLabel, onOpenChange }: MegaMenuP
                                   onClick={() => onOpenChange(null)}
                                   className="inline-flex min-h-10 items-center type-h3 font-display font-normal text-fg transition-auren-fast hover:text-accent-text"
                                 >
-                                  {link.label}
+                                  {translateNav(link.label)}
                                 </Link>
                               </li>
                             ))}
@@ -185,11 +189,13 @@ export function MegaMenu({ items, pathname, openLabel, onOpenChange }: MegaMenuP
                         </span>
                         <span className="pb-1">
                           <span className="block type-eyebrow text-accent-text">
-                            {item.tile.eyebrow}
+                            {translateNav(item.tile.eyebrow)}
                           </span>
-                          <span className="mt-2 block type-h2 text-fg">{item.tile.title}</span>
+                          <span className="mt-2 block type-h2 text-fg">
+                            {translateNav(item.tile.title)}
+                          </span>
                           <span className="mt-4 inline-block border-b border-gold pb-1 type-eyebrow text-fg">
-                            Explore
+                            {translateNav('Explore')}
                           </span>
                         </span>
                       </Link>

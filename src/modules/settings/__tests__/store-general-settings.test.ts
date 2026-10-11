@@ -8,6 +8,7 @@ describe('15.3 Store General Settings', () => {
     expect(DEFAULT_STORE_GENERAL_SETTINGS.timezone).toBe('Asia/Dhaka');
     expect(DEFAULT_STORE_GENERAL_SETTINGS.pricesIncludeVat).toBe(true);
     expect(DEFAULT_STORE_GENERAL_SETTINGS.vatPercentage).toBe(5);
+    expect(DEFAULT_STORE_GENERAL_SETTINGS.defaultLanguage).toBe('en');
   });
 
   it('validates correct store input data', () => {

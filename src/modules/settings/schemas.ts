@@ -13,6 +13,7 @@ export const SETTING_KEYS = {
 
 export const HERO_CAROUSEL_CACHE_TAG = 'hero-carousel';
 export const NAVIGATION_CACHE_TAG = 'storefront-navigation';
+export const GENERAL_SETTINGS_CACHE_TAG = 'store-general-settings';
 
 export const storeGeneralSettingsSchema = z
   .object({
@@ -36,6 +37,7 @@ export const storeGeneralSettingsSchema = z
     pricesIncludeVat: z.boolean().default(true),
     currency: z.literal('BDT').default('BDT'),
     timezone: z.literal('Asia/Dhaka').default('Asia/Dhaka'),
+    defaultLanguage: z.enum(['en', 'bn']).default('en'),
     socialInstagram: z.string().trim().max(200).default('https://instagram.com/auren.menswear'),
     socialFacebook: z.string().trim().max(200).default('https://facebook.com/auren.menswear'),
     socialYoutube: z.string().trim().max(200).default(''),

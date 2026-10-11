@@ -6,6 +6,7 @@ import { assertPermission } from '@/lib/permissions';
 import { getRequestMeta } from '@/lib/request-meta';
 import { requireStaff } from '@/lib/staff';
 import {
+  GENERAL_SETTINGS_CACHE_TAG,
   HERO_CAROUSEL_CACHE_TAG,
   NAVIGATION_CACHE_TAG,
   navigationSettingsSchema,
@@ -121,6 +122,7 @@ export async function saveStoreGeneralSettingsAction(
       ip: meta.ip,
       userAgent: meta.userAgent,
     });
+    updateTag(GENERAL_SETTINGS_CACHE_TAG);
     return ok(result);
   } catch (error) {
     return toActionError(error);
