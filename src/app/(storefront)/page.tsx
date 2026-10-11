@@ -81,11 +81,11 @@ export default function HomePage() {
         <NewArrivals />
       </Suspense>
 
-      <AtelierStory />
-
       <Suspense fallback={<FeaturedCollectionsSkeleton />}>
         <FeaturedCollections />
       </Suspense>
+
+      <AtelierStory />
 
       <LookbookCuration />
 

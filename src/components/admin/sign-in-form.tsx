@@ -75,28 +75,55 @@ export function SignInForm({ next }: { next?: string }) {
 
   if (step === 'code') {
     return (
-      <form onSubmit={onCode} className="flex flex-col gap-5" noValidate>
+      <form key="code-form" onSubmit={onCode} className="flex flex-col gap-5" noValidate>
         <Field
+          key="verification-code-field"
           label="Authentication code"
           name="code"
+          type="text"
           inputMode="numeric"
           autoComplete="one-time-code"
+          placeholder="Enter 6-digit code"
+          defaultValue=""
+          pattern="[0-9]*"
+          maxLength={8}
+          autoFocus
           hint="Open your authenticator app and enter the 6-digit code."
           required
         />
         <FormError message={error} />
         <SubmitButton pending={pending}>Verify</SubmitButton>
+        <button
+          type="button"
+          onClick={() => {
+            setError(null);
+            setStep('credentials');
+          }}
+          className="text-center type-small text-fg-muted underline-offset-4 hover:text-fg hover:underline"
+        >
+          Use different credentials
+        </button>
       </form>
     );
   }
 
   return (
-    <form onSubmit={onCredentials} className="flex flex-col gap-5">
-      <Field label="Email" name="email" type="email" autoComplete="username" required />
+    <form key="credentials-form" onSubmit={onCredentials} className="flex flex-col gap-5">
       <Field
+        key="email-field"
+        label="Email"
+        name="email"
+        type="email"
+        placeholder="name@auren.com"
+        autoComplete="username"
+        required
+      />
+      <Field
+        key="password-field"
         label="Password"
         name="password"
         type="password"
+        placeholder="••••••••••••"
         autoComplete="current-password"
         required
       />

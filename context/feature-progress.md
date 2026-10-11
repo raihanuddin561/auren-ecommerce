@@ -227,12 +227,12 @@
 | ID | Sub-feature | Pri | BE | API | UT | FE | E2E | CR | Overall | Notes |
 |---|---|---|---|---|---|---|---|---|---|---|
 | 15.1 | Dashboard KPIs | P0 | Done | Done | Done | Done | N/A | Done | Done | enhancement. Extended admin dashboard KPI metrics: Net Sales, Pending Verifications with overdue countdown, To Ship queue, Low stock count, Average Order Value (AOV) across confirmed/delivered commissions, and Return-to-Origin (RTO) & Cancel rates. |
-| 15.2 | Sales analytics | P1 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
+| 15.2 | Sales analytics | P1 | Done | Done | Done | Done | N/A | Done | Done | new. Complete sales analytics engine (`src/modules/analytics/` and `/admin/analytics`): daily revenue trends, order volume, AOV, channels (web/phone/pos), category contribution, top products with gross margin %, customer cohorts (new vs returning), and full 4-stage order journey fulfillment funnel. |
 | 15.3 | Store settings | P0 | Done | Done | Done | Done | N/A | Done | Done | new. General store settings schema, service, actions, and admin page (/admin/settings/general) supporting store name, contact email/phone, Banani studio address, Bangladesh BIN/VAT, default VAT rates, and social channels, saved in store_settings table with full transactional audit logging. |
 | 15.4 | Staff management | P0 | Done | Done | Done | Done | N/A | Done | Done | new. Staff directory, invite flow with temporary password generation, role update dropdown with RBAC elevation checks (owner-only), self-deactivation safeguards, and status toggle at /admin/settings/staff, guarded by staff.manage permission. |
 | 15.5 | Audit log viewer | P1 | Done | Done | Done | Done | N/A | Done | Done | new. /admin/settings/audit viewer with action/entity/date/staff filters, actor joins, pagination, and secure JSON payload inspection dialog for before/after snapshots, guarded by audit.read permission. |
 | 15.6 | System health page | P1 | Done | Done | Done | Done | N/A | Done | Done | new. /admin/settings/health diagnostics monitoring DB round-trip latency, outbox event pipeline backlogs/poison-states, idempotency locks, and external integrations (Email, Storage, Inngest, Redis, Sentry), guarded by settings.manage. |
-| 15.7 | Verification performance report | P1 | Todo | Todo | Todo | Todo | Todo | Todo | Todo | |
+| 15.7 | Verification performance report | P1 | Done | Done | Done | Done | N/A | Done | Done | new. Verification performance analytics report: contact attempt counts, outcome breakdowns, channel mix, cancel reasons breakdown, median time-to-verify, SLA compliance (< 120m), and staff velocity scoreboard. |
 
 ## Module 16: Launch Readiness
 

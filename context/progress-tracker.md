@@ -16,6 +16,25 @@
 - Blockers/risks: <none | details>
 ```
 
+### 2026-10-11 — 15.2, 15.7 Business Analytics, Verification Performance & Storefront Polish — Done
+- Type: new, enhancement, fix
+- Scope: 
+  - Storefront section reordering: Repositioned Featured Collections directly adjacent to New Arrivals so product catalog discovery is prioritized above narrative editorial/atelier journal stories.
+  - Admin login 2FA form fix: Resolved DOM node reconciliation bug causing email to populate the verification code field. Added explicit form/field keys, placeholders (`Enter 6-digit code`), `defaultValue=""`, and `autoFocus`.
+  - Module 15.2 & 15.7 Business Analytics & Verification Performance: Built full analytics domain (`src/modules/analytics/`) and console dashboard (`/admin/analytics`) tracking daily revenue trends, order volume, AOV, acquisition channels (web/phone/pos), merchandise category contribution, top products with gross margin %, customer cohorts (new vs returning patrons), 4-stage fulfillment funnel, and Module 15.7 verification staff scoreboard with attempt counts, contact channels, cancel reasons, and SLA compliance (< 120m).
+- Changed:
+  - Storefront: `src/app/(storefront)/page.tsx`
+  - Admin Auth: `src/components/admin/sign-in-form.tsx`, `src/components/admin/two-factor-setup.tsx`
+  - Navigation: `src/lib/admin-nav.ts` (enabled Analytics route)
+  - Analytics Module: `src/modules/analytics/types.ts`, `schemas.ts`, `repository.ts`, `queries.ts`, `index.ts`, `__tests__/analytics.test.ts`
+  - Analytics UI: `src/components/admin/analytics/analytics-view.tsx`, `src/app/admin/(console)/analytics/page.tsx`
+  - Documentation: `context/feature-progress.md`, `context/progress-tracker.md`
+- Tests: unit 8/8 new analytics tests passing; admin component tests 25/25 passing.
+- Review: Module boundaries strictly followed (App -> mod-queries -> mod-shared / lib), quiet luxury design tokens enforced with zero arbitrary CSS hex colors, RBAC permission `analytics.read` enforced.
+- Decisions: None.
+- Next: Module 16 Launch Readiness or Module 2.6 Product Relations.
+- Blockers/risks: none.
+
 ### 2026-10-10 — 8.5, 8.6 Lookbooks with Shoppable Hotspots & Editorial Journal — Done
 - Type: new and enhancement
 - Scope: Implemented seasonal lookbooks with shoppable interactive hotspot pins, presentation mode, product preview popovers, and direct storefront links. Built an editorial journal / blog platform with full Markdown typography (drop caps, pull quotes, subheadings), attached garment rails, category and tag filtering, Article schema.org JSON-LD, RSS 2.0 feeds, and admin studios for both modules.

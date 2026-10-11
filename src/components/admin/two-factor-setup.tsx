@@ -92,7 +92,7 @@ export function TwoFactorSetup() {
 
   if (step === 'scan') {
     return (
-      <form onSubmit={onCode} className="flex flex-col gap-5" noValidate>
+      <form key="scan-form" onSubmit={onCode} className="flex flex-col gap-5" noValidate>
         <p className="type-eyebrow text-fg-muted">Step 2 of 3</p>
         <ol className="list-decimal space-y-1 pl-5 type-small">
           <li>Open an authenticator app (1Password, Authy, Google Authenticator).</li>
@@ -108,10 +108,17 @@ export function TwoFactorSetup() {
           </code>
         </p>
         <Field
+          key="scan-code-field"
           label="Authentication code"
           name="code"
+          type="text"
           inputMode="numeric"
           autoComplete="one-time-code"
+          placeholder="Enter 6-digit code"
+          defaultValue=""
+          pattern="[0-9]*"
+          maxLength={8}
+          autoFocus
           required
         />
         <FormError message={error} />
@@ -121,16 +128,18 @@ export function TwoFactorSetup() {
   }
 
   return (
-    <form onSubmit={onPassword} className="flex flex-col gap-5">
+    <form key="password-form" onSubmit={onPassword} className="flex flex-col gap-5">
       <p className="type-eyebrow text-fg-muted">Step 1 of 3</p>
       <p className="type-small">
         Staff accounts need two-factor authentication before they can use the admin console. You
         will need an authenticator app on your phone. Confirm your password to begin.
       </p>
       <Field
+        key="password-field"
         label="Password"
         name="password"
         type="password"
+        placeholder="••••••••••••"
         autoComplete="current-password"
         required
       />
