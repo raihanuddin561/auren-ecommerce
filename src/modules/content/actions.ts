@@ -6,6 +6,7 @@ import { assertPermission } from '@/lib/permissions';
 import { requireStaff } from '@/lib/staff';
 import {
   createPageSchema,
+  createPageFromTemplateSchema,
   createPageSectionSchema,
   reorderPageSectionsSchema,
   updatePageSchema,
@@ -28,6 +29,29 @@ export async function createPageAction(rawInput: unknown): Promise<ActionResult<
     }
 
     const id = await service.createPage(parsed.data, {
+      userId: staff.userId,
+    });
+
+    revalidatePath('/admin/content');
+    return ok({ id });
+  } catch (error) {
+    return toActionError(error);
+  }
+}
+
+export async function createPageFromTemplateAction(
+  rawInput: unknown,
+): Promise<ActionResult<{ id: string }>> {
+  try {
+    const staff = await requireStaff();
+    assertPermission(staff, 'content.manage');
+
+    const parsed = createPageFromTemplateSchema.safeParse(rawInput);
+    if (!parsed.success) {
+      return validationError(parsed.error);
+    }
+
+    const id = await service.createPageWithTemplate(parsed.data, {
       userId: staff.userId,
     });
 

@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { deletePageAction } from '@/modules/content/actions';
 import type { PageListItem, PageStatus } from '@/modules/content/types';
 import { CreatePageDialog } from './create-page-dialog';
-import { ExternalLink, Edit3, Trash2, Search, FileText } from 'lucide-react';
+import { ExternalLink, Edit3, Trash2, Search, FileText, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface PagesTableProps {
@@ -101,7 +101,13 @@ export function PagesTable({ pages, totalCount }: PagesTableProps) {
           </span>
         </div>
 
-        <div>
+        <div className="flex items-center gap-2">
+          <Button asChild size="sm" className="gap-1.5 bg-ink text-xs text-ivory hover:bg-ink/90">
+            <Link href="/admin/content/new">
+              <Sparkles className="h-3.5 w-3.5 text-gold" />
+              New Landing Page Studio
+            </Link>
+          </Button>
           <CreatePageDialog />
         </div>
       </div>

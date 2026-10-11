@@ -57,6 +57,16 @@ const BLOCK_OPTIONS: { type: BlockType; label: string; desc: string }[] = [
     desc: 'Image beside story headline and CTA',
   },
   { type: 'lookbook_strip', label: 'Lookbook Two-Up Strip', desc: 'Dual editorial 4:5 portraits' },
+  {
+    type: 'featured_collection',
+    label: 'Featured Collection',
+    desc: 'Curated products from a collection slug',
+  },
+  {
+    type: 'category_grid',
+    label: 'Category Grid',
+    desc: 'Multi-column visual category tiles',
+  },
   { type: 'faq_accordion', label: 'FAQ Accordions', desc: 'Question and answer expandable items' },
   { type: 'video_spotlight', label: 'Video Spotlight', desc: 'Atelier craftsmanship video player' },
 ];
@@ -90,6 +100,16 @@ export function SectionEditorDialog({
   const [image1Url, setImage1Url] = useState(typeof p.image1Url === 'string' ? p.image1Url : '');
   const [image2Url, setImage2Url] = useState(typeof p.image2Url === 'string' ? p.image2Url : '');
   const [videoUrl, setVideoUrl] = useState(typeof p.videoUrl === 'string' ? p.videoUrl : '');
+  const [collectionSlug, setCollectionSlug] = useState(
+    typeof p.collectionSlug === 'string' ? p.collectionSlug : '',
+  );
+  const [collectionLimit, setCollectionLimit] = useState(
+    typeof p.limit === 'number' ? String(p.limit) : '4',
+  );
+  const [viewAllLabel, setViewAllLabel] = useState(
+    typeof p.viewAllLabel === 'string' ? p.viewAllLabel : '',
+  );
+  const [columns, setColumns] = useState(typeof p.columns === 'number' ? String(p.columns) : '3');
 
   const buildProps = (): Record<string, unknown> => {
     switch (blockType) {
@@ -166,6 +186,44 @@ export function SectionEditorDialog({
             'https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=1200',
           ctaLabel: ctaLabel.trim() || undefined,
           ctaUrl: ctaUrl.trim() || undefined,
+        };
+      case 'featured_collection':
+        return {
+          headline: headline.trim() || 'Featured Pieces',
+          subtitle: subtitle.trim() || undefined,
+          collectionSlug: collectionSlug.trim() || 'seasonal-capsule',
+          limit: Math.max(1, Math.min(12, Number(collectionLimit) || 4)),
+          viewAllLabel: viewAllLabel.trim() || 'Explore All Pieces',
+        };
+      case 'category_grid':
+        return {
+          headline: headline.trim() || 'Curated Categories',
+          subtitle: subtitle.trim() || undefined,
+          columns: (Number(columns) === 2 || Number(columns) === 4 ? Number(columns) : 3) as
+            2 | 3 | 4,
+          items: p.items ?? [
+            {
+              title: 'Master Tailored Suiting',
+              subtitle: 'Double-breasted and single-breasted cuts',
+              href: '/categories/suiting',
+              imageUrl:
+                'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?auto=format&fit=crop&w=800&q=80',
+            },
+            {
+              title: 'Artisanal Panjabi',
+              subtitle: 'Noble cotton with handcrafted plackets',
+              href: '/categories/panjabi',
+              imageUrl:
+                'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=800&q=80',
+            },
+            {
+              title: 'Fine Shirting',
+              subtitle: 'Egyptian Giza cotton in refined weaves',
+              href: '/categories/shirting',
+              imageUrl:
+                'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?auto=format&fit=crop&w=800&q=80',
+            },
+          ],
         };
       case 'faq_accordion':
         return {
@@ -293,14 +351,7 @@ export function SectionEditorDialog({
           </div>
 
           {/* Conditional Prop Fields based on Block Type */}
-          {(blockType === 'hero_banner' ||
-            blockType === 'brand_perks' ||
-            blockType === 'newsletter_strip' ||
-            blockType === 'rich_text' ||
-            blockType === 'split_banner' ||
-            blockType === 'lookbook_strip' ||
-            blockType === 'faq_accordion' ||
-            blockType === 'video_spotlight') && (
+          {blockType !== 'editorial_quote' && (
             <div className="space-y-1.5">
               <Label htmlFor="headline" className="text-xs text-fg-muted">
                 Headline
@@ -315,13 +366,7 @@ export function SectionEditorDialog({
             </div>
           )}
 
-          {(blockType === 'hero_banner' ||
-            blockType === 'brand_perks' ||
-            blockType === 'newsletter_strip' ||
-            blockType === 'rich_text' ||
-            blockType === 'lookbook_strip' ||
-            blockType === 'faq_accordion' ||
-            blockType === 'video_spotlight') && (
+          {blockType !== 'editorial_quote' && blockType !== 'split_banner' && (
             <div className="space-y-1.5">
               <Label htmlFor="subtitle" className="text-xs text-fg-muted">
                 Subtitle / Description
@@ -489,6 +534,70 @@ export function SectionEditorDialog({
                   className="h-9 border-line bg-page text-xs"
                 />
               </div>
+            </div>
+          )}
+
+          {blockType === 'featured_collection' && (
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="collectionSlug" className="text-xs text-fg-muted">
+                    Collection Slug *
+                  </Label>
+                  <Input
+                    id="collectionSlug"
+                    placeholder="e.g. winter-capsule"
+                    value={collectionSlug}
+                    onChange={(e) => setCollectionSlug(e.target.value)}
+                    className="h-9 border-line bg-page font-mono text-xs"
+                    required
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="collectionLimit" className="text-xs text-fg-muted">
+                    Max Items (1 - 12)
+                  </Label>
+                  <Input
+                    id="collectionLimit"
+                    type="number"
+                    min={1}
+                    max={12}
+                    value={collectionLimit}
+                    onChange={(e) => setCollectionLimit(e.target.value)}
+                    className="h-9 border-line bg-page font-mono text-xs"
+                  />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="viewAllLabel" className="text-xs text-fg-muted">
+                  View All Button Label
+                </Label>
+                <Input
+                  id="viewAllLabel"
+                  placeholder="e.g. Explore All Pieces"
+                  value={viewAllLabel}
+                  onChange={(e) => setViewAllLabel(e.target.value)}
+                  className="h-9 border-line bg-page text-xs"
+                />
+              </div>
+            </div>
+          )}
+
+          {blockType === 'category_grid' && (
+            <div className="space-y-1.5">
+              <Label htmlFor="gridColumns" className="text-xs text-fg-muted">
+                Grid Columns
+              </Label>
+              <select
+                id="gridColumns"
+                value={columns}
+                onChange={(e) => setColumns(e.target.value)}
+                className="h-9 w-full rounded-sm border border-line bg-page px-3 text-xs text-fg focus:ring-1 focus:ring-gold focus:outline-hidden"
+              >
+                <option value="2">2 Columns (Dual Showcase)</option>
+                <option value="3">3 Columns (Standard Balanced)</option>
+                <option value="4">4 Columns (Dense Grid)</option>
+              </select>
             </div>
           )}
 

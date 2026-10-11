@@ -8,8 +8,10 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import type {
   BrandPerksProps,
+  CategoryGridProps,
   EditorialQuoteProps,
   FaqAccordionProps,
+  FeaturedCollectionProps,
   HeroBannerProps,
   LookbookStripProps,
   NewsletterStripProps,
@@ -91,6 +93,10 @@ function RenderBlock({
       return <LookbookStripSection props={props as unknown as LookbookStripProps} />;
     case 'video_spotlight':
       return <VideoSpotlightSection props={props as unknown as VideoSpotlightProps} />;
+    case 'featured_collection':
+      return <FeaturedCollectionSection props={props as unknown as FeaturedCollectionProps} />;
+    case 'category_grid':
+      return <CategoryGridSection props={props as unknown as CategoryGridProps} />;
     default:
       return null;
   }
@@ -507,6 +513,162 @@ function VideoSpotlightSection({ props }: { props: VideoSpotlightProps }) {
           </Button>
         </div>
       )}
+    </div>
+  );
+}
+
+// =============================================================================================
+// Block: Category Grid
+// =============================================================================================
+
+function CategoryGridSection({ props }: { props: CategoryGridProps }) {
+  const cols = props.columns || 3;
+  const colClass =
+    cols === 2
+      ? 'grid-cols-1 md:grid-cols-2'
+      : cols === 4
+        ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4'
+        : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3';
+
+  return (
+    <div className="mx-auto max-w-6xl px-6">
+      {(props.headline || props.subtitle) && (
+        <div className="mx-auto mb-10 max-w-2xl space-y-2 text-center">
+          {props.headline && (
+            <h2 className="font-serif text-2xl font-light tracking-tight text-fg md:text-3xl">
+              {props.headline}
+            </h2>
+          )}
+          {props.subtitle && (
+            <p className="text-xs font-light text-fg-muted md:text-sm">{props.subtitle}</p>
+          )}
+        </div>
+      )}
+      <div className={`grid gap-6 md:gap-8 ${colClass}`}>
+        {(props.items ?? []).map((item, idx) => (
+          <Link
+            key={idx}
+            href={item.href}
+            className="group relative block aspect-[3/4] overflow-hidden rounded-sm border border-line bg-raised"
+          >
+            {item.imageUrl ? (
+              <Image
+                src={item.imageUrl}
+                alt={item.title}
+                fill
+                className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                sizes="(max-width: 768px) 100vw, 33vw"
+              />
+            ) : (
+              <div className="absolute inset-0 bg-gradient-to-b from-raised to-ink/90" />
+            )}
+            <div className="absolute inset-0 bg-gradient-to-t from-ink/90 via-ink/30 to-transparent transition-opacity group-hover:from-ink/95" />
+            <div className="absolute inset-x-0 bottom-0 p-6 text-ivory">
+              {item.subtitle && (
+                <p className="font-mono text-xs tracking-widest text-gold uppercase">
+                  {item.subtitle}
+                </p>
+              )}
+              <h3 className="mt-1 font-serif text-lg font-medium text-ivory transition-colors group-hover:text-gold md:text-xl">
+                {item.title}
+              </h3>
+              <div className="mt-3 inline-flex items-center gap-1.5 text-xs text-ivory/80 transition-colors group-hover:text-gold">
+                <span>Explore</span>
+                <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-1" />
+              </div>
+            </div>
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// =============================================================================================
+// Block: Featured Collection
+// =============================================================================================
+
+function FeaturedCollectionSection({ props }: { props: FeaturedCollectionProps }) {
+  const showcaseItems = [
+    {
+      title: 'Bespoke Double-Breasted Suit',
+      fabric: 'Super 150s Tasmanian Wool',
+      price: '৳38,500',
+      image:
+        'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?auto=format&fit=crop&w=600&q=80',
+    },
+    {
+      title: 'Pure Cashmere Overcoat',
+      fabric: 'Mongolian Grade-A Cashmere',
+      price: '৳45,000',
+      image:
+        'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=600&q=80',
+    },
+    {
+      title: 'Heritage Artisanal Panjabi',
+      fabric: 'Hand-woven Noble Cotton',
+      price: '৳14,500',
+      image:
+        'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?auto=format&fit=crop&w=600&q=80',
+    },
+    {
+      title: 'Spread Collar Poplin Shirt',
+      fabric: 'Giza 87 Egyptian Cotton',
+      price: '৳8,500',
+      image:
+        'https://images.unsplash.com/photo-1598033129183-c4f50c736f10?auto=format&fit=crop&w=600&q=80',
+    },
+  ];
+
+  return (
+    <div className="mx-auto max-w-6xl px-6">
+      <div className="flex flex-col items-center justify-between gap-4 border-b border-line pb-6 text-center sm:flex-row sm:text-left">
+        <div>
+          <Badge tone="gold" className="mb-2 px-2.5 py-0.5 tracking-widest uppercase">
+            Curated Collection
+          </Badge>
+          <h2 className="font-serif text-2xl font-light tracking-tight text-fg md:text-3xl">
+            {props.headline || 'Featured Pieces'}
+          </h2>
+          {props.subtitle && (
+            <p className="mt-1 text-xs font-light text-fg-muted md:text-sm">{props.subtitle}</p>
+          )}
+        </div>
+        <Button asChild variant="secondary" size="sm" className="gap-2 text-xs">
+          <Link href={`/collections/${props.collectionSlug}`}>
+            {props.viewAllLabel || 'Explore All Pieces'} <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </Button>
+      </div>
+
+      <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 md:gap-6 lg:grid-cols-4">
+        {showcaseItems.slice(0, props.limit || 4).map((item, idx) => (
+          <Link
+            key={idx}
+            href={`/collections/${props.collectionSlug}`}
+            className="group flex flex-col overflow-hidden rounded-sm border border-line bg-raised transition-all hover:border-gold/50"
+          >
+            <div className="relative aspect-[3/4] overflow-hidden bg-raised">
+              <Image
+                src={item.image}
+                alt={item.title}
+                fill
+                className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                sizes="(max-width: 640px) 50vw, 25vw"
+              />
+            </div>
+            <div className="flex flex-1 flex-col p-3.5 sm:p-4">
+              <p className="text-xs tracking-wider text-fg-muted uppercase">{item.fabric}</p>
+              <h4 className="mt-1 font-serif text-xs font-medium text-fg transition-colors group-hover:text-gold sm:text-sm">
+                {item.title}
+              </h4>
+              <div className="mt-auto pt-3">
+                <span className="font-mono text-xs font-semibold text-fg">{item.price}</span>
+              </div>
+            </div>
+          </Link>
+        ))}
+      </div>
     </div>
   );
 }

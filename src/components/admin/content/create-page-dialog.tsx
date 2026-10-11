@@ -75,9 +75,9 @@ export function CreatePageDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" className="gap-1.5 bg-ink text-xs text-ivory hover:bg-ink/90">
+        <Button variant="secondary" size="sm" className="gap-1.5 text-xs">
           <Plus className="h-3.5 w-3.5" />
-          Create Page
+          Quick Blank Page
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-md border-line bg-raised">

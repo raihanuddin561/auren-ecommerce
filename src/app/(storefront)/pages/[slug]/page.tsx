@@ -51,8 +51,10 @@ async function PageContent({ params }: PageProps) {
     notFound();
   }
 
+  const hasHeroLeading = page.sections.length > 0 && page.sections[0]?.blockType === 'hero_banner';
+
   return (
-    <article className="min-h-screen py-10 md:py-16">
+    <article className={`min-h-screen ${hasHeroLeading ? 'pb-16' : 'py-10 md:py-16'}`}>
       {isDraft && (
         <aside
           aria-label="Draft mode banner"
@@ -62,16 +64,18 @@ async function PageContent({ params }: PageProps) {
         </aside>
       )}
 
-      <header className="mx-auto mb-12 max-w-4xl space-y-3 px-6 text-center">
-        <h1 className="font-serif text-3xl font-light tracking-tight text-fg md:text-5xl">
-          {page.title}
-        </h1>
-        {page.description && (
-          <p className="mx-auto max-w-xl text-xs leading-relaxed text-fg-muted md:text-sm">
-            {page.description}
-          </p>
-        )}
-      </header>
+      {!hasHeroLeading && (
+        <header className="mx-auto mb-12 max-w-4xl space-y-3 px-6 text-center">
+          <h1 className="font-serif text-3xl font-light tracking-tight text-fg md:text-5xl">
+            {page.title}
+          </h1>
+          {page.description && (
+            <p className="mx-auto max-w-xl text-xs leading-relaxed text-fg-muted md:text-sm">
+              {page.description}
+            </p>
+          )}
+        </header>
+      )}
 
       <SectionRenderer sections={page.sections} />
     </article>

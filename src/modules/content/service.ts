@@ -3,9 +3,11 @@ import { db, type Tx } from '@/lib/db';
 import { DomainError } from '@/lib/errors';
 import { audit } from '@/modules/audit/service';
 import * as repo from './repository';
+import { getTemplateById } from './templates';
 import {
   validateBlockProps,
   type CreatePageInput,
+  type CreatePageFromTemplateInput,
   type CreatePageSectionInput,
   type PageFilterInput,
   type ReorderPageSectionsInput,
@@ -76,6 +78,65 @@ export async function createPage(
       entity: 'page',
       entityId: created.id,
       after: { slug: created.slug, title: created.title, status: created.status },
+      ip: actor.ip ?? null,
+      userAgent: actor.userAgent ?? null,
+    });
+
+    revalidateTag('pages', 'max');
+    return created.id;
+  });
+}
+
+export async function createPageWithTemplate(
+  input: CreatePageFromTemplateInput,
+  actor: { userId: string; ip?: string | null; userAgent?: string | null },
+): Promise<string> {
+  const template = getTemplateById(input.templateId);
+  if (!template) {
+    throw new DomainError('NOT_FOUND', `Landing page template "${input.templateId}" not found`);
+  }
+
+  return db.$transaction(async (tx) => {
+    const existing = await repo.getPageBySlug(tx, input.slug, true);
+    if (existing) {
+      throw new DomainError('CONFLICT', `A page with slug "${input.slug}" already exists`);
+    }
+
+    const created = await repo.createPage(
+      tx,
+      {
+        slug: input.slug,
+        title: input.title,
+        description: input.description,
+        status: input.status,
+        scheduledAt: null,
+      },
+      actor.userId,
+    );
+
+    for (let i = 0; i < template.sections.length; i++) {
+      const section = template.sections[i]!;
+      await repo.createPageSection(tx, {
+        pageId: created.id,
+        blockType: section.blockType,
+        name: section.name,
+        props: section.props,
+        sortOrder: i,
+        isVisible: true,
+      });
+    }
+
+    await audit(tx, {
+      actorId: actor.userId,
+      action: 'page.create_from_template',
+      entity: 'page',
+      entityId: created.id,
+      after: {
+        slug: created.slug,
+        title: created.title,
+        templateId: input.templateId,
+        sectionsCount: template.sections.length,
+      },
       ip: actor.ip ?? null,
       userAgent: actor.userAgent ?? null,
     });

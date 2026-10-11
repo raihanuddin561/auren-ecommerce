@@ -223,7 +223,21 @@ export const pageFilterSchema = z.object({
   limit: z.number().int().min(1).max(100).default(25),
 });
 
+export const createPageFromTemplateSchema = z.object({
+  templateId: z.string().trim().min(1, 'Template is required'),
+  title: z.string().trim().min(2, 'Page title is required').max(150),
+  slug: z
+    .string()
+    .trim()
+    .min(2, 'Slug must be at least 2 characters')
+    .max(100)
+    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'Slug must be lower-case alphanumeric with hyphens'),
+  description: z.string().trim().max(500).optional().nullable(),
+  status: pageStatusEnum.default('draft'),
+});
+
 export type CreatePageInput = z.infer<typeof createPageSchema>;
+export type CreatePageFromTemplateInput = z.infer<typeof createPageFromTemplateSchema>;
 export type UpdatePageInput = z.infer<typeof updatePageSchema>;
 export type CreatePageSectionInput = z.infer<typeof createPageSectionSchema>;
 export type UpdatePageSectionInput = z.infer<typeof updatePageSectionSchema>;

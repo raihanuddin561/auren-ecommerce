@@ -181,4 +181,37 @@ describe('Content module validation schemas', () => {
       expect(invalidQuote.success).toBe(false);
     });
   });
+
+  describe('createPageFromTemplateSchema and LANDING_PAGE_TEMPLATES', () => {
+    it('validates template creation schema', async () => {
+      const { createPageFromTemplateSchema } = await import('../schemas');
+      const res = createPageFromTemplateSchema.safeParse({
+        templateId: 'seasonal_capsule',
+        title: 'Winter Capsule 2026',
+        slug: 'winter-capsule-2026',
+        description: 'Limited seasonal drop.',
+        status: 'draft',
+      });
+      expect(res.success).toBe(true);
+    });
+
+    it('all registered landing page starter templates pass block validation', async () => {
+      const { LANDING_PAGE_TEMPLATES } = await import('../templates');
+      expect(LANDING_PAGE_TEMPLATES.length).toBeGreaterThanOrEqual(4);
+
+      for (const template of LANDING_PAGE_TEMPLATES) {
+        expect(template.id).toBeTruthy();
+        expect(template.title).toBeTruthy();
+        expect(template.sections.length).toBeGreaterThan(0);
+
+        for (const section of template.sections) {
+          const val = validateBlockProps(section.blockType, section.props);
+          expect(
+            val.success,
+            `Template ${template.id} section ${section.name} failed validation`,
+          ).toBe(true);
+        }
+      }
+    });
+  });
 });
