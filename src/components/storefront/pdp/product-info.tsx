@@ -1,3 +1,5 @@
+'use client';
+
 import { CreditCard, Repeat, Star, Truck } from 'lucide-react';
 import {
   Accordion,
@@ -8,6 +10,15 @@ import {
 import { Icon } from '@/components/ui/icon';
 import type { PdpData } from '@/modules/catalog/pdp';
 import type { ProductRatingStatsData } from '@/modules/reviews/types';
+import { useTranslation } from '@/lib/i18n/context';
+import {
+  translateProductTitle,
+  translateCategory,
+  translateDetailLabel,
+  translateDetailValue,
+  translateCatalogPhrase,
+  toBengaliDigits,
+} from '@/lib/i18n/catalog-translator';
 
 /** Eyebrow, serif title, subtitle and social proof rating stars. The page's only h1. */
 export function ProductHeading({
@@ -17,10 +28,14 @@ export function ProductHeading({
   product: PdpData;
   stats?: ProductRatingStatsData | null;
 }) {
+  const { locale, isBn } = useTranslation();
+
   return (
     <header className="flex flex-col gap-3">
-      {product.eyebrow ? <p className="type-eyebrow text-fg-muted">{product.eyebrow}</p> : null}
-      <h1 className="type-h1 text-fg">{product.title}</h1>
+      {product.eyebrow ? (
+        <p className="type-eyebrow text-fg-muted">{translateCategory(product.eyebrow, locale)}</p>
+      ) : null}
+      <h1 className="type-h1 text-fg">{translateProductTitle(product.title, locale)}</h1>
       {stats && stats.reviewCount > 0 ? (
         <a
           href="#reviews"
@@ -39,32 +54,57 @@ export function ProductHeading({
               />
             ))}
           </div>
-          <span className="font-medium text-fg">{stats.averageRating.toFixed(1)}</span>
+          <span className="font-medium text-fg">
+            {isBn
+              ? toBengaliDigits(stats.averageRating.toFixed(1))
+              : stats.averageRating.toFixed(1)}
+          </span>
           <span>
-            ({stats.reviewCount} {stats.reviewCount === 1 ? 'review' : 'reviews'})
+            (
+            {isBn
+              ? `${toBengaliDigits(stats.reviewCount)}টি মতামত`
+              : `${stats.reviewCount} ${stats.reviewCount === 1 ? 'review' : 'reviews'}`}
+            )
           </span>
           <span className="text-fg-muted/40">•</span>
           <span className="font-medium text-accent-text">
-            {stats.fitTrueToSizePercentage}% True to size
+            {isBn
+              ? `${toBengaliDigits(stats.fitTrueToSizePercentage)}% সঠিক সাইজ ফিট`
+              : `${stats.fitTrueToSizePercentage}% True to size`}
           </span>
         </a>
       ) : null}
-      {product.subtitle ? <p className="type-body text-fg-muted">{product.subtitle}</p> : null}
+      {product.subtitle ? (
+        <p className="type-body text-fg-muted">
+          {isBn ? translateCatalogPhrase(product.subtitle) : product.subtitle}
+        </p>
+      ) : null}
     </header>
   );
 }
 
-const TRUST = [
-  { icon: Repeat, text: 'Doorstep size exchange' },
-  { icon: CreditCard, text: 'COD & Mobile Banking' },
-  { icon: Truck, text: '24–48h Dhaka · Nationwide 2–4d' },
-] as const;
-
 export function TrustRow() {
+  const { isBn } = useTranslation();
+
+  const trustItems = [
+    {
+      icon: Repeat,
+      text: isBn ? 'হোম সাইজ এক্সচেঞ্জ সুবিধা' : 'Doorstep size exchange',
+    },
+    {
+      icon: CreditCard,
+      text: isBn ? 'ক্যাশ অন ডেলিভারি ও মোবাইল ব্যাংকিং' : 'COD & Mobile Banking',
+    },
+    {
+      icon: Truck,
+      text: isBn ? 'ঢাকা ২৪–৪৮ ঘণ্টা · সারাদেশে ২–৪ দিন' : '24–48h Dhaka · Nationwide 2–4d',
+    },
+  ];
+
   return (
     <div className="flex flex-col gap-3 border-y border-line py-5">
       <ul className="grid gap-3 sm:grid-cols-3">
-        {TRUST.map(({ icon, text }) => (
+        {trustItems.map(({ icon, text }) => (
           <li key={text} className="flex items-center gap-2.5 type-small text-fg">
             <Icon icon={icon} size={18} className="text-accent-text" />
             <span>{text}</span>
@@ -72,7 +112,9 @@ export function TrustRow() {
         ))}
       </ul>
       <div className="flex flex-wrap items-center gap-2 pt-1">
-        <span className="type-eyebrow tracking-wider text-fg-muted uppercase">Accepted:</span>
+        <span className="type-eyebrow tracking-wider text-fg-muted uppercase">
+          {isBn ? 'গৃহীত মাধ্যম:' : 'Accepted:'}
+        </span>
         {['Cash on delivery', 'bKash', 'Nagad', 'Visa', 'Mastercard'].map((mark) => (
           <span
             key={mark}
@@ -88,21 +130,23 @@ export function TrustRow() {
 
 /** Details and fit, fabric and care, delivery and returns. Plain text only, never HTML. */
 export function ProductAccordions({ product }: { product: PdpData }) {
+  const { locale, isBn } = useTranslation();
+
   return (
     <Accordion type="single" collapsible defaultValue="details" className="border-t border-line">
       <AccordionItem value="details">
-        <AccordionTrigger>Details and fit</AccordionTrigger>
+        <AccordionTrigger>{isBn ? 'বিবরণ ও ফিট' : 'Details and fit'}</AccordionTrigger>
         <AccordionContent>
           <div className="flex flex-col gap-3 type-body text-fg-muted">
             {product.description.map((paragraph, index) => (
-              <p key={index}>{paragraph}</p>
+              <p key={index}>{isBn ? translateCatalogPhrase(paragraph) : paragraph}</p>
             ))}
             {product.details.length > 0 ? (
               <dl className="mt-1 grid grid-cols-[auto_1fr] gap-x-6 gap-y-1 type-small">
                 {product.details.map((detail) => (
                   <div key={detail.label} className="contents">
-                    <dt className="text-fg">{detail.label}</dt>
-                    <dd>{detail.value}</dd>
+                    <dt className="text-fg">{translateDetailLabel(detail.label, locale)}</dt>
+                    <dd>{translateDetailValue(detail.value, locale)}</dd>
                   </div>
                 ))}
               </dl>
@@ -111,25 +155,37 @@ export function ProductAccordions({ product }: { product: PdpData }) {
         </AccordionContent>
       </AccordionItem>
       <AccordionItem value="care">
-        <AccordionTrigger>Fabric and care</AccordionTrigger>
+        <AccordionTrigger>{isBn ? 'ফ্যাব্রিক ও যত্ন' : 'Fabric and care'}</AccordionTrigger>
         <AccordionContent>
           <div className="flex flex-col gap-3 type-body text-fg-muted">
-            {product.fabric ? <p>Crafted in {product.fabric.toLowerCase()}.</p> : null}
-            <p>{product.care ?? 'Follow the care label sewn into the garment.'}</p>
+            {product.fabric ? (
+              <p>
+                {isBn
+                  ? `তৈরি করা হয়েছে অভিজাত ${translateDetailValue(product.fabric, locale)} দিয়ে।`
+                  : `Crafted in ${product.fabric.toLowerCase()}.`}
+              </p>
+            ) : null}
+            <p>
+              {isBn
+                ? 'পোশাকে সংযুক্ত কেয়ার লেবেল অনুযায়ী যত্ন নিন।'
+                : (product.care ?? 'Follow the care label sewn into the garment.')}
+            </p>
           </div>
         </AccordionContent>
       </AccordionItem>
       <AccordionItem value="delivery">
-        <AccordionTrigger>Delivery and returns</AccordionTrigger>
+        <AccordionTrigger>{isBn ? 'ডেলিভারি ও রিটার্ন' : 'Delivery and returns'}</AccordionTrigger>
         <AccordionContent>
           <div className="flex flex-col gap-3 type-body text-fg-muted">
             <p>
-              Every order is confirmed by our team before it ships, usually within a couple of
-              hours. We will call you to check the size and the address.
+              {isBn
+                ? 'আমাদের টিম ডেলিভারির আগে প্রতিটি অর্ডার নিশ্চিত করে (সাধারণত কয়েক ঘণ্টার মধ্যে)। আমরা সাইজ এবং ঠিকানা নিশ্চিত করতে আপনাকে ফোন করব।'
+                : 'Every order is confirmed by our team before it ships, usually within a couple of hours. We will call you to check the size and the address.'}
             </p>
             <p>
-              If the size is not right, exchange it for another. Pieces must be unworn with the tags
-              attached.
+              {isBn
+                ? 'সাইজ পছন্দ না হলে বা মানানসই না হলে সাইজ পরিবর্তনের সহজ সুবিধা রয়েছে। পোশাকটি অবশ্যই অপ্রযুক্ত এবং ট্যাগযুক্ত থাকতে হবে।'
+                : 'If the size is not right, exchange it for another. Pieces must be unworn with the tags attached.'}
             </p>
           </div>
         </AccordionContent>

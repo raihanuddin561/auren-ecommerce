@@ -8,6 +8,13 @@ import { ArrowRight, Search, X } from 'lucide-react';
 import { Icon } from '@/components/ui/icon';
 import { getSearchSuggestionsAction } from '@/modules/search/actions';
 import type { CategorySuggestion, SearchProductSuggestion } from '@/modules/search/types';
+import { useTranslation } from '@/lib/i18n/context';
+import {
+  translateProductTitle,
+  translateCategory,
+  translateCatalogPhrase,
+  toBengaliDigits,
+} from '@/lib/i18n/catalog-translator';
 
 interface SearchOverlayProps {
   open: boolean;
@@ -25,6 +32,7 @@ const DEFAULT_POPULAR = [
 
 export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
   const router = useRouter();
+  const { locale } = useTranslation();
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState('');
   const [products, setProducts] = useState<SearchProductSuggestion[]>([]);
@@ -106,7 +114,7 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="Search Collection"
+      aria-label={locale === 'bn' ? 'সংগ্রহ অনুসন্ধান' : 'Search Collection'}
       className="fixed inset-0 z-50 flex flex-col bg-ink/75 backdrop-blur-md"
     >
       {/* Backdrop click dismiss */}
@@ -117,12 +125,14 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
           {/* Header Bar */}
           <div className="flex items-center justify-between pb-4">
             <span className="type-eyebrow font-medium tracking-widest text-gold uppercase">
-              ✦ Atelier Collection Discovery ✦
+              {locale === 'bn'
+                ? '✦ অলিয়ের কালেকশন অনুসন্ধান ✦'
+                : '✦ Atelier Collection Discovery ✦'}
             </span>
             <button
               type="button"
               onClick={onClose}
-              aria-label="Close search"
+              aria-label={locale === 'bn' ? 'অনুসন্ধান বন্ধ করুন' : 'Close search'}
               className="flex size-9 items-center justify-center rounded-full border border-line/60 p-2 text-fg-muted transition-all duration-200 hover:border-gold hover:bg-gold/10 hover:text-gold"
             >
               <Icon icon={X} size={18} />
@@ -141,7 +151,11 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search garments, noble fabrics, silhouettes..."
+              placeholder={
+                locale === 'bn'
+                  ? 'পোশাক, অভিজাত ফ্যাব্রিক, সিলুয়েট খুঁজুন...'
+                  : 'Search garments, noble fabrics, silhouettes...'
+              }
               className="w-full border-b border-line/80 bg-transparent py-4 pr-28 pl-10 font-serif text-xl text-fg placeholder:text-fg-muted/60 focus:border-gold focus:outline-none md:text-2xl"
               autoComplete="off"
             />
@@ -150,7 +164,7 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
                 type="submit"
                 className="absolute right-0 flex items-center gap-1.5 rounded-xs border border-gold/40 bg-gold/10 px-3 py-1.5 type-eyebrow font-medium text-gold transition-all duration-200 hover:bg-gold hover:text-ink"
               >
-                <span>View all</span>
+                <span>{locale === 'bn' ? 'সব দেখুন' : 'View all'}</span>
                 <Icon icon={ArrowRight} size={14} />
               </button>
             ) : null}
@@ -160,7 +174,7 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
           {query.trim().length < 2 ? (
             <div className="mt-8 flex flex-col gap-3">
               <p className="type-eyebrow font-medium tracking-eyebrow text-gold uppercase">
-                Trending Curations
+                {locale === 'bn' ? 'জনপ্রিয় পছন্দ' : 'Trending Curations'}
               </p>
               <div className="flex flex-wrap gap-2">
                 {popular.map((term) => (
@@ -170,7 +184,7 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
                     onClick={() => handleSelectTerm(term)}
                     className="rounded-full border border-line/70 bg-raised px-4 py-1.5 type-small text-fg transition-all duration-200 hover:scale-105 hover:border-gold hover:bg-gold/5 hover:text-gold active:scale-95"
                   >
-                    {term}
+                    {locale === 'bn' ? translateCatalogPhrase(term) : term}
                   </button>
                 ))}
               </div>
@@ -181,7 +195,9 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
               {/* Category Matches */}
               {displayCategories.length > 0 ? (
                 <div className="flex items-center gap-3">
-                  <span className="type-eyebrow text-fg-muted">In categories:</span>
+                  <span className="type-eyebrow text-fg-muted">
+                    {locale === 'bn' ? 'ক্যাটাগরি অনুযায়ী:' : 'In categories:'}
+                  </span>
                   <div className="flex flex-wrap gap-2">
                     {displayCategories.map((cat) => (
                       <Link
@@ -190,7 +206,7 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
                         onClick={onClose}
                         className="bg-subtle border border-line px-3 py-1 type-small text-fg hover:border-gold"
                       >
-                        {cat.name}
+                        {translateCategory(cat.name, locale)}
                       </Link>
                     ))}
                   </div>
@@ -201,11 +217,15 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
               {loading ? (
                 <div className="flex items-center gap-2 py-6 type-small text-fg-muted">
                   <span className="size-4 animate-spin rounded-full border-2 border-line border-t-fg" />
-                  <span>Curating pieces...</span>
+                  <span>
+                    {locale === 'bn' ? 'পোশাক নির্বাচন করা হচ্ছে...' : 'Curating pieces...'}
+                  </span>
                 </div>
               ) : displayProducts.length > 0 ? (
                 <div className="flex flex-col gap-3">
-                  <p className="type-eyebrow text-fg-muted">Suggested Pieces</p>
+                  <p className="type-eyebrow text-fg-muted">
+                    {locale === 'bn' ? 'পরামর্শকৃত পোশাক' : 'Suggested Pieces'}
+                  </p>
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
                     {displayProducts.map((prod) => (
                       <Link
@@ -231,13 +251,17 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
                         </div>
                         <div className="mt-3 flex flex-col">
                           {prod.categoryName ? (
-                            <span className="type-eyebrow text-fg-muted">{prod.categoryName}</span>
+                            <span className="type-eyebrow text-fg-muted">
+                              {translateCategory(prod.categoryName, locale)}
+                            </span>
                           ) : null}
                           <span className="line-clamp-1 font-serif text-base text-fg group-hover:underline">
-                            {prod.title}
+                            {translateProductTitle(prod.title, locale)}
                           </span>
                           <span className="mt-1 font-sans font-medium text-fg">
-                            {prod.priceFormatted}
+                            {locale === 'bn'
+                              ? toBengaliDigits(prod.priceFormatted)
+                              : prod.priceFormatted}
                           </span>
                         </div>
                       </Link>
@@ -250,7 +274,9 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
                       onClick={handleSubmit as unknown as React.MouseEventHandler}
                       className="flex items-center gap-2 border border-line bg-raised px-6 py-2.5 type-eyebrow text-fg transition-auren-fast hover:border-fg hover:bg-fg/5"
                     >
-                      <span>Explore all matching pieces</span>
+                      <span>
+                        {locale === 'bn' ? 'সকল অনুরূপ পোশাক দেখুন' : 'Explore all matching pieces'}
+                      </span>
                       <Icon icon={ArrowRight} size={14} />
                     </button>
                   </div>
@@ -258,10 +284,14 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
               ) : (
                 <div className="py-8 text-center">
                   <p className="type-body text-fg-muted">
-                    No garments found matching &ldquo;{query}&rdquo;.
+                    {locale === 'bn'
+                      ? `"${query}" এর সাথে মিল রেখে কোনো পোশাক পাওয়া যায়নি।`
+                      : `No garments found matching "${query}".`}
                   </p>
                   <p className="mt-1 type-small text-fg-muted">
-                    Try searching for fabric types, garment categories, or classic staples.
+                    {locale === 'bn'
+                      ? 'ফ্যাব্রিকের ধরন, পোশাকের ক্যাটাগরি বা ক্লাসিক পছন্দের নাম খুঁজুন।'
+                      : 'Try searching for fabric types, garment categories, or classic staples.'}
                   </p>
                 </div>
               )}

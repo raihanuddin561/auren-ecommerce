@@ -21,6 +21,13 @@ import {
   type Facets,
   type ListingQuery,
 } from '@/modules/catalog/listing';
+import { useTranslation } from '@/lib/i18n/context';
+import {
+  translateSize,
+  translateColor,
+  translateDetailValue,
+  toBengaliDigits,
+} from '@/lib/i18n/catalog-translator';
 
 export type FilterSection = 'size' | 'color' | 'fit' | 'fabric' | 'price';
 
@@ -59,9 +66,6 @@ interface FilterDrawerProps {
   onApply: (next: ListingQuery) => void;
 }
 
-const optionLabel = (option: FacetOption) =>
-  `${option.label}, ${option.count} ${option.count === 1 ? 'piece' : 'pieces'}`;
-
 /**
  * Every filter, in a drawer. Choices are held in a draft and applied together, so the page only
  * navigates once. The address is the single source of truth: the drawer starts from it each time.
@@ -84,9 +88,16 @@ function FilterDrawerBody({
   section,
   onApply,
 }: FilterDrawerProps) {
+  const { locale } = useTranslation();
   const [draft, setDraft] = useState<Draft>(() => draftFrom(query));
   const [priceError, setPriceError] = useState<string | null>(null);
   const baseId = useId();
+
+  const optionAriaLabel = (option: FacetOption, translatedName: string) => {
+    const count = locale === 'bn' ? toBengaliDigits(option.count) : option.count;
+    const unit = locale === 'bn' ? 'টি পোশাক' : option.count === 1 ? 'piece' : 'pieces';
+    return `${translatedName}, ${count} ${unit}`;
+  };
 
   useEffect(() => {
     if (!open || !section) return;
@@ -100,7 +111,11 @@ function FilterDrawerBody({
     const min = draft.min.trim();
     const max = draft.max.trim();
     if ((min && !PRICE_PATTERN.test(min)) || (max && !PRICE_PATTERN.test(max))) {
-      setPriceError('Enter whole taka or taka and paisa, for example 2500 or 2500.50.');
+      setPriceError(
+        locale === 'bn'
+          ? 'পূর্ণ টাকা বা টাকা ও পয়সা লিখুন, যেমন ২৫০০ বা ২৫০০.৫০।'
+          : 'Enter whole taka or taka and paisa, for example 2500 or 2500.50.',
+      );
       return;
     }
     const next = parseListingQuery({
@@ -129,22 +144,29 @@ function FilterDrawerBody({
   return (
     <>
       <SheetHeader>
-        <SheetTitle>Filters</SheetTitle>
+        <SheetTitle>{locale === 'bn' ? 'ফিল্টার' : 'Filters'}</SheetTitle>
         <SheetDescription id={`${baseId}-description`}>
-          Choose what to show, then apply. Counts show how many pieces match.
+          {locale === 'bn'
+            ? 'পছন্দ অনুযায়ী নির্বাচন করুন এবং প্রয়োগ করুন। সংখ্যা মিল পাওয়া পোশাকের পরিমাণ নির্দেশ করে।'
+            : 'Choose what to show, then apply. Counts show how many pieces match.'}
         </SheetDescription>
       </SheetHeader>
       <SheetBody className="flex flex-col gap-10">
-        <FilterSet id={`${baseId}-size`} legend="Size" hidden={facets.size.length === 0}>
+        <FilterSet
+          id={`${baseId}-size`}
+          legend={locale === 'bn' ? 'সাইজ' : 'Size'}
+          hidden={facets.size.length === 0}
+        >
           <div className="flex flex-wrap gap-2">
             {facets.size.map((option) => {
               const selected = draft.size.includes(option.value);
+              const labelText = translateSize(option.label, locale);
               return (
                 <button
                   key={option.value}
                   type="button"
                   aria-pressed={selected}
-                  aria-label={optionLabel(option)}
+                  aria-label={optionAriaLabel(option, labelText)}
                   disabled={option.count === 0 && !selected}
                   onClick={() => setDraft((d) => ({ ...d, size: toggle(d.size, option.value) }))}
                   className={cn(
@@ -155,24 +177,29 @@ function FilterDrawerBody({
                     'disabled:cursor-not-allowed disabled:border-line disabled:text-fg-muted disabled:line-through',
                   )}
                 >
-                  {option.label}
+                  {labelText}
                 </button>
               );
             })}
           </div>
         </FilterSet>
 
-        <FilterSet id={`${baseId}-color`} legend="Colour" hidden={facets.color.length === 0}>
+        <FilterSet
+          id={`${baseId}-color`}
+          legend={locale === 'bn' ? 'রং' : 'Colour'}
+          hidden={facets.color.length === 0}
+        >
           <div className="grid grid-cols-2 gap-2">
             {facets.color.map((option) => {
               const selected = draft.color.includes(option.value);
               const fill = option.hex && /^#[0-9a-f]{3,8}$/i.test(option.hex) ? option.hex : null;
+              const labelText = translateColor(option.label, locale);
               return (
                 <button
                   key={option.value}
                   type="button"
                   aria-pressed={selected}
-                  aria-label={optionLabel(option)}
+                  aria-label={optionAriaLabel(option, labelText)}
                   disabled={option.count === 0 && !selected}
                   onClick={() => setDraft((d) => ({ ...d, color: toggle(d.color, option.value) }))}
                   className={cn(
@@ -190,9 +217,9 @@ function FilterDrawerBody({
                       selected && 'ring-1 ring-fg ring-offset-2 ring-offset-raised',
                     )}
                   />
-                  <span className="flex-1 truncate">{option.label}</span>
+                  <span className="flex-1 truncate">{labelText}</span>
                   <span aria-hidden="true" className="text-fg-muted tabular-nums">
-                    {option.count}
+                    {locale === 'bn' ? toBengaliDigits(option.count) : option.count}
                   </span>
                 </button>
               );
@@ -200,16 +227,21 @@ function FilterDrawerBody({
           </div>
         </FilterSet>
 
-        <FilterSet id={`${baseId}-fit`} legend="Fit" hidden={facets.fit.length === 0}>
+        <FilterSet
+          id={`${baseId}-fit`}
+          legend={locale === 'bn' ? 'ফিট' : 'Fit'}
+          hidden={facets.fit.length === 0}
+        >
           <div className="flex flex-wrap gap-2">
             {facets.fit.map((option) => {
               const selected = draft.fit.includes(option.value);
+              const labelText = translateDetailValue(option.label, locale);
               return (
                 <button
                   key={option.value}
                   type="button"
                   aria-pressed={selected}
-                  aria-label={optionLabel(option)}
+                  aria-label={optionAriaLabel(option, labelText)}
                   disabled={option.count === 0 && !selected}
                   onClick={() => setDraft((d) => ({ ...d, fit: toggle(d.fit, option.value) }))}
                   className={cn(
@@ -220,9 +252,9 @@ function FilterDrawerBody({
                     'disabled:cursor-not-allowed disabled:border-line disabled:text-fg-muted',
                   )}
                 >
-                  {option.label}
+                  {labelText}
                   <span aria-hidden="true" className="tabular-nums opacity-70">
-                    {option.count}
+                    {locale === 'bn' ? toBengaliDigits(option.count) : option.count}
                   </span>
                 </button>
               );
@@ -230,16 +262,21 @@ function FilterDrawerBody({
           </div>
         </FilterSet>
 
-        <FilterSet id={`${baseId}-fabric`} legend="Fabric" hidden={facets.fabric.length === 0}>
+        <FilterSet
+          id={`${baseId}-fabric`}
+          legend={locale === 'bn' ? 'ফ্যাব্রিক' : 'Fabric'}
+          hidden={facets.fabric.length === 0}
+        >
           <ul className="flex flex-col">
             {facets.fabric.map((option) => {
               const selected = draft.fabric.includes(option.value);
+              const labelText = translateDetailValue(option.label, locale);
               return (
                 <li key={option.value}>
                   <button
                     type="button"
                     aria-pressed={selected}
-                    aria-label={optionLabel(option)}
+                    aria-label={optionAriaLabel(option, labelText)}
                     disabled={option.count === 0 && !selected}
                     onClick={() =>
                       setDraft((d) => ({ ...d, fabric: toggle(d.fabric, option.value) }))
@@ -250,9 +287,9 @@ function FilterDrawerBody({
                       'hover:text-accent-text disabled:cursor-not-allowed disabled:text-fg-muted',
                     )}
                   >
-                    <span>{option.label}</span>
+                    <span>{labelText}</span>
                     <span aria-hidden="true" className="type-small text-fg-muted tabular-nums">
-                      {option.count}
+                      {locale === 'bn' ? toBengaliDigits(option.count) : option.count}
                     </span>
                   </button>
                 </li>
@@ -261,10 +298,14 @@ function FilterDrawerBody({
           </ul>
         </FilterSet>
 
-        <FilterSet id={`${baseId}-price`} legend="Price" hidden={facets.priceRange === null}>
+        <FilterSet
+          id={`${baseId}-price`}
+          legend={locale === 'bn' ? 'মূল্য' : 'Price'}
+          hidden={facets.priceRange === null}
+        >
           <div className="grid grid-cols-2 gap-3">
             <label className="flex flex-col gap-1 type-small text-fg-muted">
-              Minimum (৳)
+              {locale === 'bn' ? 'সর্বনিম্ন (৳)' : 'Minimum (৳)'}
               <Input
                 inputMode="decimal"
                 autoComplete="off"
@@ -276,7 +317,7 @@ function FilterDrawerBody({
               />
             </label>
             <label className="flex flex-col gap-1 type-small text-fg-muted">
-              Maximum (৳)
+              {locale === 'bn' ? 'সর্বোচ্চ (৳)' : 'Maximum (৳)'}
               <Input
                 inputMode="decimal"
                 autoComplete="off"
@@ -301,7 +342,7 @@ function FilterDrawerBody({
 
         <div>
           <Switch
-            label="In stock only"
+            label={locale === 'bn' ? 'শুধুমাত্র স্টকে আছে এমন' : 'In stock only'}
             checked={draft.inStock}
             onCheckedChange={(checked) => setDraft((d) => ({ ...d, inStock: checked }))}
           />
@@ -309,10 +350,10 @@ function FilterDrawerBody({
       </SheetBody>
       <SheetFooter>
         <Button type="button" onClick={apply} size="lg" fullWidth>
-          Apply filters
+          {locale === 'bn' ? 'ফিল্টার প্রয়োগ করুন' : 'Apply filters'}
         </Button>
         <Button type="button" onClick={clear} variant="link" className="self-center">
-          Clear all
+          {locale === 'bn' ? 'সব মুছে ফেলুন' : 'Clear all'}
         </Button>
       </SheetFooter>
     </>

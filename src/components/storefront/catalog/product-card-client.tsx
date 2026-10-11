@@ -13,6 +13,12 @@ import { cn } from '@/lib/cn';
 import type { CardColor, CardImage, CardVariant } from '@/modules/catalog/card';
 import { addToBag } from '../cart/cart-client';
 import { CatalogImage, ImagePlaceholder, isLocalImage } from './catalog-image';
+import { useTranslation } from '@/lib/i18n/context';
+import {
+  translateProductTitle,
+  translateCategory,
+  translateBadge,
+} from '@/lib/i18n/catalog-translator';
 
 /**
  * The interactive parts of a product card. The card itself is a Server Component; these small
@@ -225,6 +231,7 @@ interface QuickAddProps {
  * stock on the server and the bag drawer opens on success.
  */
 export function QuickAdd({ title }: QuickAddProps) {
+  const { isBn } = useTranslation();
   const { variants, sizes, selectedColorId } = useCardState();
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -259,8 +266,12 @@ export function QuickAdd({ title }: QuickAddProps) {
       )}
     >
       <div className="mb-1.5 flex items-center justify-between">
-        <p className="type-eyebrow font-medium tracking-eyebrow text-gold uppercase">Select Size</p>
-        <span className="type-caption font-mono text-fg-muted">Quick Add</span>
+        <p className="type-eyebrow font-medium tracking-eyebrow text-gold uppercase">
+          {isBn ? 'সাইজ নির্বাচন করুন' : 'Select Size'}
+        </p>
+        <span className="type-caption font-mono text-fg-muted">
+          {isBn ? 'কুইক অ্যাড' : 'Quick Add'}
+        </span>
       </div>
       <ul className="flex flex-wrap gap-1.5">
         {sizes.map((size) => {
@@ -291,4 +302,25 @@ export function QuickAdd({ title }: QuickAddProps) {
       </ul>
     </div>
   );
+}
+
+export function LocalizedCardTitle({
+  title,
+  explicitBn,
+}: {
+  title: string;
+  explicitBn?: string | null;
+}) {
+  const { locale } = useTranslation();
+  return <>{translateProductTitle(title, locale, explicitBn)}</>;
+}
+
+export function LocalizedCategoryName({ name }: { name: string }) {
+  const { locale } = useTranslation();
+  return <>{translateCategory(name, locale)}</>;
+}
+
+export function LocalizedCardBadge({ label }: { label: string }) {
+  const { locale } = useTranslation();
+  return <>{translateBadge(label, locale)}</>;
 }

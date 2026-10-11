@@ -23,6 +23,8 @@ import {
   type ListingSort,
 } from '@/modules/catalog/listing';
 import { FilterDrawer, type FilterSection } from './filter-drawer';
+import { useTranslation } from '@/lib/i18n/context';
+import { toBengaliDigits } from '@/lib/i18n/catalog-translator';
 
 interface ListingControlsProps {
   basePath: string;
@@ -30,6 +32,13 @@ interface ListingControlsProps {
   facets: Facets;
   total: number;
 }
+
+const SORT_LABELS_BN: Record<ListingSort, string> = {
+  featured: 'বিশেষ নির্বাচিত',
+  newest: 'নতুনতম',
+  'price-asc': 'মূল্য: কম থেকে বেশি',
+  'price-desc': 'মূল্য: বেশি থেকে কম',
+};
 
 /** Desktop columns a density stands for (the grid classes in modules/catalog/listing.ts). */
 const desktopColumns = (density: Density | null): 2 | 3 | 4 =>
@@ -53,6 +62,7 @@ const DESKTOP_DENSITIES: Array<{
  */
 export function ListingControls({ basePath, query, facets, total }: ListingControlsProps) {
   const router = useRouter();
+  const { locale } = useTranslation();
   const [pending, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
   const [section, setSection] = useState<FilterSection | null>(null);
@@ -73,9 +83,24 @@ export function ListingControls({ basePath, query, facets, total }: ListingContr
 
   const count = activeFilterCount(query);
   const chips: Array<{ key: FilterSection; label: string; selected: number; shown: boolean }> = [
-    { key: 'size', label: 'Size', selected: query.size.length, shown: facets.size.length > 0 },
-    { key: 'color', label: 'Colour', selected: query.color.length, shown: facets.color.length > 0 },
-    { key: 'fit', label: 'Fit', selected: query.fit.length, shown: facets.fit.length > 0 },
+    {
+      key: 'size',
+      label: locale === 'bn' ? 'সাইজ' : 'Size',
+      selected: query.size.length,
+      shown: facets.size.length > 0,
+    },
+    {
+      key: 'color',
+      label: locale === 'bn' ? 'রং' : 'Colour',
+      selected: query.color.length,
+      shown: facets.color.length > 0,
+    },
+    {
+      key: 'fit',
+      label: locale === 'bn' ? 'ফিট' : 'Fit',
+      selected: query.fit.length,
+      shown: facets.fit.length > 0,
+    },
   ];
 
   return (
@@ -86,11 +111,13 @@ export function ListingControls({ basePath, query, facets, total }: ListingContr
       <div className="container-page flex min-h-14 items-center gap-3 py-2">
         <ChipButton active={count > 0} onClick={() => openDrawer(null)} className="shrink-0">
           <Icon icon={SlidersHorizontal} size={16} />
-          Filter
+          {locale === 'bn' ? 'ফিল্টার' : 'Filter'}
           {count > 0 ? (
             <span className="tabular-nums">
-              <span aria-hidden="true">({count})</span>
-              <span className="sr-only">, {count} selected</span>
+              <span aria-hidden="true">({locale === 'bn' ? toBengaliDigits(count) : count})</span>
+              <span className="sr-only">
+                , {locale === 'bn' ? `${toBengaliDigits(count)}টি নির্বাচিত` : `${count} selected`}
+              </span>
             </span>
           ) : null}
         </ChipButton>
@@ -107,8 +134,15 @@ export function ListingControls({ basePath, query, facets, total }: ListingContr
                 {chip.label}
                 {chip.selected > 0 ? (
                   <span className="tabular-nums">
-                    <span aria-hidden="true">({chip.selected})</span>
-                    <span className="sr-only">, {chip.selected} selected</span>
+                    <span aria-hidden="true">
+                      ({locale === 'bn' ? toBengaliDigits(chip.selected) : chip.selected})
+                    </span>
+                    <span className="sr-only">
+                      ,{' '}
+                      {locale === 'bn'
+                        ? `${toBengaliDigits(chip.selected)}টি নির্বাচিত`
+                        : `${chip.selected} selected`}
+                    </span>
                   </span>
                 ) : null}
               </ChipButton>
@@ -116,12 +150,14 @@ export function ListingControls({ basePath, query, facets, total }: ListingContr
         </div>
 
         <p role="status" className="ml-auto hidden type-small text-fg-muted md:block">
-          {total} {total === 1 ? 'piece' : 'pieces'}
+          {locale === 'bn'
+            ? `${toBengaliDigits(total)}টি পোশাক`
+            : `${total} ${total === 1 ? 'piece' : 'pieces'}`}
         </p>
 
         <div className="ml-auto flex min-w-0 items-center gap-1 md:ml-0 md:gap-2">
           <label className="sr-only" htmlFor="listing-sort">
-            Sort by
+            {locale === 'bn' ? 'সাজান' : 'Sort by'}
           </label>
           <Select
             value={query.sort}
@@ -136,20 +172,26 @@ export function ListingControls({ basePath, query, facets, total }: ListingContr
             <SelectContent align="end">
               {SORT_VALUES.map((value) => (
                 <SelectItem key={value} value={value}>
-                  {SORT_LABELS[value]}
+                  {locale === 'bn' ? SORT_LABELS_BN[value] : SORT_LABELS[value]}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
 
           {/* Desktop: two, three or four columns. */}
-          <div role="group" aria-label="Columns" className="hidden items-center md:flex">
+          <div
+            role="group"
+            aria-label={locale === 'bn' ? 'কলাম' : 'Columns'}
+            className="hidden items-center md:flex"
+          >
             {DESKTOP_DENSITIES.map(({ columns, density, icon }) => {
               const pressed = desktopColumns(query.density) === columns;
               return (
                 <DensityButton
                   key={columns}
-                  label={`${columns} columns`}
+                  label={
+                    locale === 'bn' ? `${toBengaliDigits(columns)}টি কলাম` : `${columns} columns`
+                  }
                   pressed={pressed}
                   icon={icon}
                   onClick={() => go({ ...query, density })}
@@ -158,15 +200,19 @@ export function ListingControls({ basePath, query, facets, total }: ListingContr
             })}
           </div>
           {/* Phone: one or two columns. */}
-          <div role="group" aria-label="Columns" className="flex items-center md:hidden">
+          <div
+            role="group"
+            aria-label={locale === 'bn' ? 'কলাম' : 'Columns'}
+            className="flex items-center md:hidden"
+          >
             <DensityButton
-              label="1 column"
+              label={locale === 'bn' ? '১টি কলাম' : '1 column'}
               pressed={phoneColumns(query.density) === 1}
               icon={Square}
               onClick={() => go({ ...query, density: 1 })}
             />
             <DensityButton
-              label="2 columns"
+              label={locale === 'bn' ? '২টি কলাম' : '2 columns'}
               pressed={phoneColumns(query.density) === 2}
               icon={Rows3}
               onClick={() => go({ ...query, density: null })}

@@ -5,7 +5,15 @@ import { cn } from '@/lib/cn';
 import { deserialize } from '@/lib/money';
 import { cardBadges, type ProductCardData } from '@/modules/catalog/card';
 import { ImagePlaceholder, safeColor } from './catalog-image';
-import { CardImages, CardState, ColorSwatches, QuickAdd } from './product-card-client';
+import {
+  CardImages,
+  CardState,
+  ColorSwatches,
+  QuickAdd,
+  LocalizedCardTitle,
+  LocalizedCategoryName,
+  LocalizedCardBadge,
+} from './product-card-client';
 import { WishlistButton } from './wishlist-button';
 
 /**
@@ -16,7 +24,11 @@ export type ProductCardView = Pick<
   ProductCardData,
   'id' | 'slug' | 'title' | 'categoryName' | 'price' | 'compareAt' | 'image' | 'hoverImage'
 > &
-  Partial<Pick<ProductCardData, 'colors' | 'sizes' | 'variants' | 'isNew' | 'limited' | 'stock'>>;
+  Partial<
+    Pick<ProductCardData, 'colors' | 'sizes' | 'variants' | 'isNew' | 'limited' | 'stock'>
+  > & {
+    titleBn?: string | null;
+  };
 
 interface ProductCardProps {
   product: ProductCardView;
@@ -88,7 +100,7 @@ export function ProductCard({
                   tone={BADGE_TONE[badge.key]}
                   className="shadow-2xs border border-line/60 bg-page/90 type-caption font-mono tracking-wider uppercase backdrop-blur-xs"
                 >
-                  {badge.label}
+                  <LocalizedCardBadge label={badge.label} />
                 </Badge>
               ))}
             </div>
@@ -103,7 +115,7 @@ export function ProductCard({
         <div className="mt-4 flex flex-col gap-1">
           {product.categoryName ? (
             <p className="type-eyebrow tracking-eyebrow text-accent-text uppercase">
-              {product.categoryName}
+              <LocalizedCategoryName name={product.categoryName} />
             </p>
           ) : null}
           <h3 className="type-body font-medium text-fg transition-colors duration-200 group-hover:text-gold">
@@ -111,7 +123,7 @@ export function ProductCard({
               href={`/products/${product.slug}`}
               className="outline-none after:absolute after:inset-0 after:z-10 after:content-[''] focus-visible:after:outline-2 focus-visible:after:outline-offset-2 focus-visible:after:outline-gold"
             >
-              {product.title}
+              <LocalizedCardTitle title={product.title} explicitBn={product.titleBn} />
             </Link>
           </h3>
           <Price

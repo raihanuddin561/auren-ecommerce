@@ -23,6 +23,8 @@ import {
 } from './buy-logic';
 import { usePdpState } from './pdp-state';
 import { SizeGuideDrawer } from './size-guide-drawer';
+import { useTranslation } from '@/lib/i18n/context';
+import { translateColor, translateSize, toBengaliDigits } from '@/lib/i18n/catalog-translator';
 
 interface BuyBoxProps {
   productId: string;
@@ -50,6 +52,7 @@ export function BuyBox({
   sizeChart,
 }: BuyBoxProps) {
   const { colorId, sizeId, setColorId, setSizeId } = usePdpState();
+  const { locale, isBn } = useTranslation();
   const router = useRouter();
   const [quantity, setQuantity] = useState(1);
   const [pending, startTransition] = useTransition();
@@ -154,25 +157,35 @@ export function BuyBox({
 
   const buttonLabel =
     reason === 'sizes-pending'
-      ? 'Sizes updating'
+      ? isBn
+        ? 'সাইজ আপডেট হচ্ছে'
+        : 'Sizes updating'
       : reason === 'sold-out'
-        ? 'Sold out'
+        ? isBn
+          ? 'স্টক শেষ'
+          : 'Sold out'
         : reason === 'choose-size'
-          ? 'Choose a size'
-          : 'Add to bag';
+          ? isBn
+            ? 'সাইজ নির্বাচন করুন'
+            : 'Choose a size'
+          : isBn
+            ? 'ব্যাগে যোগ করুন'
+            : 'Add to bag';
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-baseline justify-between gap-4">
         {priceNode}
-        <p className="type-small text-fg-muted">Tax included</p>
+        <p className="type-small text-fg-muted">{isBn ? 'ভ্যাট অন্তর্ভুক্ত' : 'Tax included'}</p>
       </div>
 
       {colors.length > 0 ? (
         <fieldset>
           <legend className="type-eyebrow text-fg">
-            Colour{' '}
-            <span className="ml-2 tracking-normal text-fg-muted normal-case">{color?.label}</span>
+            {isBn ? 'রং' : 'Colour'}{' '}
+            <span className="ml-2 tracking-normal text-fg-muted normal-case">
+              {translateColor(color?.label, locale)}
+            </span>
           </legend>
           <div className="mt-3 flex flex-wrap gap-2">
             {colors.map((entry) => {
@@ -229,12 +242,12 @@ export function BuyBox({
       {sizes.length > 0 ? (
         <div className="relative">
           <fieldset>
-            <legend className="type-eyebrow text-fg">Size</legend>
+            <legend className="type-eyebrow text-fg">{isBn ? 'সাইজ' : 'Size'}</legend>
             <div
               id="size-group"
               tabIndex={-1}
               role="group"
-              aria-label="Choose a size"
+              aria-label={isBn ? 'সাইজ নির্বাচন করুন' : 'Choose a size'}
               className="mt-3 flex flex-wrap gap-2 outline-none"
             >
               {options.map((option) => {
@@ -260,7 +273,7 @@ export function BuyBox({
                           : 'border-line-strong text-fg hover:border-fg',
                     )}
                   >
-                    {option.label}
+                    {translateSize(option.label, locale)}
                   </button>
                 );
               })}
@@ -273,7 +286,11 @@ export function BuyBox({
                 showChoose && !chosen && 'text-danger-text',
               )}
             >
-              {showChoose && !chosen ? 'Choose a size to continue.' : (note ?? lowAtRest)}
+              {showChoose && !chosen
+                ? isBn
+                  ? 'এগিয়ে যেতে একটি সাইজ নির্বাচন করুন।'
+                  : 'Choose a size to continue.'
+                : (note ?? lowAtRest)}
             </p>
           </fieldset>
           <div className="absolute top-0 right-0">
@@ -288,12 +305,13 @@ export function BuyBox({
       ) : sizeChart !== null ? (
         <div className="relative flex flex-col gap-2 border border-line p-4">
           <div className="flex items-center justify-between">
-            <span className="type-eyebrow text-fg">Size</span>
+            <span className="type-eyebrow text-fg">{isBn ? 'সাইজ' : 'Size'}</span>
             <SizeGuideDrawer chart={sizeChart} title={title} showHelper={false} offered={[]} />
           </div>
           <p className="type-small text-fg-muted">
-            Size options are being updated for this piece. Please check back shortly or consult the
-            size guide.
+            {isBn
+              ? 'এই পোশাকের জন্য সাইজের অপশন আপডেট করা হচ্ছে। অনুগ্রহ করে একটু পরে আবার দেখুন অথবা সাইজ গাইড দেখুন।'
+              : 'Size options are being updated for this piece. Please check back shortly or consult the size guide.'}
           </p>
         </div>
       ) : null}
@@ -315,7 +333,7 @@ export function BuyBox({
               <Icon icon={Minus} size={16} />
             </button>
             <output aria-live="polite" className="w-7 text-center tabular-nums">
-              {shownQuantity}
+              {isBn ? toBengaliDigits(shownQuantity) : shownQuantity}
             </output>
             <button
               type="button"
@@ -356,7 +374,13 @@ export function BuyBox({
             onClick={buyNow}
             className="w-full tracking-button"
           >
-            {reason === 'choose-size' ? 'Choose size to buy' : 'Buy Now — Instant Checkout'}
+            {reason === 'choose-size'
+              ? isBn
+                ? 'কিনতে সাইজ নির্বাচন করুন'
+                : 'Choose size to buy'
+              : isBn
+                ? 'এখনই কিনুন — ইনস্ট্যান্ট চেকআউট'
+                : 'Buy Now — Instant Checkout'}
           </Button>
         ) : null}
 
@@ -365,12 +389,14 @@ export function BuyBox({
             variant="secondary"
             onClick={() =>
               toast.message(
-                'Back-in-stock alerts are coming soon',
-                'For now, our concierge can tell you when this piece returns.',
+                isBn ? 'স্টক এলার্ট শীঘ্রই চালু হচ্ছে' : 'Back-in-stock alerts are coming soon',
+                isBn
+                  ? 'আপাতত আমাদের কনসিয়ার্জ ডেস্ক আপনাকে এই পোশাক ফিরে আসার তথ্য জানাতে পারবে।'
+                  : 'For now, our concierge can tell you when this piece returns.',
               )
             }
           >
-            Notify me
+            {isBn ? 'স্টক আসলে জানান' : 'Notify me'}
           </Button>
         ) : null}
 
@@ -378,15 +404,25 @@ export function BuyBox({
         <div className="mt-1 flex flex-col gap-1.5 rounded-xs border border-line/60 bg-sunken/40 p-3.5 type-small text-fg-muted">
           <div className="flex items-center gap-2 text-fg">
             <span className="font-bold text-accent-text">✓</span>
-            <span>Cash on delivery available across all 64 districts</span>
+            <span>
+              {isBn
+                ? '৬৪ জেলায় ক্যাশ অন ডেলিভারি সুবিধা'
+                : 'Cash on delivery available across all 64 districts'}
+            </span>
           </div>
           <div className="flex items-center gap-2 text-fg">
             <span className="font-bold text-accent-text">✓</span>
-            <span>Personal fitting verification call before dispatch</span>
+            <span>
+              {isBn
+                ? 'ডেলিভারির আগে ফোন করে সাইজ নিশ্চিতকরণ'
+                : 'Personal fitting verification call before dispatch'}
+            </span>
           </div>
           <div className="flex items-center gap-2 text-fg">
             <span className="font-bold text-accent-text">✓</span>
-            <span>Doorstep size exchange within 7 days</span>
+            <span>
+              {isBn ? '৭ দিনের মধ্যে সহজ সাইজ এক্সচেঞ্জ' : 'Doorstep size exchange within 7 days'}
+            </span>
           </div>
         </div>
       </div>
