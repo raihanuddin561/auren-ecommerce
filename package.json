@@ -75,7 +75,7 @@
     "@commitlint/cli": "^21.2.3",
     "@commitlint/config-conventional": "^21.2.3",
     "@faker-js/faker": "^10.6.0",
-    "@playwright/test": "^1.63.0",
+    "@playwright/test": "^1.64.0",
     "@tailwindcss/postcss": "^4",
     "@testcontainers/postgresql": "^12.2.0",
     "@types/node": "^24.19.0",
