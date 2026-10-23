@@ -13,6 +13,8 @@ describe('HeroCarousel', () => {
     expect(markup).toContain('href="/shop"');
     expect(markup).toContain('Explore Collection');
     expect(markup).toContain('role="tablist"');
+    expect(markup).toContain('data-carousel-image');
+    expect(markup).toContain('data-carousel-buttons');
   });
 
   it('renders skeleton correctly', () => {

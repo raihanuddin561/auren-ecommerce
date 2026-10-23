@@ -60,6 +60,14 @@ export function HeroCarousel({ settings, className }: HeroCarouselProps) {
     goTo(currentIndex - 1);
   }, [currentIndex, goTo]);
 
+  const handlePause = useCallback(() => {
+    setIsHovered(true);
+  }, []);
+
+  const handleResume = useCallback(() => {
+    setIsHovered(false);
+  }, []);
+
   // Autoplay timer
   useEffect(() => {
     if (!isPlaying || isHovered || prefersReducedMotion || total <= 1) return;
@@ -130,8 +138,7 @@ export function HeroCarousel({ settings, className }: HeroCarouselProps) {
       aria-label="Campaign highlights"
       tabIndex={0}
       onKeyDown={handleKeyDown}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      onMouseLeave={handleResume}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
       className={cn(
@@ -211,9 +218,21 @@ export function HeroCarousel({ settings, className }: HeroCarouselProps) {
                     ) : null}
 
                     {/* Action CTAs */}
-                    <div className="mt-6 flex flex-wrap items-center gap-3.5 md:mt-8">
+                    <div
+                      data-carousel-buttons
+                      onMouseEnter={handlePause}
+                      onMouseLeave={handleResume}
+                      className="mt-6 flex w-fit flex-wrap items-center gap-3.5 md:mt-8"
+                    >
                       {slide.primaryCtaText && slide.primaryCtaLink ? (
-                        <Button asChild variant="primary" size="lg" className="tracking-button">
+                        <Button
+                          asChild
+                          variant="primary"
+                          size="lg"
+                          className="tracking-button"
+                          onFocus={handlePause}
+                          onBlur={handleResume}
+                        >
                           <Link href={slide.primaryCtaLink} tabIndex={isActive ? 0 : -1}>
                             {slide.primaryCtaText}
                           </Link>
@@ -226,6 +245,8 @@ export function HeroCarousel({ settings, className }: HeroCarouselProps) {
                           variant="secondary"
                           size="lg"
                           className="border border-line-strong hover:border-fg"
+                          onFocus={handlePause}
+                          onBlur={handleResume}
                         >
                           <Link href={slide.secondaryCtaLink} tabIndex={isActive ? 0 : -1}>
                             {slide.secondaryCtaText}
@@ -263,7 +284,12 @@ export function HeroCarousel({ settings, className }: HeroCarouselProps) {
 
           {/* Right Column: Permanently Anchored Showcase Stage - Identical Image Sizing, Zero Position Jump */}
           <div className="order-1 flex items-center justify-center lg:order-2 lg:col-span-6 xl:col-span-5">
-            <div className="group/frame hover:shadow-2xl relative mx-auto flex aspect-[4/5] w-[270px] items-center justify-center overflow-hidden rounded-xs border border-line/80 bg-raised/70 shadow-float backdrop-blur-xs transition-all duration-500 hover:border-gold/70 sm:w-[320px] md:w-[360px] lg:w-[390px] xl:w-[420px]">
+            <div
+              data-carousel-image
+              onMouseEnter={handlePause}
+              onMouseLeave={handleResume}
+              className="group/frame hover:shadow-2xl relative mx-auto flex aspect-[4/5] w-[270px] items-center justify-center overflow-hidden rounded-xs border border-line/80 bg-raised/70 shadow-float backdrop-blur-xs transition-all duration-500 hover:border-gold/70 sm:w-[320px] md:w-[360px] lg:w-[390px] xl:w-[420px]"
+            >
               {slides.map((slide, index) => {
                 const isActive = index === currentIndex;
                 const isBroken = Boolean(brokenImages[slide.id || index]);
@@ -353,7 +379,13 @@ export function HeroCarousel({ settings, className }: HeroCarouselProps) {
         <div className="relative z-20 container-page pb-6 md:pb-10">
           <div className="flex flex-col gap-4 border-t border-line/40 pt-5 sm:flex-row sm:items-center sm:justify-between">
             {/* Interactive slide progress bars & numbers */}
-            <div role="tablist" aria-label="Slides" className="flex items-center gap-2 sm:gap-3">
+            <div
+              role="tablist"
+              aria-label="Slides"
+              onMouseEnter={handlePause}
+              onMouseLeave={handleResume}
+              className="flex items-center gap-2 sm:gap-3"
+            >
               {slides.map((slide, index) => {
                 const isActive = index === currentIndex;
                 const paddedIndex = String(index + 1).padStart(2, '0');
@@ -366,6 +398,8 @@ export function HeroCarousel({ settings, className }: HeroCarouselProps) {
                     aria-selected={isActive}
                     aria-label={`Go to slide ${index + 1}: ${slide.title}`}
                     onClick={() => goTo(index)}
+                    onFocus={handlePause}
+                    onBlur={handleResume}
                     className="group/ind flex items-center gap-2 py-2 text-left focus:outline-none focus-visible:ring-1 focus-visible:ring-gold"
                   >
                     <span
@@ -400,11 +434,17 @@ export function HeroCarousel({ settings, className }: HeroCarouselProps) {
             </div>
 
             {/* Play/pause toggle and Next / Prev buttons */}
-            <div className="flex items-center gap-3 self-end sm:self-auto">
+            <div
+              onMouseEnter={handlePause}
+              onMouseLeave={handleResume}
+              className="flex items-center gap-3 self-end sm:self-auto"
+            >
               {/* Autoplay toggle */}
               <button
                 type="button"
                 onClick={() => setIsPlaying((prev) => !prev)}
+                onFocus={handlePause}
+                onBlur={handleResume}
                 aria-label={isPlaying ? 'Pause carousel autoplay' : 'Start carousel autoplay'}
                 className="flex size-9 items-center justify-center rounded-xs border border-line/50 bg-ink/50 text-fg-muted backdrop-blur-md transition-all duration-200 hover:scale-105 hover:border-gold hover:bg-gold/10 hover:text-gold focus:outline-none focus-visible:ring-1 focus-visible:ring-gold active:scale-95"
               >
@@ -415,6 +455,8 @@ export function HeroCarousel({ settings, className }: HeroCarouselProps) {
               <button
                 type="button"
                 onClick={prev}
+                onFocus={handlePause}
+                onBlur={handleResume}
                 aria-label="Previous slide"
                 className="flex size-9 items-center justify-center rounded-xs border border-line/50 bg-ink/50 text-fg-muted backdrop-blur-md transition-all duration-200 hover:scale-105 hover:border-gold hover:bg-gold/10 hover:text-gold focus:outline-none focus-visible:ring-1 focus-visible:ring-gold active:scale-95"
               >
@@ -425,6 +467,8 @@ export function HeroCarousel({ settings, className }: HeroCarouselProps) {
               <button
                 type="button"
                 onClick={next}
+                onFocus={handlePause}
+                onBlur={handleResume}
                 aria-label="Next slide"
                 className="flex size-9 items-center justify-center rounded-xs border border-line/50 bg-ink/50 text-fg-muted backdrop-blur-md transition-all duration-200 hover:scale-105 hover:border-gold hover:bg-gold/10 hover:text-gold focus:outline-none focus-visible:ring-1 focus-visible:ring-gold active:scale-95"
               >
