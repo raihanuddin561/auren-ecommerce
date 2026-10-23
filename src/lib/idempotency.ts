@@ -1,11 +1,10 @@
 import 'server-only';
 import { createHash } from 'node:crypto';
 import type { Prisma, PrismaClient } from '@/generated/prisma/client';
-import type { Tx } from './db';
+import { DEFAULT_TRANSACTION_OPTIONS, type Tx } from './db';
 import { DomainError } from './errors';
 
 // `work` runs inside the transaction (stock locks, order inserts); never call email/HTTP in it (INV-E1).
-const TRANSACTION_OPTIONS = { maxWait: 5_000, timeout: 20_000 } as const;
 const KEY_PATTERN = /^[A-Za-z0-9_\-:.]{8,128}$/;
 const DEFAULT_TTL_SECONDS = 7 * 24 * 60 * 60;
 
@@ -39,6 +38,8 @@ export interface IdempotencyOptions {
   request?: unknown;
   /** How long the stored response is replayable, measured by the database clock. */
   ttlSeconds?: number;
+  /** Custom interactive transaction options (overrides default maxWait and timeout). */
+  transactionOptions?: { maxWait?: number; timeout?: number };
 }
 
 export interface IdempotentResult<T> {
@@ -72,6 +73,10 @@ export async function runIdempotent<T extends Prisma.InputJsonValue>(
   if (actor.length === 0) throw new DomainError('VALIDATION', 'An idempotency actor is required');
   const storageKey = `${actor}:${key}`;
   const requestHash = fingerprint(request ?? null);
+  const txOptions = {
+    ...DEFAULT_TRANSACTION_OPTIONS,
+    ...options.transactionOptions,
+  };
 
   return client.$transaction(async (tx) => {
     const claimed = await tx.$queryRaw<Array<{ key: string }>>`
@@ -102,5 +107,5 @@ export async function runIdempotent<T extends Prisma.InputJsonValue>(
     await tx.$executeRaw`
       UPDATE idempotency_keys SET response = ${JSON.stringify({ value })}::jsonb WHERE key = ${storageKey}`;
     return { replayed: false, value };
-  }, TRANSACTION_OPTIONS);
+  }, txOptions);
 }

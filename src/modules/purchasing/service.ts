@@ -402,6 +402,7 @@ export async function receiveGoods(
         notes: input.notes ?? null,
         lines: [...input.lines].sort((a, b) => (a.poItemId < b.poItemId ? -1 : 1)),
       },
+      transactionOptions: { maxWait: 15_000, timeout: 60_000 },
     },
     (tx) => receiveInTransaction(tx, input, actor),
   );
@@ -466,6 +467,11 @@ async function receiveInTransaction(
     notes: input.notes ?? null,
   });
 
+  const carriedMap = await repo.landedAllocatedBeforeMany(
+    tx,
+    requested.map((entry) => entry.item.id),
+  );
+
   const stockEffects: string[] = [];
   for (const { item, quantity } of requested) {
     const variant = variantCosts.get(item.variantId);
@@ -476,7 +482,7 @@ async function receiveInTransaction(
         'A variant is priced in another currency than this order.',
       );
     }
-    const alreadyCarried = await repo.landedAllocatedBefore(tx, item.id);
+    const alreadyCarried = carriedMap.get(item.id) ?? 0n;
     const landedMinor = receiptLandedShare({
       lineLandedMinor: allocation.perLine.get(item.id) ?? 0n,
       quantityOrdered: item.quantityOrdered,

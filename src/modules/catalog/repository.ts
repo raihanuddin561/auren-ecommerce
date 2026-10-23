@@ -736,7 +736,7 @@ export async function readVariantCosts(
 }
 
 export const setVariantAvgCost = (tx: Tx, id: string, avgCostMinor: bigint) =>
-  tx.productVariant.update({ where: { id }, data: { avgCostMinor } });
+  tx.productVariant.update({ where: { id }, data: { avgCostMinor }, select: { id: true } });
 
 /** Sets the average cost only while it is still zero. True when a row changed (history comes from receipts). */
 export async function setVariantAvgCostIfUnset(

@@ -183,3 +183,21 @@ export async function landedAllocatedBefore(tx: Tx, poItemId: string): Promise<b
   });
   return sum._sum.landedCostMinor ?? 0n;
 }
+
+/** Landed costs that earlier deliveries of multiple order lines already carried. */
+export async function landedAllocatedBeforeMany(
+  tx: Tx,
+  poItemIds: readonly string[],
+): Promise<Map<string, bigint>> {
+  if (poItemIds.length === 0) return new Map();
+  const rows = await tx.goodsReceiptItem.groupBy({
+    by: ['poItemId'],
+    where: { poItemId: { in: [...new Set(poItemIds)] } },
+    _sum: { landedCostMinor: true },
+  });
+  const map = new Map<string, bigint>();
+  for (const row of rows) {
+    map.set(row.poItemId, row._sum.landedCostMinor ?? 0n);
+  }
+  return map;
+}

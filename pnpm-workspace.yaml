@@ -12,3 +12,13 @@ allowBuilds:
 # Supply chain: refuse versions published less than 2 days ago (minutes). Gives the registry and
 # the community time to pull a malicious release before it can reach this repository.
 minimumReleaseAge: 2880
+minimumReleaseAgeExclude:
+  - 'next@16.4.3'
+  - 'eslint-config-next@16.4.3'
+  - '@next/*'
+
+overrides:
+  mysql2: '>=3.23.1'
+  handlebars: '>=4.7.10'
+  vite: '>=8.3.3'
+  deepmerge-ts: '>=8.0.0'
