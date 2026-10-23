@@ -193,9 +193,11 @@ export function ColorSwatches() {
               aria-hidden="true"
               style={fill ? { backgroundColor: fill } : undefined}
               className={cn(
-                'block size-5 rounded-full border border-line-strong transition-auren-fast',
+                'block size-5 rounded-full border border-line-strong transition-all duration-200',
                 !fill && 'bg-sunken',
-                pressed && 'ring-1 ring-fg ring-offset-2 ring-offset-page',
+                pressed
+                  ? 'shadow-xs scale-110 border-gold ring-1 ring-gold ring-offset-2 ring-offset-page'
+                  : 'hover:scale-105 hover:border-gold/70',
               )}
             />
           </button>
@@ -269,7 +271,7 @@ export function QuickAdd({ title }: QuickAddProps) {
         <p className="type-eyebrow font-medium tracking-eyebrow text-gold uppercase">
           {isBn ? 'সাইজ নির্বাচন করুন' : 'Select Size'}
         </p>
-        <span className="type-caption font-mono text-fg-muted">
+        <span className="type-caption font-mono tracking-wider text-fg-muted uppercase">
           {isBn ? 'কুইক অ্যাড' : 'Quick Add'}
         </span>
       </div>
@@ -287,9 +289,9 @@ export function QuickAdd({ title }: QuickAddProps) {
                 aria-label={soldOut ? `${size}, sold out` : `Add size ${size} to bag`}
                 onClick={() => variant && add(size, variant)}
                 className={cn(
-                  'touch-target inline-flex h-8 min-w-8 items-center justify-center rounded-xs border border-line-strong px-2 type-caption font-mono text-fg transition-all duration-200',
+                  'shadow-2xs touch-target inline-flex h-8 min-w-8 items-center justify-center rounded-xs border border-line-strong bg-raised/85 px-2.5 type-caption font-mono font-medium text-fg transition-all duration-200',
                   'hover:scale-105 hover:border-gold hover:bg-gold hover:text-ink active:scale-95',
-                  'disabled:cursor-not-allowed disabled:border-line disabled:text-fg-muted disabled:hover:scale-100 disabled:hover:bg-transparent disabled:hover:text-fg-muted',
+                  'disabled:cursor-not-allowed disabled:border-line disabled:bg-sunken/40 disabled:text-fg-muted disabled:hover:scale-100 disabled:hover:bg-transparent disabled:hover:text-fg-muted',
                   soldOut && 'line-through opacity-40',
                   isCurrentPending && 'animate-pulse border-gold bg-gold/20 text-gold',
                 )}

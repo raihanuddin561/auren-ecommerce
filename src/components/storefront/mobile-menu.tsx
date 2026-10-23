@@ -26,13 +26,14 @@ import { useTranslation } from '@/lib/i18n/context';
 
 interface MobileMenuProps {
   items: NavItem[];
+  onOpenFemme?: () => void;
 }
 
 const bigLink =
   'flex min-h-14 items-center border-b border-line type-h1 text-fg transition-auren-fast hover:text-accent-text';
 
 /** Full-screen menu: large serif links, expandable categories, a featured image. */
-export function MobileMenu({ items }: MobileMenuProps) {
+export function MobileMenu({ items, onOpenFemme }: MobileMenuProps) {
   const { translateNav, isBn } = useTranslation();
   const featured = items.find((item) => item.tile)?.tile;
 
@@ -60,6 +61,26 @@ export function MobileMenu({ items }: MobileMenuProps) {
         </div>
 
         <nav aria-label="Mobile" className="flex flex-1 flex-col overflow-y-auto px-5 pb-10">
+          {/* Department Switcher */}
+          <div className="mt-4 grid grid-cols-2 gap-2 border-b border-line pb-4">
+            <div className="flex items-center justify-center gap-1.5 rounded-xs border border-gold/60 bg-gold/5 py-2.5 type-eyebrow font-medium tracking-eyebrow text-fg">
+              <span>Homme</span>
+              <span className="size-1 rounded-full bg-gold" />
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                onOpenFemme?.();
+              }}
+              className="flex items-center justify-center gap-1.5 rounded-xs border border-line bg-raised/50 py-2.5 type-eyebrow font-medium tracking-eyebrow text-fg-muted transition-colors hover:border-gold hover:text-fg"
+            >
+              <span>Femme</span>
+              <span className="rounded-xs border border-gold/40 bg-gold/10 px-1.5 py-0.5 type-caption font-mono text-accent-text uppercase">
+                {isBn ? 'প্রিভিউ' : 'Preview'}
+              </span>
+            </button>
+          </div>
+
           <Accordion type="single" collapsible className="mt-2">
             {items.map((item) =>
               item.columns?.length ? (

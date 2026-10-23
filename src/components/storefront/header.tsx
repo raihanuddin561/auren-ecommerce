@@ -11,6 +11,7 @@ import { MegaMenu } from './mega-menu';
 import { MobileMenu } from './mobile-menu';
 import { BagButton } from './cart/bag-button';
 import { SearchOverlay } from './search/search-overlay';
+import { FemmePreviewDialog } from './femme-preview-dialog';
 import { Wordmark } from './wordmark';
 import { LanguageSwitcher } from './language-switcher';
 import { useTranslation } from '@/lib/i18n/context';
@@ -48,6 +49,7 @@ export function Header({ items = PRIMARY_NAV }: HeaderProps = {}) {
   const scrolled = useScrolledPast(HEADER_SOLID_AFTER_PX);
   const [openPanel, setOpenPanel] = useState<string | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [femmeOpen, setFemmeOpen] = useState(false);
 
   const overHero = hasHeroHeader(pathname);
   const transparent = overHero && !scrolled && openPanel === null;
@@ -72,14 +74,32 @@ export function Header({ items = PRIMARY_NAV }: HeaderProps = {}) {
           />
         ) : null}
         <div className="container-page grid h-full grid-cols-[1fr_auto_1fr] items-center">
-          <div className="flex items-center">
-            <MobileMenu items={items} />
-            <MegaMenu
-              items={items}
-              pathname={pathname}
-              openLabel={openPanel}
-              onOpenChange={setOpenPanel}
-            />
+          <div className="flex items-center gap-6">
+            <MobileMenu items={items} onOpenFemme={() => setFemmeOpen(true)} />
+            <div className="hidden items-center gap-5 lg:flex">
+              <div className="flex items-center gap-3 border-r border-line/60 pr-5 type-eyebrow font-medium tracking-eyebrow">
+                <span className="relative flex cursor-default items-center gap-1.5 text-fg">
+                  <span>Homme</span>
+                  <span className="size-1 rounded-full bg-gold" aria-hidden="true" />
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setFemmeOpen(true)}
+                  className="group relative flex items-center gap-1.5 text-fg-muted transition-colors hover:text-accent-text"
+                >
+                  <span>Femme</span>
+                  <span className="rounded-xs border border-gold/40 bg-gold/10 px-1.5 py-0.5 type-caption font-mono text-accent-text uppercase transition-colors group-hover:border-gold group-hover:bg-gold/20">
+                    Preview
+                  </span>
+                </button>
+              </div>
+              <MegaMenu
+                items={items}
+                pathname={pathname}
+                openLabel={openPanel}
+                onOpenChange={setOpenPanel}
+              />
+            </div>
           </div>
 
           <Wordmark />
@@ -114,6 +134,7 @@ export function Header({ items = PRIMARY_NAV }: HeaderProps = {}) {
       </header>
 
       <SearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} />
+      <FemmePreviewDialog open={femmeOpen} onOpenChange={setFemmeOpen} />
     </>
   );
 }

@@ -431,16 +431,60 @@ export function BuyBox({
       <div
         aria-hidden={!barVisible}
         className={cn(
-          'fixed inset-x-0 bottom-0 z-40 border-t border-line bg-page/95 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-float backdrop-blur transition-transform duration-(--dur-base) ease-auren motion-reduce:transition-none md:hidden',
+          'fixed inset-x-0 bottom-0 z-40 border-t border-line/80 bg-page/98 px-4 pt-2.5 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-float backdrop-blur-md transition-transform duration-(--dur-base) ease-auren motion-reduce:transition-none md:hidden',
           barVisible ? 'translate-y-0' : 'pointer-events-none translate-y-full',
         )}
       >
-        <div className="flex items-center gap-2">
+        {/* Compact Size Chips on Mobile if not yet selected */}
+        {sizes.length > 0 && !chosen ? (
+          <div className="mb-2 scrollbar-none flex items-center gap-1.5 overflow-x-auto pb-0.5">
+            <span className="shrink-0 type-caption font-mono tracking-wider text-gold uppercase">
+              {isBn ? 'সাইজ:' : 'Size:'}
+            </span>
+            {options.map((option) => {
+              const isSelected = option.sizeId === sizeId;
+              const disabled = option.state === 'out' || option.available <= 0;
+              return (
+                <button
+                  key={option.sizeId}
+                  type="button"
+                  disabled={disabled}
+                  tabIndex={barVisible ? 0 : -1}
+                  onClick={() => setSizeId(option.sizeId)}
+                  className={cn(
+                    'inline-flex h-7 min-w-7 items-center justify-center rounded-xs border px-2 type-caption font-mono font-medium transition-all duration-150',
+                    isSelected
+                      ? 'shadow-xs border-gold bg-gold font-semibold text-ink'
+                      : 'border-line-strong bg-raised/80 text-fg hover:border-gold',
+                    disabled && 'border-line line-through opacity-35',
+                  )}
+                >
+                  {option.label}
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
+
+        <div className="flex items-center gap-2.5">
           <div className="min-w-0 flex-1">
             <p className="truncate type-small font-medium text-fg">{title}</p>
-            <p className="type-small text-fg-muted">
-              {[color?.label, chosen?.label].filter(Boolean).join(' · ') || 'Choose your size'}
-            </p>
+            <div className="flex items-center gap-1.5 type-small text-fg-muted">
+              <span className="truncate">
+                {[color?.label, chosen?.label].filter(Boolean).join(' · ') ||
+                  (isBn ? 'সাইজ নির্বাচন করুন' : 'Select a size')}
+              </span>
+              {chosen && liveVariant ? (
+                <>
+                  <span aria-hidden="true">·</span>
+                  <Price
+                    size="sm"
+                    price={deserialize(liveVariant.price)}
+                    compareAt={liveVariant.compareAt ? deserialize(liveVariant.compareAt) : null}
+                  />
+                </>
+              ) : null}
+            </div>
           </div>
           <Button
             size="sm"
@@ -454,8 +498,9 @@ export function BuyBox({
               }
               add();
             }}
+            className="shrink-0 tracking-button"
           >
-            Add
+            {isBn ? 'ব্যাগে নিন' : 'Add'}
           </Button>
           <Button
             size="sm"
@@ -469,8 +514,9 @@ export function BuyBox({
               }
               buyNow();
             }}
+            className="shrink-0 tracking-button"
           >
-            Buy Now
+            {isBn ? 'এখনই কিনুন' : 'Buy Now'}
           </Button>
         </div>
       </div>

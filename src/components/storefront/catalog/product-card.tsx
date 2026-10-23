@@ -69,7 +69,7 @@ export function ProductCard({
 
   return (
     <article
-      className={cn('group relative transition-all duration-300 hover:-translate-y-1', className)}
+      className={cn('group relative transition-all duration-500 hover:-translate-y-1', className)}
       data-stock={product.stock ?? undefined}
     >
       <CardState
@@ -78,7 +78,7 @@ export function ProductCard({
         sizes={product.sizes ?? []}
       >
         <div
-          className="shadow-xs group-hover:shadow-soft relative aspect-4/5 overflow-hidden rounded-xs border border-line/60 bg-sunken transition-all duration-500 group-hover:border-gold/60"
+          className="shadow-xs relative aspect-4/5 overflow-hidden rounded-xs border border-line/60 bg-sunken transition-all duration-500 group-hover:border-gold/70 group-hover:shadow-float"
           style={background ? { backgroundColor: background } : undefined}
         >
           {image ? (
