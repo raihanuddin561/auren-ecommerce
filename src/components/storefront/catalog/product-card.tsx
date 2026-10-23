@@ -3,7 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { Price } from '@/components/ui/price';
 import { cn } from '@/lib/cn';
 import { deserialize } from '@/lib/money';
-import { cardBadges, type ProductCardData } from '@/modules/catalog/card';
+import { cardBadges, type CardBadge, type ProductCardData } from '@/modules/catalog/card';
 import { ImagePlaceholder, safeColor } from './catalog-image';
 import {
   CardImages,
@@ -49,6 +49,15 @@ const BADGE_TONE = {
   new: 'gold',
 } as const;
 
+const CARD_BADGE_STYLE: Record<CardBadge['key'], string> = {
+  sale: 'bg-oxblood text-paper border-transparent font-semibold shadow-xs',
+  limited: 'bg-oxblood text-paper border-transparent font-semibold shadow-xs',
+  new: 'bg-page/95 text-fg border-gold font-semibold shadow-xs backdrop-blur-xs',
+  'sold-out': 'bg-fg text-page border-transparent font-medium shadow-xs',
+  'low-stock':
+    'bg-page/95 text-warning-text border-warning font-semibold shadow-xs backdrop-blur-xs',
+};
+
 /**
  * A product in a grid: 4:5 picture, second picture on hover and keyboard focus (pointer devices),
  * colour swatches that switch the picture, badges, a quick-add size row on desktop hover or focus,
@@ -93,12 +102,15 @@ export function ProductCard({
             <ImagePlaceholder label="AUREN" />
           )}
           {badges.length > 0 ? (
-            <div className="absolute top-3 left-3 z-10 flex flex-col items-start gap-1">
+            <div className="absolute top-3 left-3 z-10 flex flex-col items-start gap-1.5">
               {badges.map((badge) => (
                 <Badge
                   key={badge.key}
                   tone={BADGE_TONE[badge.key]}
-                  className="shadow-2xs border border-line/60 bg-page/90 type-caption font-mono tracking-wider uppercase backdrop-blur-xs"
+                  className={cn(
+                    'type-caption font-mono tracking-wider uppercase',
+                    CARD_BADGE_STYLE[badge.key],
+                  )}
                 >
                   <LocalizedCardBadge label={badge.label} />
                 </Badge>

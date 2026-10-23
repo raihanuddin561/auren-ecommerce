@@ -109,10 +109,11 @@ const hex = (n: number) => Math.round(n).toString(16).padStart(2, '0');
  * on the long edge.
  */
 export async function processImage(input: Buffer): Promise<ProcessedImage> {
-  const pipeline = sharp(input, { limitInputPixels: MAX_INPUT_PIXELS, failOn: 'error' })
+  const pipeline = sharp(input, { limitInputPixels: MAX_INPUT_PIXELS, failOn: 'none' })
     .rotate()
+    .toColorspace('srgb')
     .resize({ width: MAX_EDGE, height: MAX_EDGE, fit: 'inside', withoutEnlargement: true })
-    .webp({ quality: 82 });
+    .webp({ quality: 85, smartSubsample: true, effort: 4 });
   const { data, info } = await pipeline.toBuffer({ resolveWithObject: true });
   const { dominant } = await sharp(data).stats();
   const blur = await sharp(data)
