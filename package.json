@@ -71,20 +71,20 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
-    "@axe-core/playwright": "^4.13.0",
+    "@axe-core/playwright": "^4.14.0",
     "@commitlint/cli": "^21.2.3",
     "@commitlint/config-conventional": "^21.2.3",
     "@faker-js/faker": "^10.6.0",
-    "@playwright/test": "^1.63.0",
+    "@playwright/test": "^1.64.1",
     "@tailwindcss/postcss": "^4",
-    "@testcontainers/postgresql": "^12.2.0",
+    "@testcontainers/postgresql": "^12.2.1",
     "@types/node": "^24.19.0",
     "@types/nodemailer": "^8.0.2",
     "@types/pg": "^8.23.1",
     "@types/qrcode": "^1.5.6",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@vitest/coverage-v8": "^5.0.3",
+    "@vitest/coverage-v8": "^5.0.5",
     "cross-env": "^10.1.0",
     "dotenv": "^18.0.5",
     "eslint": "^9",
@@ -96,12 +96,12 @@
     "prettier-plugin-tailwindcss": "^0.8.1",
     "prisma": "7.10.0",
     "tailwindcss": "^4",
-    "testcontainers": "^12.2.0",
+    "testcontainers": "^12.2.1",
     "tsx": "^4.23.15",
     "typescript": "^5",
     "typescript-eslint": "^8.71.0",
     "vite-tsconfig-paths": "^6.1.1",
-    "vitest": "^5.0.3"
+    "vitest": "^5.0.5"
   },
   "engines": {
     "node": ">=24.0.0"
