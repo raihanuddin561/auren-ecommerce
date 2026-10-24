@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { deserialize, money } from '@/lib/money';
+import { deserialize, money, serialize } from '@/lib/money';
 import { hashCartToken, isCartToken, newCartToken } from '../token';
 import { buildCartView, emptyCartView, type ViewLineInput } from '../view';
 
@@ -69,6 +69,25 @@ describe('cart view', () => {
     expect(exact.freeDelivery).toMatchObject({ reached: true, remaining: null });
     const none = view([line()], null as never);
     expect(none.freeDelivery).toMatchObject({ threshold: null, remaining: null, reached: false });
+  });
+
+  it('deducts discount from subtotal to compute subtotalAfterDiscount', () => {
+    const lines = [line({ quantity: 2 })];
+    const result = buildCartView({
+      currency: 'BDT',
+      revision: '1:1',
+      lines,
+      threshold: money(1000000n, 'BDT'),
+      discount: {
+        code: 'AUREN-VIP',
+        title: 'VIP Discount',
+        amount: serialize(money(50000n, 'BDT')),
+        freeShipping: false,
+      },
+    });
+    expect(deserialize(result.subtotal).minor).toBe(500000n);
+    expect(deserialize(result.subtotalAfterDiscount).minor).toBe(450000n);
+    expect(result.discount?.code).toBe('AUREN-VIP');
   });
 
   it('an empty bag is a valid view with zero totals', () => {

@@ -12,6 +12,9 @@ import {
   removeDiscountCodeAction,
 } from '@/modules/promotions/actions';
 
+import { syncCart } from './cart-client';
+import { useCartView } from './cart-store';
+
 interface CartPromoCodeProps {
   /** Optional initial coupon code if already known from server */
   initialCode?: string | null;
@@ -21,21 +24,26 @@ interface CartPromoCodeProps {
 
 export function CartPromoCode({ initialCode = null, compact = false }: CartPromoCodeProps) {
   const router = useRouter();
+  const cartView = useCartView();
   const [isOpen, setIsOpen] = useState(false);
   const [code, setCode] = useState('');
-  const [appliedCode, setAppliedCode] = useState<string | null>(initialCode);
+  const [appliedCode, setAppliedCode] = useState<string | null>(
+    cartView?.discount?.code ?? initialCode,
+  );
   const [prevInitialCode, setPrevInitialCode] = useState<string | null>(initialCode);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  if (initialCode !== prevInitialCode) {
-    setPrevInitialCode(initialCode);
-    setAppliedCode(initialCode);
+  // Sync if initialCode or cartView changes
+  const effectiveCode = cartView?.discount?.code ?? initialCode;
+  if (effectiveCode !== prevInitialCode) {
+    setPrevInitialCode(effectiveCode);
+    setAppliedCode(effectiveCode);
   }
 
   // Sync with server if not passed initially
   useEffect(() => {
-    if (initialCode) return;
+    if (effectiveCode) return;
     let cancelled = false;
     getAppliedCouponAction().then((res) => {
       if (!cancelled && res.ok && res.data.code) {
@@ -45,7 +53,7 @@ export function CartPromoCode({ initialCode = null, compact = false }: CartPromo
     return () => {
       cancelled = true;
     };
-  }, [initialCode]);
+  }, [effectiveCode]);
 
   async function handleApply(e: React.FormEvent) {
     e.preventDefault();
@@ -62,6 +70,7 @@ export function CartPromoCode({ initialCode = null, compact = false }: CartPromo
       setAppliedCode(res.data.code);
       setCode('');
       setIsOpen(false);
+      await syncCart();
       toast.success('Promo code applied', `Code ${res.data.code} added to your bag.`);
       router.refresh();
     } else {
@@ -78,6 +87,7 @@ export function CartPromoCode({ initialCode = null, compact = false }: CartPromo
 
     if (res.ok) {
       setAppliedCode(null);
+      await syncCart();
       toast.message('Promo code removed', 'Your bag has been updated.');
       router.refresh();
     } else {

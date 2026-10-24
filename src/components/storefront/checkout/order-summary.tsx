@@ -7,7 +7,8 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { formatPrice } from '@/components/ui/price';
-import { deserialize } from '@/lib/money';
+import { deserialize, subtract } from '@/lib/money';
+import { syncCart } from '@/components/storefront/cart/cart-client';
 import { applyDiscountCodeAction, removeDiscountCodeAction } from '@/modules/promotions/actions';
 import type { CheckoutSummary } from '@/modules/checkout/types';
 
@@ -23,6 +24,12 @@ export function OrderSummaryBody({ summary, onCouponChange }: OrderSummaryBodyPr
   const shipping = totals.shipping ? deserialize(totals.shipping) : null;
   const total = totals.total ? deserialize(totals.total) : null;
   const discountAmount = totals.discount ? deserialize(totals.discount) : null;
+  const baseSubtotal = deserialize(totals.subtotal);
+  const effectiveSubtotalAfterDiscount =
+    discountAmount && discountAmount.minor > 0n
+      ? subtract(baseSubtotal, discountAmount)
+      : baseSubtotal;
+  const payableTotal = total ?? effectiveSubtotalAfterDiscount;
 
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
@@ -41,6 +48,7 @@ export function OrderSummaryBody({ summary, onCouponChange }: OrderSummaryBodyPr
 
     if (result.ok) {
       setCode('');
+      await syncCart();
       onCouponChange?.();
       router.refresh();
     } else {
@@ -56,6 +64,7 @@ export function OrderSummaryBody({ summary, onCouponChange }: OrderSummaryBodyPr
     setLoading(false);
 
     if (result.ok) {
+      await syncCart();
       onCouponChange?.();
       router.refresh();
     } else {
@@ -190,7 +199,7 @@ export function OrderSummaryBody({ summary, onCouponChange }: OrderSummaryBodyPr
         <div className="mt-2 flex items-baseline justify-between gap-4 border-t border-line pt-4">
           <dt className="type-body text-fg">Total</dt>
           <dd className="type-price text-h3 text-fg tabular-nums" data-testid="order-total">
-            {total ? formatPrice(total) : formatPrice(deserialize(totals.subtotal))}
+            {formatPrice(payableTotal)}
           </dd>
         </div>
         <p className="type-small text-fg-muted">Prices include tax.</p>

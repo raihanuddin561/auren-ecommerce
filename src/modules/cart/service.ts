@@ -1,7 +1,9 @@
 import { db, type Tx } from '@/lib/db';
 import { DomainError } from '@/lib/errors';
+import { money, serialize } from '@/lib/money';
 import * as catalog from '@/modules/catalog/service';
 import * as inventory from '@/modules/inventory/service';
+import * as promotions from '@/modules/promotions/service';
 import * as shipping from '@/modules/shipping/service';
 import * as repo from './repository';
 import {
@@ -12,7 +14,7 @@ import {
 } from './schemas';
 import { CART_TTL_DAYS, hashCartToken, isCartToken, newCartToken } from './token';
 import type { CartIdentity } from './types';
-import { buildCartView, emptyCartView, type CartView } from './view';
+import { buildCartView, emptyCartView, type CartDiscountView, type CartView } from './view';
 
 export type { CartIdentity };
 
@@ -119,19 +121,58 @@ async function viewOf(cart: CartRow | null): Promise<CartView> {
     catalog.getSellableVariants(db, ids),
     inventory.getAvailability(ids),
   ]);
+  const viewLines = cart.items.map((item) => {
+    const variant = variants.get(item.variantId);
+    return {
+      variantId: item.variantId,
+      quantity: item.quantity,
+      variant: variant ?? null,
+      available: availability.get(item.variantId)?.available ?? 0,
+    };
+  });
+
+  let discount: CartDiscountView | null = null;
+  if (cart.discountCode && viewLines.length > 0) {
+    const linesForDiscount = viewLines
+      .filter(
+        (l) =>
+          l.variant &&
+          l.variant.sellable &&
+          l.variant.currency === cart.currency &&
+          l.available > 0,
+      )
+      .map((l) => ({
+        variantId: l.variantId,
+        productId: l.variant!.productId,
+        unitPriceMinor: l.variant!.priceMinor,
+        quantity: l.quantity,
+        currency: cart.currency,
+      }));
+
+    if (linesForDiscount.length > 0) {
+      const evaluated = await promotions.findAndEvaluateDiscount(
+        cart.discountCode,
+        linesForDiscount,
+        { userId: cart.userId ?? undefined },
+      );
+
+      if (evaluated && evaluated.discountMinor > 0n) {
+        discount = {
+          code: evaluated.code ?? cart.discountCode,
+          title: evaluated.title,
+          amount: serialize(money(evaluated.discountMinor, cart.currency)),
+          freeShipping: evaluated.freeShipping,
+        };
+      }
+    }
+  }
+
   return buildCartView({
     currency: cart.currency,
     revision: `${cart.updatedAt.getTime()}:${cart.items.length}`,
     threshold,
-    lines: cart.items.map((item) => {
-      const variant = variants.get(item.variantId);
-      return {
-        variantId: item.variantId,
-        quantity: item.quantity,
-        variant: variant ?? null,
-        available: availability.get(item.variantId)?.available ?? 0,
-      };
-    }),
+    lines: viewLines,
+    discount,
   });
 }
 

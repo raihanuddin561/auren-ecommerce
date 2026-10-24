@@ -5,12 +5,18 @@ import {
   Check,
   Dices,
   Infinity as InfinityIcon,
+  Layers,
+  Loader2,
   Plus,
+  Search,
+  ShoppingBag,
   Sparkles,
   Tag,
+  X,
 } from 'lucide-react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -26,9 +32,19 @@ import { FormField } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/components/ui/toast';
 import { cn } from '@/lib/cn';
+import { searchProductsForPicker } from '@/modules/catalog/actions';
 import { createDiscountAction } from '@/modules/promotions/actions';
 import { generateCouponCode } from '@/modules/promotions/generator';
 import type { DiscountType } from '@/modules/promotions/types';
+
+interface ProductPickerItem {
+  id: string;
+  title: string;
+  slug: string;
+  subtitle: string | null;
+  status: string;
+  imageUrl: string | null;
+}
 
 const PREFIX_OPTIONS = ['AUREN', 'VIP', 'FESTIVE', 'SPECIAL'] as const;
 
@@ -50,15 +66,56 @@ export function CreateDiscountDialog() {
   const [usageLimitPerCustomer, setUsageLimitPerCustomer] = useState('1');
   const [customerEligibility, setCustomerEligibility] = useState<'all' | 'new'>('all');
 
+  // Scope & Product-Wise Selection
+  const [appliesTo, setAppliesTo] = useState<'order' | 'products'>('order');
+  const [selectedProducts, setSelectedProducts] = useState<ProductPickerItem[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<ProductPickerItem[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+
   // Expiration controls
   const [isUnlimited, setIsUnlimited] = useState<boolean>(true);
   const [endsAt, setEndsAt] = useState('');
+
+  // Debounced product search
+  useEffect(() => {
+    if (appliesTo !== 'products') return;
+    const term = searchQuery.trim();
+    if (!term) return;
+
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      setIsSearching(true);
+      try {
+        const res = await searchProductsForPicker({
+          q: term,
+          excludeIds: selectedProducts.map((p) => p.id),
+        });
+        if (!cancelled && res.ok) {
+          setSearchResults(res.data);
+        }
+      } catch {
+        if (!cancelled) setSearchResults([]);
+      } finally {
+        if (!cancelled) setIsSearching(false);
+      }
+    }, 250);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [searchQuery, selectedProducts, appliesTo]);
 
   function handleGenerateCode(prefixToUse: string = selectedPrefix) {
     const generated = generateCouponCode({ prefix: prefixToUse });
     setCode(generated);
     if (!title) {
-      if (type === 'percentage') {
+      if (appliesTo === 'products') {
+        setTitle(
+          `${value}% Off Selected Products (${selectedProducts.length || 'Items'}) - ${generated}`,
+        );
+      } else if (type === 'percentage') {
         setTitle(`${value}% Off Luxury Commission (${generated})`);
       } else if (type === 'fixed_amount') {
         setTitle(`৳${value} Off Commission (${generated})`);
@@ -100,6 +157,10 @@ export function CreateDiscountDialog() {
     setUsageLimit('');
     setUsageLimitPerCustomer('1');
     setCustomerEligibility('all');
+    setAppliesTo('order');
+    setSelectedProducts([]);
+    setSearchQuery('');
+    setSearchResults([]);
     setIsUnlimited(true);
     setEndsAt('');
     setFormError(null);
@@ -110,6 +171,12 @@ export function CreateDiscountDialog() {
     setLoading(true);
     setFormError(null);
 
+    if (appliesTo === 'products' && selectedProducts.length === 0) {
+      setFormError('Please select at least one product for this product-wise promotion.');
+      setLoading(false);
+      return;
+    }
+
     const cleanCode = code.trim() ? code.trim().toUpperCase() : null;
 
     const payload = {
@@ -117,8 +184,8 @@ export function CreateDiscountDialog() {
       title: title.trim(),
       type,
       value: Number(value) || 0,
-      appliesTo: 'order' as const,
-      targetIds: [],
+      appliesTo,
+      targetIds: appliesTo === 'products' ? selectedProducts.map((p) => p.id) : [],
       minSubtotal: minSubtotal ? Number(minSubtotal) : null,
       maxDiscount: maxDiscount ? Number(maxDiscount) : null,
       customerEligibility,
@@ -325,6 +392,171 @@ export function CreateDiscountDialog() {
             )}
           </div>
 
+          {/* Promotion Scope: Entire Order vs Product-Wise % */}
+          <div className="flex flex-col gap-3 rounded-xs border border-line/70 bg-sunken/40 p-4">
+            <div className="flex items-center justify-between">
+              <label className="flex items-center gap-1.5 type-small font-medium text-fg">
+                <Layers className="h-4 w-4 text-gold" />
+                Promotion Scope
+              </label>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setAppliesTo('order')}
+                  className={cn(
+                    'rounded-xs px-2.5 py-1 type-caption font-medium transition-colors',
+                    appliesTo === 'order'
+                      ? 'border border-gold/40 bg-gold/15 text-gold-strong dark:text-gold'
+                      : 'border border-line bg-page text-fg-muted hover:text-fg',
+                  )}
+                >
+                  Entire Order
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAppliesTo('products')}
+                  className={cn(
+                    'rounded-xs px-2.5 py-1 type-caption font-medium transition-colors',
+                    appliesTo === 'products'
+                      ? 'border border-gold/40 bg-gold/15 text-gold-strong dark:text-gold'
+                      : 'border border-line bg-page text-fg-muted hover:text-fg',
+                  )}
+                >
+                  Specific Products (Product-wise %)
+                </button>
+              </div>
+            </div>
+
+            {appliesTo === 'products' ? (
+              <div className="flex flex-col gap-3 border-t border-line/60 pt-3">
+                <div className="flex items-center justify-between">
+                  <span className="type-caption text-fg-muted">
+                    This coupon will apply exclusively to the selected products below.
+                  </span>
+                  <Badge tone={selectedProducts.length > 0 ? 'gold' : 'neutral'}>
+                    {selectedProducts.length} Product
+                    {selectedProducts.length === 1 ? '' : 's'} Selected
+                  </Badge>
+                </div>
+
+                {/* Selected Products Chips */}
+                {selectedProducts.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {selectedProducts.map((prod) => (
+                      <div
+                        key={prod.id}
+                        className="inline-flex items-center gap-2 rounded-xs border border-gold/40 bg-gold/5 py-1 pr-2 pl-1.5"
+                      >
+                        {prod.imageUrl ? (
+                          <div className="bg-subtle relative h-6 w-5 shrink-0 overflow-hidden rounded-xs">
+                            <Image
+                              src={prod.imageUrl}
+                              alt={prod.title}
+                              fill
+                              sizes="24px"
+                              className="object-cover"
+                            />
+                          </div>
+                        ) : (
+                          <ShoppingBag className="h-4 w-4 shrink-0 text-gold" />
+                        )}
+                        <span className="max-w-[140px] truncate type-caption font-medium text-fg">
+                          {prod.title}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setSelectedProducts((prev) => prev.filter((p) => p.id !== prod.id))
+                          }
+                          aria-label={`Remove ${prod.title}`}
+                          className="text-fg-muted transition-colors hover:text-danger-text"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+
+                {/* Product Search Input */}
+                <div className="relative">
+                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-fg-muted">
+                    {isSearching ? (
+                      <Loader2 className="h-4 w-4 animate-spin text-gold" />
+                    ) : (
+                      <Search className="h-4 w-4" />
+                    )}
+                  </div>
+                  <Input
+                    value={searchQuery}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
+                      if (!e.target.value.trim()) {
+                        setSearchResults([]);
+                        setIsSearching(false);
+                      }
+                    }}
+                    placeholder="Search product by title (e.g. Linen, Polo, Shirt)..."
+                    className="pl-9 text-xs"
+                  />
+                </div>
+
+                {/* Search Results Dropdown List */}
+                {searchResults.length > 0 ? (
+                  <ul className="max-h-48 divide-y divide-line overflow-y-auto rounded-xs border border-line bg-page p-1">
+                    {searchResults.map((item) => (
+                      <li
+                        key={item.id}
+                        className="hover:bg-hover flex items-center justify-between rounded-xs p-2 transition-colors"
+                      >
+                        <div className="flex min-w-0 items-center gap-2.5">
+                          {item.imageUrl ? (
+                            <div className="bg-subtle relative h-8 w-6 shrink-0 overflow-hidden rounded-xs">
+                              <Image
+                                src={item.imageUrl}
+                                alt={item.title}
+                                fill
+                                sizes="32px"
+                                className="object-cover"
+                              />
+                            </div>
+                          ) : (
+                            <div className="bg-subtle flex h-8 w-6 shrink-0 items-center justify-center rounded-xs text-fg-muted">
+                              <ShoppingBag className="h-3.5 w-3.5" />
+                            </div>
+                          )}
+                          <div className="min-w-0">
+                            <p className="truncate type-caption font-medium text-fg">
+                              {item.title}
+                            </p>
+                            <p className="truncate type-caption text-fg-muted">/{item.slug}</p>
+                          </div>
+                        </div>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => {
+                            setSelectedProducts((prev) => [...prev, item]);
+                            setSearchResults((prev) => prev.filter((p) => p.id !== item.id));
+                          }}
+                          className="h-7 shrink-0 px-2.5 type-caption"
+                        >
+                          <Plus className="mr-1 h-3 w-3" />
+                          Add
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : searchQuery.trim() && !isSearching ? (
+                  <p className="px-1 type-caption text-fg-muted italic">
+                    No matching products found.
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+
           {/* Expiration Rules (Highlighting Unlimited Expiry) */}
           <div className="flex flex-col gap-3 rounded-xs border border-line/70 bg-sunken/40 p-4">
             <div className="flex items-center justify-between">
@@ -527,10 +759,27 @@ export function CreateDiscountDialog() {
                       ? `৳${value} OFF`
                       : 'FREE DELIVERY'}
                 </p>
+                {appliesTo === 'products' ? (
+                  <p className="type-caption font-sans font-medium text-gold-strong dark:text-gold">
+                    Product-wise ({selectedProducts.length} selected)
+                  </p>
+                ) : null}
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-3 border-t border-line/60 pt-2 type-caption font-mono text-fg-muted">
-              {minSubtotal ? <span>Min. Order ৳{minSubtotal}</span> : <span>No Min. Spend</span>}
+              {appliesTo === 'products' ? (
+                <span className="text-gold-strong dark:text-gold">
+                  ✦ Product-wise ({selectedProducts.length} item
+                  {selectedProducts.length === 1 ? '' : 's'})
+                </span>
+              ) : (
+                <span>✦ Entire Order</span>
+              )}
+              {minSubtotal ? (
+                <span>· Min. Order ৳{minSubtotal}</span>
+              ) : (
+                <span>· No Min. Spend</span>
+              )}
               {maxDiscount ? <span>· Max Cap ৳{maxDiscount}</span> : null}
               <span>
                 · {usageLimitPerCustomer ? `${usageLimitPerCustomer}x/client` : 'Unlimited'}

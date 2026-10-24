@@ -1,5 +1,6 @@
 import {
   compare,
+  deserialize,
   money,
   multiply,
   serialize,
@@ -41,6 +42,13 @@ export interface FreeDeliveryView {
   reached: boolean;
 }
 
+export interface CartDiscountView {
+  code: string;
+  title: string;
+  amount: SerializedMoney;
+  freeShipping: boolean;
+}
+
 export interface CartView {
   /** Changes whenever the bag does; the browser keeps whichever view is newest. */
   revision: string;
@@ -48,6 +56,8 @@ export interface CartView {
   count: number;
   lines: CartLineView[];
   subtotal: SerializedMoney;
+  discount: CartDiscountView | null;
+  subtotalAfterDiscount: SerializedMoney;
   currency: string;
   freeDelivery: FreeDeliveryView;
   hasIssues: boolean;
@@ -79,7 +89,7 @@ export function emptyCartView(
   threshold: Money | null,
   revision = '0:0',
 ): CartView {
-  return buildCartView({ currency, revision, lines: [], threshold });
+  return buildCartView({ currency, revision, lines: [], threshold, discount: null });
 }
 
 export function buildCartView(input: {
@@ -87,6 +97,7 @@ export function buildCartView(input: {
   revision: string;
   lines: readonly ViewLineInput[];
   threshold: Money | null;
+  discount?: CartDiscountView | null;
 }): CartView {
   const { currency } = input;
   const lines: CartLineView[] = [];
@@ -128,17 +139,23 @@ export function buildCartView(input: {
   }
 
   const subtotal = sum(totals, currency);
+  const discountAmount = input.discount ? deserialize(input.discount.amount) : null;
+  const subtotalAfterDiscount =
+    discountAmount && discountAmount.minor > 0n ? subtract(subtotal, discountAmount) : subtotal;
   const { threshold } = input;
-  const reached = threshold !== null && compare(subtotal, threshold) >= 0;
+  const reached = threshold !== null && compare(subtotalAfterDiscount, threshold) >= 0;
   return {
     revision: input.revision,
     count,
     lines,
     subtotal: serialize(subtotal),
+    discount: input.discount ?? null,
+    subtotalAfterDiscount: serialize(subtotalAfterDiscount),
     currency,
     freeDelivery: {
       threshold: threshold ? serialize(threshold) : null,
-      remaining: threshold && !reached ? serialize(subtract(threshold, subtotal)) : null,
+      remaining:
+        threshold && !reached ? serialize(subtract(threshold, subtotalAfterDiscount)) : null,
       reached,
     },
     hasIssues: lines.some((line) => line.issue !== null),

@@ -1,7 +1,7 @@
 'use client';
 
 import { toast } from '@/components/ui/toast';
-import { addToCart, setCartLine, type CartActionData } from '@/modules/cart/actions';
+import { addToCart, refreshCart, setCartLine, type CartActionData } from '@/modules/cart/actions';
 import type { CartLineView } from '@/modules/cart/view';
 import type { ActionResult } from '@/lib/action-result';
 import { saveProductForLater } from '../catalog/wishlist-button';
@@ -78,5 +78,13 @@ export async function saveLineForLater(line: CartLineView): Promise<void> {
   const removed = await changeQuantity(line.variantId, 0);
   if (removed) {
     toast.message('Saved for later', `${line.productTitle} is in your wishlist on this device.`);
+  }
+}
+
+/** Fetches the freshest bag view from the server and updates the browser store. */
+export async function syncCart(): Promise<void> {
+  const result = await call(refreshCart);
+  if (result && result.ok) {
+    setCartView(result.data.view);
   }
 }

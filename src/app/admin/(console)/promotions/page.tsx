@@ -41,6 +41,8 @@ export default async function PromotionsPage({ searchParams }: PromotionsPagePro
     title: item.title,
     type: item.type,
     value: item.value,
+    appliesTo: item.appliesTo,
+    targetIds: item.targetIds,
     minSubtotalMinor: item.minSubtotalMinor ? item.minSubtotalMinor.toString() : null,
     maxDiscountMinor: item.maxDiscountMinor ? item.maxDiscountMinor.toString() : null,
     customerEligibility: item.customerEligibility,

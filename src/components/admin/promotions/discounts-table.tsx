@@ -14,6 +14,8 @@ export interface DiscountRow {
   title: string;
   type: string;
   value: number;
+  appliesTo: string;
+  targetIds: string[];
   minSubtotalMinor: string | null;
   maxDiscountMinor: string | null;
   customerEligibility: string;
@@ -114,17 +116,27 @@ export function DiscountsTable({ discounts, total, canManage }: DiscountsTablePr
                     </td>
 
                     <td className="px-4 py-3">
-                      {discount.type === 'percentage' ? (
-                        <span className="font-mono font-semibold text-fg">
-                          {discount.value}% OFF
-                        </span>
-                      ) : discount.type === 'fixed_amount' ? (
-                        <span className="font-mono font-semibold text-fg">
-                          ৳{discount.value} OFF
-                        </span>
-                      ) : (
-                        <span className="font-semibold text-fg">Free Delivery</span>
-                      )}
+                      <div className="flex flex-col">
+                        {discount.type === 'percentage' ? (
+                          <span className="font-mono font-semibold text-fg">
+                            {discount.value}% OFF
+                          </span>
+                        ) : discount.type === 'fixed_amount' ? (
+                          <span className="font-mono font-semibold text-fg">
+                            ৳{discount.value} OFF
+                          </span>
+                        ) : (
+                          <span className="font-semibold text-fg">Free Delivery</span>
+                        )}
+                        {discount.appliesTo === 'products' ? (
+                          <span className="type-caption font-medium text-gold-strong dark:text-gold">
+                            Product-wise ({discount.targetIds.length} item
+                            {discount.targetIds.length === 1 ? '' : 's'})
+                          </span>
+                        ) : (
+                          <span className="type-caption text-fg-muted">Entire order</span>
+                        )}
+                      </div>
                     </td>
 
                     <td className="px-4 py-3">
