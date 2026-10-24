@@ -101,21 +101,21 @@ export function OrderSummaryBody({ summary, onCouponChange }: OrderSummaryBodyPr
       {/* Coupon Application / Active Promo Section */}
       <div className="border-t border-line pt-4">
         {discount ? (
-          <div className="rounded border-accent/40 bg-accent/5 flex items-center justify-between border p-3">
-            <div className="flex items-center gap-2">
-              <Tag className="h-4 w-4 text-accent-text" />
-              <div>
-                <p className="type-small font-medium tracking-wider text-fg uppercase">
+          <div className="flex items-center justify-between rounded-xs border border-gold/40 bg-gold/5 p-3">
+            <div className="flex min-w-0 items-center gap-2">
+              <Tag className="h-4 w-4 shrink-0 text-gold" />
+              <div className="min-w-0">
+                <p className="truncate type-caption font-mono font-semibold tracking-wider text-gold-strong uppercase dark:text-gold">
                   {discount.code}
                 </p>
-                <p className="type-eyebrow text-fg-muted">{discount.title}</p>
+                <p className="truncate type-caption text-fg-muted">{discount.title}</p>
               </div>
             </div>
             <button
               type="button"
               onClick={handleRemove}
               disabled={loading}
-              className="inline-flex items-center gap-1 text-xs text-fg-muted transition-colors hover:text-danger disabled:opacity-50"
+              className="inline-flex items-center gap-1 text-xs text-fg-muted transition-colors hover:text-danger-text disabled:opacity-50"
               aria-label={`Remove discount code ${discount.code}`}
             >
               {loading ? (
@@ -136,9 +136,9 @@ export function OrderSummaryBody({ summary, onCouponChange }: OrderSummaryBodyPr
                   setCode(e.target.value.toUpperCase());
                   setError(null);
                 }}
-                placeholder="Promo code"
+                placeholder="Promo code (e.g. AUREN-7X9K2M)"
                 maxLength={30}
-                className="rounded h-9 min-w-0 flex-1 border border-line bg-page px-3 text-xs text-fg uppercase placeholder:text-fg-muted placeholder:normal-case focus:border-gold focus:outline-none"
+                className="h-9 min-w-0 flex-1 rounded-xs border border-line bg-page px-3 type-caption font-mono tracking-wider text-fg uppercase placeholder:font-sans placeholder:text-fg-muted placeholder:normal-case focus:border-gold focus:outline-none"
               />
               <Button
                 type="submit"
@@ -151,7 +151,7 @@ export function OrderSummaryBody({ summary, onCouponChange }: OrderSummaryBodyPr
               </Button>
             </div>
             {error ? (
-              <p role="alert" className="type-eyebrow text-danger-text">
+              <p role="alert" className="type-caption text-danger-text">
                 {error}
               </p>
             ) : null}

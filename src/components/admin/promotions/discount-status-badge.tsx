@@ -1,3 +1,4 @@
+import { Infinity as InfinityIcon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 interface DiscountStatusBadgeProps {
@@ -21,6 +22,15 @@ export function DiscountStatusBadge({ isActive, startsAt, endsAt }: DiscountStat
 
   if (end && end < now) {
     return <Badge tone="warning">Expired</Badge>;
+  }
+
+  if (!end) {
+    return (
+      <Badge tone="gold" className="flex items-center gap-1">
+        <InfinityIcon className="h-3 w-3" />
+        Unlimited
+      </Badge>
+    );
   }
 
   return <Badge tone="success">Active</Badge>;

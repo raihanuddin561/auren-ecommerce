@@ -56,6 +56,16 @@ export async function removeDiscountCodeAction(): Promise<ActionResult<{ success
   }
 }
 
+export async function getAppliedCouponAction(): Promise<ActionResult<{ code: string | null }>> {
+  try {
+    const identity = await readCartIdentity();
+    const code = await service.getCartDiscountCode(identity);
+    return ok({ code });
+  } catch (error) {
+    return toActionError(error);
+  }
+}
+
 // ---------------------------------------------------------------------------------------------
 // Admin Console Actions (Staff Guarded with promotions.manage)
 // ---------------------------------------------------------------------------------------------

@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/sheet';
 import { refreshCart } from '@/modules/cart/actions';
 import { CartLine } from './cart-line';
+import { CartPromoCode } from './cart-promo-code';
 import { closeCartDrawer, setCartView, useCartDrawerOpen, useCartView } from './cart-store';
 import { CartTotals } from './cart-summary';
 import { FreeDeliveryBar } from './free-delivery-bar';
@@ -91,6 +92,7 @@ export function CartDrawer() {
             <SheetFooter>
               <FreeDeliveryBar view={view} />
               <CartTotals view={view} />
+              <CartPromoCode compact />
               <Button
                 asChild
                 size="lg"

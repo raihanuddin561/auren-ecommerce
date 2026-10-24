@@ -8,6 +8,7 @@ import { Icon } from '@/components/ui/icon';
 import type { CartView } from '@/modules/cart/view';
 import { CartHydrator } from './cart-hydrator';
 import { CartLine } from './cart-line';
+import { CartPromoCode } from './cart-promo-code';
 import { useCartView } from './cart-store';
 import { CartTotals, TRUST_LINES } from './cart-summary';
 import { FreeDeliveryBar } from './free-delivery-bar';
@@ -52,6 +53,7 @@ export function CartPageView({ initial }: { initial: CartView }) {
             <h2 className="type-h3 text-fg">Summary</h2>
             <FreeDeliveryBar view={view} />
             <CartTotals view={view} />
+            <CartPromoCode />
             {view.hasIssues ? (
               <p role="alert" className="type-small text-danger-text">
                 Some pieces need your attention before you can check out.
