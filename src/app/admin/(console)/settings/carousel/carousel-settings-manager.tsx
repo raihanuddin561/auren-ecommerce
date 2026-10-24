@@ -9,6 +9,7 @@ import {
   RotateCcw,
   Settings2,
   ShoppingBag,
+  Sparkles,
   Trash2,
   Upload,
 } from 'lucide-react';
@@ -350,6 +351,78 @@ export function CarouselSettingsManager({ initialSettings }: CarouselSettingsMan
 
           {/* Slides List */}
           <div className="flex flex-col gap-6">
+            {/* Photography & Imagery Guidelines Callout */}
+            <div className="rounded-xs border border-line bg-page/70 p-4 sm:p-5">
+              <div className="flex items-start gap-3.5">
+                <div className="flex size-8 shrink-0 items-center justify-center rounded-xs border border-gold/40 bg-gold/15 text-gold-strong dark:text-gold">
+                  <Icon icon={Sparkles} size={16} />
+                </div>
+                <div className="flex-1">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h3 className="type-small font-medium tracking-wider text-fg uppercase">
+                      Editorial Imagery Guidelines for Carousel
+                    </h3>
+                    <span className="type-caption font-mono text-accent-text">
+                      Target Ratio: 4:5 Portrait
+                    </span>
+                  </div>
+                  <p className="mt-1 type-small text-fg-muted">
+                    To maintain AUREN&apos;s quiet luxury aesthetic and avoid awkward image cropping
+                    across devices, follow these curation specifications:
+                  </p>
+
+                  <div className="mt-3.5 grid gap-3 sm:grid-cols-3">
+                    {/* Guideline 1: Dimensions */}
+                    <div className="rounded-xs border border-line/60 bg-raised/80 p-3">
+                      <span className="type-caption font-mono tracking-wider text-gold-strong uppercase dark:text-gold">
+                        01. Optimal Sizing
+                      </span>
+                      <p className="mt-1 type-small font-medium text-fg">4:5 Aspect Ratio</p>
+                      <p className="mt-0.5 type-caption leading-relaxed text-fg-muted">
+                        Recommended: <strong>1200 × 1500 px</strong> (min 800 × 1000 px). Formats:
+                        WebP or JPG up to 10MB.
+                      </p>
+                    </div>
+
+                    {/* Guideline 2: Cover Mode */}
+                    <div className="rounded-xs border border-line/60 bg-raised/80 p-3">
+                      <span className="type-caption font-mono tracking-wider text-gold-strong uppercase dark:text-gold">
+                        02. Full Bleed (Cover)
+                      </span>
+                      <p className="mt-1 type-small font-medium text-fg">Editorial & Models</p>
+                      <p className="mt-0.5 type-caption leading-relaxed text-fg-muted">
+                        Best for campaign shoots. Position model faces and collars in the upper 60%
+                        of the composition.
+                      </p>
+                    </div>
+
+                    {/* Guideline 3: Contain Mode */}
+                    <div className="rounded-xs border border-line/60 bg-raised/80 p-3">
+                      <span className="type-caption font-mono tracking-wider text-gold-strong uppercase dark:text-gold">
+                        03. Ambient Pedestal (Contain)
+                      </span>
+                      <p className="mt-1 type-small font-medium text-fg">Garments & Packshots</p>
+                      <p className="mt-0.5 type-caption leading-relaxed text-fg-muted">
+                        Best for isolated garments, square pieces, or transparent PNGs. Displayed on
+                        an illuminated vitrine pedestal.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1.5 border-t border-line/40 pt-2.5 type-caption text-fg-muted">
+                    <span>
+                      ✦ <strong>Auto-Fit Engine:</strong> Storefront automatically detects natural
+                      aspect ratios to prevent image distortion.
+                    </span>
+                    <span>
+                      ✦ <strong>Vignette Overlay:</strong> Adjust the dark overlay slider (20–30%)
+                      if photography has bright white sections for title readability.
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="type-h3 text-fg">Hero Slides</h2>
@@ -541,7 +614,12 @@ export function CarouselSettingsManager({ initialSettings }: CarouselSettingsMan
                     {/* Right Column: Visuals, Alignment, Overlay */}
                     <div className="flex flex-col gap-4 border-t border-line pt-4 md:col-span-5 md:border-t-0 md:border-l md:pt-0 md:pl-6">
                       <div>
-                        <p className="type-small font-medium text-fg">Campaign Imagery</p>
+                        <div className="flex items-center justify-between">
+                          <p className="type-small font-medium text-fg">Campaign Imagery</p>
+                          <span className="type-caption font-mono text-accent-text">
+                            4:5 Portrait
+                          </span>
+                        </div>
                         <div className="mt-2 flex gap-4">
                           {/* Image preview box (standardized 4:5 atelier portrait) */}
                           <div className="relative aspect-[4/5] w-28 shrink-0 overflow-hidden border border-line bg-page">
@@ -661,7 +739,7 @@ export function CarouselSettingsManager({ initialSettings }: CarouselSettingsMan
 
                       <FormField
                         label="Image Sizing & Fit"
-                        hint="All images maintain identical 4:5 silhouette sizing with zero position jumps."
+                        hint="Full Bleed: editorial models with automatic upper-body framing. Ambient Pedestal: studio packshots on illuminated pedestal with contact shadow."
                       >
                         {() => (
                           <div className="flex border border-line bg-page">

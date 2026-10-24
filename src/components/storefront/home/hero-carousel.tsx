@@ -145,6 +145,13 @@ export function HeroCarousel({ settings, className }: HeroCarouselProps) {
     return null;
   }
 
+  const activeSlideKey = activeSlide.id || String(currentIndex);
+  const activeRatio = imageRatios[activeSlideKey];
+  const activeIsWide = activeRatio !== undefined && activeRatio > 1.25;
+  const activeIsExtremeRatio =
+    activeRatio !== undefined && (activeRatio > 1.22 || activeRatio < 0.65);
+  const activeShouldAdaptVitrine = activeSlide.imageFit === 'contain' || activeIsExtremeRatio;
+
   return (
     <section
       data-tone="ink"
@@ -333,6 +340,11 @@ export function HeroCarousel({ settings, className }: HeroCarouselProps) {
                 const ratio = imageRatios[slideKey];
                 const isWide = ratio !== undefined && ratio > 1.25;
                 const isTall = ratio !== undefined && ratio < 0.82;
+                // Dynamically detect aspect ratio mismatch (e.g. wide landscape banner or extreme tall crop)
+                // When mismatched, adapt to the Vitrine presentation to preserve 100% native image resolution
+                // without digital over-zooming, pixel stretching, or cutting off the subject.
+                const isExtremeRatio = ratio !== undefined && (ratio > 1.22 || ratio < 0.65);
+                const shouldAdaptVitrine = isContain || isExtremeRatio;
 
                 return (
                   <div
@@ -346,7 +358,7 @@ export function HeroCarousel({ settings, className }: HeroCarouselProps) {
                     )}
                   >
                     {!isBroken && slide.imageUrl ? (
-                      isContain ? (
+                      shouldAdaptVitrine ? (
                         <>
                           {/* Ambient blurred backdrop: fills the entire 4:5 frame so canvas presence is always harmonized */}
                           <div className="absolute inset-0 scale-125 opacity-30 blur-xl">
@@ -362,13 +374,13 @@ export function HeroCarousel({ settings, className }: HeroCarouselProps) {
                           {/* Subtle studio exhibition overhead light */}
                           <div className="from-white/[0.08] pointer-events-none absolute inset-x-0 top-0 h-36 bg-gradient-to-b to-transparent" />
 
-                          {/* Dynamic foreground product canvas on ambient pedestal */}
-                          <div className="relative z-10 flex size-full flex-col items-center justify-center p-4 sm:p-6">
+                          {/* Dynamic foreground product/artwork canvas on ambient pedestal */}
+                          <div className="relative z-10 flex size-full flex-col items-center justify-center p-3.5 sm:p-5">
                             <div
                               className={cn(
                                 'relative flex items-center justify-center transition-all duration-500 ease-out',
                                 isWide
-                                  ? 'h-auto max-h-[75%] w-full max-w-[94%]'
+                                  ? 'h-auto max-h-[78%] w-full max-w-[96%]'
                                   : isTall
                                     ? 'h-full max-h-[92%] w-auto max-w-[88%]'
                                     : 'size-full max-h-[88%] max-w-[88%]',
@@ -377,7 +389,7 @@ export function HeroCarousel({ settings, className }: HeroCarouselProps) {
                               <CatalogImage
                                 src={slide.imageUrl}
                                 alt={slide.imageAlt || slide.title}
-                                sizes="(max-width: 640px) 270px, (max-width: 1024px) 360px, 430px"
+                                sizes="(max-width: 640px) 540px, (max-width: 1024px) 760px, 860px"
                                 priority={index === 0}
                                 onError={() =>
                                   setBrokenImages((prev) => ({
@@ -386,14 +398,17 @@ export function HeroCarousel({ settings, className }: HeroCarouselProps) {
                                   }))
                                 }
                                 onLoad={(e) => handleImageLoad(slideKey, e)}
-                                className="size-full object-contain drop-shadow-2xl transition-transform duration-700 ease-auren group-hover/frame:scale-[1.03]"
+                                className={cn(
+                                  'size-full object-contain drop-shadow-2xl transition-transform duration-700 ease-auren group-hover/frame:scale-[1.03]',
+                                  isWide && 'shadow-2xl rounded-xs ring-1 ring-gold/25',
+                                )}
                               />
                             </div>
 
-                            {/* Exhibition studio contact shadow beneath the garment */}
+                            {/* Exhibition studio contact shadow beneath the garment/artwork */}
                             <div
                               aria-hidden="true"
-                              className="bg-black/40 pointer-events-none mt-1 h-3.5 w-3/4 max-w-[260px] rounded-full blur-md transition-all duration-700 group-hover/frame:scale-105"
+                              className="bg-black/40 pointer-events-none mt-2 h-3.5 w-3/4 max-w-[260px] rounded-full blur-md transition-all duration-700 group-hover/frame:scale-105"
                             />
                           </div>
                         </>
@@ -403,7 +418,7 @@ export function HeroCarousel({ settings, className }: HeroCarouselProps) {
                           <CatalogImage
                             src={slide.imageUrl}
                             alt={slide.imageAlt || slide.title}
-                            sizes="(max-width: 640px) 270px, (max-width: 1024px) 360px, 430px"
+                            sizes="(max-width: 640px) 540px, (max-width: 1024px) 760px, 860px"
                             priority={index === 0}
                             onError={() =>
                               setBrokenImages((prev) => ({
@@ -448,7 +463,13 @@ export function HeroCarousel({ settings, className }: HeroCarouselProps) {
                 <span>{String(total).padStart(2, '0')}</span>
                 <span className="hidden text-line-strong sm:inline">·</span>
                 <span className="hidden tracking-wider text-gold-strong uppercase sm:inline dark:text-gold">
-                  {activeSlide.imageFit === 'contain' ? 'Studio Fit' : 'Campaign'}
+                  {activeShouldAdaptVitrine
+                    ? activeIsWide
+                      ? 'Adaptive Vitrine'
+                      : activeSlide.imageFit === 'contain'
+                        ? 'Studio Fit'
+                        : 'Campaign Edit'
+                    : 'Campaign'}
                 </span>
               </div>
 

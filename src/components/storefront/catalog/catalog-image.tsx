@@ -23,6 +23,8 @@ interface CatalogImageProps {
   height?: number | null;
   /** Tiny stored preview shown while the picture loads. */
   blurData?: string | null;
+  /** Image encoding quality (1-100) for next/image. */
+  quality?: number;
   /** Called when the picture cannot be loaded, so the caller can show a calm stand-in. */
   onError?: () => void;
   /** Called when the image finishes loading with access to naturalWidth and naturalHeight. */
@@ -43,6 +45,7 @@ export function CatalogImage({
   width,
   height,
   blurData,
+  quality,
   onError,
   onLoad,
   className,
@@ -56,6 +59,7 @@ export function CatalogImage({
         fill
         sizes={sizes}
         priority={priority}
+        quality={quality}
         unoptimized={isSvg}
         onError={onError}
         onLoad={onLoad}
