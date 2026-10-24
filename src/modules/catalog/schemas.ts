@@ -392,6 +392,11 @@ export const searchPickerSchema = z
     excludeIds: z.array(id).max(500).default([]),
   })
   .strict();
+export const getProductsByIdsPickerSchema = z
+  .object({
+    ids: z.array(id).max(500),
+  })
+  .strict();
 export const removeCollectionHeroSchema = z.object({ collectionId: id }).strict();
 
 export type CreateCategoryInput = z.infer<typeof createCategorySchema>;

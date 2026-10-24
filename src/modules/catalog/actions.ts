@@ -25,6 +25,7 @@ import {
   deleteMediaSchema,
   deleteSizeChartSchema,
   generateVariantsSchema,
+  getProductsByIdsPickerSchema,
   previewRulesSchema,
   productDetailsSchema,
   productStatusSchema,
@@ -395,6 +396,29 @@ export async function searchProductsForPicker(input: unknown): Promise<
     const staff = await requireStaff();
     assertPermission(staff, 'catalog.read');
     return ok(await catalog.searchProductsForPicker(parsed.data.q, parsed.data.excludeIds));
+  } catch (error) {
+    return toActionError(error);
+  }
+}
+
+export async function getProductsByIdsForPicker(input: unknown): Promise<
+  ActionResult<
+    Array<{
+      id: string;
+      title: string;
+      slug: string;
+      subtitle: string | null;
+      status: string;
+      imageUrl: string | null;
+    }>
+  >
+> {
+  const parsed = getProductsByIdsPickerSchema.safeParse(input);
+  if (!parsed.success) return validationError(parsed.error);
+  try {
+    const staff = await requireStaff();
+    assertPermission(staff, 'catalog.read');
+    return ok(await catalog.getProductsByIdsForPicker(parsed.data.ids));
   } catch (error) {
     return toActionError(error);
   }

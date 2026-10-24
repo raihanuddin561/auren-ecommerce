@@ -10,6 +10,7 @@ import { readCartIdentity } from '@/modules/cart/cookie';
 import {
   applyCouponSchema,
   createDiscountSchema,
+  deleteDiscountSchema,
   toggleDiscountSchema,
   updateDiscountSchema,
 } from './schemas';
@@ -113,6 +114,24 @@ export async function toggleDiscountAction(input: unknown): Promise<ActionResult
     const record = await service.setDiscountActive(parsed.data.id, parsed.data.isActive);
     revalidatePath('/admin/promotions');
     return ok(record);
+  } catch (error) {
+    return toActionError(error);
+  }
+}
+
+export async function deleteDiscountAction(
+  input: unknown,
+): Promise<ActionResult<{ success: boolean; archived: boolean }>> {
+  const staff = await requireStaff();
+  assertPermission(staff, 'promotions.manage');
+
+  const parsed = deleteDiscountSchema.safeParse(input);
+  if (!parsed.success) return validationError(parsed.error);
+
+  try {
+    const result = await service.deleteDiscount(parsed.data.id);
+    revalidatePath('/admin/promotions');
+    return ok({ success: true, archived: result.archived });
   } catch (error) {
     return toActionError(error);
   }

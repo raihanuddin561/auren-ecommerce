@@ -324,3 +324,7 @@ export async function updateDiscount(input: UpdateDiscountInput): Promise<Discou
 export async function setDiscountActive(id: string, isActive: boolean): Promise<DiscountRecord> {
   return repo.setDiscountActive(db, id, isActive);
 }
+
+export async function deleteDiscount(id: string): Promise<{ deleted: boolean; archived: boolean }> {
+  return repo.deleteDiscount(db, id);
+}

@@ -1300,6 +1300,28 @@ export async function searchProductsForPicker(
   }));
 }
 
+export async function getProductsByIdsForPicker(ids: readonly string[]): Promise<
+  Array<{
+    id: string;
+    title: string;
+    slug: string;
+    subtitle: string | null;
+    status: string;
+    imageUrl: string | null;
+  }>
+> {
+  if (ids.length === 0) return [];
+  const rows = await db.$transaction((tx) => repo.getProductsByIdsForPicker(tx, ids));
+  return rows.map((p) => ({
+    id: p.id,
+    title: p.title,
+    slug: p.slug,
+    subtitle: p.subtitle,
+    status: p.status,
+    imageUrl: p.media[0]?.url ?? null,
+  }));
+}
+
 export async function previewRules(
   rules: CollectionRules,
 ): Promise<{ count: number; sample: string[]; capped: boolean }> {

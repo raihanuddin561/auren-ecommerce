@@ -1,12 +1,14 @@
 'use client';
 
-import { Check, Copy, Tag } from 'lucide-react';
+import { Check, Copy, Pencil, Tag, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/toast';
 import { toggleDiscountAction } from '@/modules/promotions/actions';
+import { DeleteDiscountDialog } from './delete-discount-dialog';
 import { DiscountStatusBadge } from './discount-status-badge';
+import { EditDiscountDialog } from './edit-discount-dialog';
 
 export interface DiscountRow {
   id: string;
@@ -37,6 +39,8 @@ export function DiscountsTable({ discounts, total, canManage }: DiscountsTablePr
   const router = useRouter();
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [editingDiscount, setEditingDiscount] = useState<DiscountRow | null>(null);
+  const [deletingDiscount, setDeletingDiscount] = useState<DiscountRow | null>(null);
 
   async function handleToggle(id: string, currentActive: boolean) {
     setTogglingId(id);
@@ -190,15 +194,37 @@ export function DiscountsTable({ discounts, total, canManage }: DiscountsTablePr
 
                     {canManage ? (
                       <td className="px-4 py-3 text-right">
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          disabled={isToggling}
-                          loading={isToggling}
-                          onClick={() => handleToggle(discount.id, discount.isActive)}
-                        >
-                          {discount.isActive ? 'Deactivate' : 'Activate'}
-                        </Button>
+                        <div className="flex items-center justify-end gap-1.5">
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => setEditingDiscount(discount)}
+                            className="h-8 px-2.5 type-caption"
+                            title="Edit coupon rules, validity, and scope"
+                          >
+                            <Pencil className="mr-1 h-3 w-3" />
+                            Edit
+                          </Button>
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            disabled={isToggling}
+                            loading={isToggling}
+                            onClick={() => handleToggle(discount.id, discount.isActive)}
+                            className="h-8 px-2.5 type-caption"
+                          >
+                            {discount.isActive ? 'Deactivate' : 'Activate'}
+                          </Button>
+                          <button
+                            type="button"
+                            onClick={() => setDeletingDiscount(discount)}
+                            className="inline-flex size-8 items-center justify-center rounded-xs text-fg-muted transition-colors hover:bg-danger/10 hover:text-danger-text"
+                            title="Delete or archive coupon"
+                            aria-label={`Delete ${discount.code || discount.title}`}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
                       </td>
                     ) : null}
                   </tr>
@@ -211,6 +237,22 @@ export function DiscountsTable({ discounts, total, canManage }: DiscountsTablePr
       <p className="type-eyebrow text-fg-muted">
         Showing {discounts.length} of {total} promotions
       </p>
+
+      {/* Edit and Delete Modals */}
+      <EditDiscountDialog
+        discount={editingDiscount}
+        open={Boolean(editingDiscount)}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) setEditingDiscount(null);
+        }}
+      />
+      <DeleteDiscountDialog
+        discount={deletingDiscount}
+        open={Boolean(deletingDiscount)}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) setDeletingDiscount(null);
+        }}
+      />
     </div>
   );
 }

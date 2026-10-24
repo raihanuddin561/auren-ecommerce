@@ -314,3 +314,21 @@ export async function setDiscountActive(
 
   return toRecord(row);
 }
+
+export async function deleteDiscount(
+  db: DbOrTx,
+  id: string,
+): Promise<{ deleted: boolean; archived: boolean }> {
+  const redemptionsCount = await db.discountRedemption.count({ where: { discountId: id } });
+  if (redemptionsCount > 0) {
+    // Preserve financial audit and receipt consistency for completed orders. Deactivate the coupon.
+    await db.discount.update({
+      where: { id },
+      data: { isActive: false },
+    });
+    return { deleted: false, archived: true };
+  }
+
+  await db.discount.delete({ where: { id } });
+  return { deleted: true, archived: false };
+}

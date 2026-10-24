@@ -60,6 +60,14 @@ export const toggleDiscountSchema = z
 
 export type ToggleDiscountInput = z.infer<typeof toggleDiscountSchema>;
 
+export const deleteDiscountSchema = z
+  .object({
+    id: z.string().uuid(),
+  })
+  .strict();
+
+export type DeleteDiscountInput = z.infer<typeof deleteDiscountSchema>;
+
 /** Storefront coupon submission schema. */
 export const applyCouponSchema = z
   .object({

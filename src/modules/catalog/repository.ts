@@ -440,6 +440,22 @@ export const findProductsByIds = (tx: Tx, ids: readonly string[]) =>
     select: { id: true, title: true, status: true },
   });
 
+export const getProductsByIdsForPicker = (tx: Tx, ids: readonly string[]) =>
+  tx.product.findMany({
+    where: {
+      id: { in: [...ids] },
+      deletedAt: null,
+    },
+    select: {
+      id: true,
+      title: true,
+      slug: true,
+      subtitle: true,
+      status: true,
+      media: { select: { url: true, alt: true }, orderBy: { position: 'asc' }, take: 1 },
+    },
+  });
+
 /** For the "add products" picker: matches by title, SKU or slug, excluding current members. */
 export const searchProductsForPicker = (tx: Tx, q: string, excludeIds: readonly string[]) =>
   tx.product.findMany({
