@@ -25,6 +25,8 @@ interface CatalogImageProps {
   blurData?: string | null;
   /** Called when the picture cannot be loaded, so the caller can show a calm stand-in. */
   onError?: () => void;
+  /** Called when the image finishes loading with access to naturalWidth and naturalHeight. */
+  onLoad?: (e: React.SyntheticEvent<HTMLImageElement>) => void;
   className?: string;
 }
 
@@ -42,6 +44,7 @@ export function CatalogImage({
   height,
   blurData,
   onError,
+  onLoad,
   className,
 }: CatalogImageProps) {
   const isSvg = src.endsWith('.svg') || src.includes('.svg');
@@ -55,6 +58,7 @@ export function CatalogImage({
         priority={priority}
         unoptimized={isSvg}
         onError={onError}
+        onLoad={onLoad}
         {...(isBlurData(blurData) ? { placeholder: 'blur' as const, blurDataURL: blurData } : {})}
         className={cn('object-cover', className)}
       />
@@ -70,6 +74,7 @@ export function CatalogImage({
       loading={priority ? 'eager' : 'lazy'}
       decoding="async"
       onError={onError}
+      onLoad={onLoad}
       className={cn('absolute inset-0 size-full object-cover', className)}
     />
   );

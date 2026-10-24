@@ -82,5 +82,18 @@ describe('HeroCarousel', () => {
     expect(markup).toContain('blur-xl');
     // Atelier badge present
     expect(markup).toContain('Auren Atelier');
+    // Navigation controls with data-carousel-nav present for selective hover
+    expect(markup).toContain('data-carousel-nav');
+    // Synchronized progress indicator present
+    expect(markup).toContain('animate-carousel-progress');
+  });
+
+  it('provides dedicated selective hover targets for image, cta buttons, and nav controls', () => {
+    const markup = html(<HeroCarousel settings={DEFAULT_HERO_CAROUSEL_SETTINGS} />);
+    expect(markup).toContain('data-carousel-image');
+    expect(markup).toContain('data-carousel-buttons');
+    expect(markup).toContain('data-carousel-nav');
+    // Tablist exists for accessible slide switching without hover pause
+    expect(markup).toContain('role="tablist"');
   });
 });

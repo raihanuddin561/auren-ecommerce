@@ -576,6 +576,23 @@
   animation-timing-function: var(--ease-auren);
 }
 
+/* Hero carousel slide autoplay progress indicator */
+@keyframes carousel-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@utility animate-carousel-progress {
+  animation-name: carousel-progress;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+  transform-origin: left;
+}
+
 /* Reduced motion: movement becomes an instant state change; nothing slides, zooms or lifts. */
 @media (prefers-reduced-motion: reduce) {
   *,

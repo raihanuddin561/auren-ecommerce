@@ -5,9 +5,9 @@ import {
   ChevronRight,
   Pause,
   Play,
+  RefreshCw,
   ShieldCheck,
   Truck,
-  RefreshCw,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -27,15 +27,18 @@ interface HeroCarouselProps {
  * Modern, luxury storefront hero carousel.
  * Meets AUREN's editorial menswear aesthetic:
  * - Compatible with all image aspect ratios (portrait garments, square pieces, panoramic campaigns).
+ * - Dynamically detects natural image dimensions to ensure optimal framing with zero awkward crops.
  * - "contain" (default): features garments uncropped in an atelier gallery pedestal frame with ambient reflection.
- * - "cover": full-bleed panoramic campaign photography.
- * - Touch swipe gestures, keyboard navigation, animated progress bar, and full accessibility.
+ * - "cover": full-bleed panoramic campaign photography with dynamic portrait/landscape focal alignment.
+ * - Selective hover pause: Slider only pauses when the image frame or action buttons are hovered.
+ * - Smooth synchronized animated progress bars, touch swipe gestures, and full accessibility.
  */
 export function HeroCarousel({ settings, className }: HeroCarouselProps) {
   const slides: HeroSlide[] = settings.slides.length > 0 ? settings.slides : [];
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(settings.autoplay && slides.length > 1);
   const [isHovered, setIsHovered] = useState(false);
+  const [imageRatios, setImageRatios] = useState<Record<string, number>>({});
   const touchStartXRef = useRef<number | null>(null);
   const touchStartYRef = useRef<number | null>(null);
   const prefersReducedMotion = useReducedMotion();
@@ -67,6 +70,17 @@ export function HeroCarousel({ settings, className }: HeroCarouselProps) {
   const handleResume = useCallback(() => {
     setIsHovered(false);
   }, []);
+
+  const handleImageLoad = useCallback(
+    (slideKey: string, e: React.SyntheticEvent<HTMLImageElement>) => {
+      const img = e.currentTarget;
+      if (img.naturalWidth && img.naturalHeight) {
+        const ratio = img.naturalWidth / img.naturalHeight;
+        setImageRatios((prev) => ({ ...prev, [slideKey]: ratio }));
+      }
+    },
+    [],
+  );
 
   // Autoplay timer
   useEffect(() => {
@@ -143,7 +157,7 @@ export function HeroCarousel({ settings, className }: HeroCarouselProps) {
       onTouchEnd={handleTouchEnd}
       className={cn(
         'group relative flex w-full flex-col justify-between overflow-hidden bg-page pt-(--header-height) text-fg outline-none select-none focus-visible:ring-1 focus-visible:ring-gold/60',
-        'min-h-[540px] md:min-h-[580px] lg:min-h-[640px]',
+        'min-h-[560px] md:min-h-[600px] lg:min-h-[660px]',
         className,
       )}
     >
@@ -181,7 +195,7 @@ export function HeroCarousel({ settings, className }: HeroCarouselProps) {
       {/* Main Slide Content Stage - Unified Stable Architecture Across All Slides */}
       <div className="relative z-10 container-page flex flex-1 flex-col justify-center py-6 md:py-8 lg:py-10">
         <div className="grid w-full items-center gap-8 lg:grid-cols-12 lg:gap-14">
-          {/* Left Column: Stacked Editorial Storytelling (Stable Container, Zero Image Displacement) */}
+          {/* Left Column: Stacked Editorial Storytelling */}
           <div className="order-2 flex flex-col justify-center text-left lg:order-1 lg:col-span-6 xl:col-span-7">
             <div className="grid w-full">
               {slides.map((slide, index) => {
@@ -198,38 +212,59 @@ export function HeroCarousel({ settings, className }: HeroCarouselProps) {
                       'col-start-1 row-start-1 flex flex-col justify-center transition-all duration-700 ease-out',
                       isActive
                         ? 'translate-y-0 opacity-100'
-                        : 'pointer-events-none translate-y-2 opacity-0',
+                        : 'pointer-events-none translate-y-3 opacity-0',
                     )}
                   >
                     {slide.eyebrow ? (
-                      <p className="type-eyebrow font-medium tracking-eyebrow text-accent-text uppercase">
-                        {slide.eyebrow}
+                      <p
+                        className={cn(
+                          'flex items-center gap-2.5 type-eyebrow font-medium tracking-eyebrow text-accent-text uppercase transition-all duration-500',
+                          isActive ? 'translate-y-0 opacity-100' : 'translate-y-2 opacity-0',
+                        )}
+                      >
+                        <span className="inline-block h-px w-5 bg-gold/70" />
+                        <span>{slide.eyebrow}</span>
                       </p>
                     ) : null}
 
-                    <h1 className="mt-3 type-display-xl font-display leading-[1.04] tracking-tight text-balance text-fg">
+                    <h1
+                      className={cn(
+                        'mt-3.5 type-display-xl font-display leading-[1.04] tracking-tight text-balance text-fg transition-all delay-75 duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]',
+                        isActive ? 'translate-y-0 opacity-100' : 'translate-y-3 opacity-0',
+                      )}
+                    >
                       {slide.title}
                     </h1>
 
                     {slide.description ? (
-                      <p className="mt-3.5 max-w-xl type-body leading-relaxed text-pretty text-fg-muted">
+                      <p
+                        className={cn(
+                          'mt-4 max-w-xl type-body leading-relaxed text-pretty text-fg-muted/95 transition-all delay-150 duration-700 ease-out',
+                          isActive ? 'translate-y-0 opacity-100' : 'translate-y-3 opacity-0',
+                        )}
+                      >
                         {slide.description}
                       </p>
                     ) : null}
 
-                    {/* Action CTAs */}
+                    {/* Action CTAs - Pauses on Hover */}
                     <div
                       data-carousel-buttons
                       onMouseEnter={handlePause}
                       onMouseLeave={handleResume}
-                      className="mt-6 flex w-fit flex-wrap items-center gap-3.5 md:mt-8"
+                      className={cn(
+                        'mt-6 flex w-fit flex-wrap items-center gap-3.5 transition-all delay-200 duration-700 ease-out md:mt-8',
+                        isActive
+                          ? 'translate-y-0 opacity-100'
+                          : 'pointer-events-none translate-y-3 opacity-0',
+                      )}
                     >
                       {slide.primaryCtaText && slide.primaryCtaLink ? (
                         <Button
                           asChild
                           variant="primary"
                           size="lg"
-                          className="tracking-button"
+                          className="shadow-sm tracking-button transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98]"
                           onFocus={handlePause}
                           onBlur={handleResume}
                         >
@@ -244,7 +279,7 @@ export function HeroCarousel({ settings, className }: HeroCarouselProps) {
                           asChild
                           variant="secondary"
                           size="lg"
-                          className="border border-line-strong hover:border-fg"
+                          className="border border-line-strong transition-transform duration-200 hover:scale-[1.02] hover:border-fg active:scale-[0.98]"
                           onFocus={handlePause}
                           onBlur={handleResume}
                         >
@@ -254,46 +289,50 @@ export function HeroCarousel({ settings, className }: HeroCarouselProps) {
                         </Button>
                       ) : null}
                     </div>
-
-                    {/* Customer reassurance trust pills */}
-                    <div className="mt-7 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-line/40 pt-4 type-small text-fg-muted">
-                      <span className="inline-flex items-center gap-1.5 text-fg/90">
-                        <Icon icon={Truck} size={15} className="text-accent-text" />
-                        <span>All 64 Districts COD</span>
-                      </span>
-                      <span className="hidden text-line-strong sm:inline" aria-hidden="true">
-                        ·
-                      </span>
-                      <span className="inline-flex items-center gap-1.5 text-fg/90">
-                        <Icon icon={ShieldCheck} size={15} className="text-accent-text" />
-                        <span>Doorstep Inspection</span>
-                      </span>
-                      <span className="hidden text-line-strong sm:inline" aria-hidden="true">
-                        ·
-                      </span>
-                      <span className="inline-flex items-center gap-1.5 text-fg/90">
-                        <Icon icon={RefreshCw} size={15} className="text-accent-text" />
-                        <span>7-Day Fit Exchange</span>
-                      </span>
-                    </div>
                   </div>
                 );
               })}
             </div>
+
+            {/* Customer reassurance trust pills - Permanently anchored */}
+            <div className="mt-8 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-line/40 pt-4 type-small text-fg-muted">
+              <span className="inline-flex items-center gap-1.5 text-fg/90">
+                <Icon icon={Truck} size={15} className="text-accent-text" />
+                <span>All 64 Districts COD</span>
+              </span>
+              <span className="hidden text-line-strong sm:inline" aria-hidden="true">
+                ·
+              </span>
+              <span className="inline-flex items-center gap-1.5 text-fg/90">
+                <Icon icon={ShieldCheck} size={15} className="text-accent-text" />
+                <span>Doorstep Inspection</span>
+              </span>
+              <span className="hidden text-line-strong sm:inline" aria-hidden="true">
+                ·
+              </span>
+              <span className="inline-flex items-center gap-1.5 text-fg/90">
+                <Icon icon={RefreshCw} size={15} className="text-accent-text" />
+                <span>7-Day Fit Exchange</span>
+              </span>
+            </div>
           </div>
 
-          {/* Right Column: Permanently Anchored Showcase Stage - Identical Image Sizing, Zero Position Jump */}
+          {/* Right Column: Permanently Anchored Showcase Stage - Dynamic Fit with Zero Distortion */}
           <div className="order-1 flex items-center justify-center lg:order-2 lg:col-span-6 xl:col-span-5">
             <div
               data-carousel-image
               onMouseEnter={handlePause}
               onMouseLeave={handleResume}
-              className="group/frame hover:shadow-2xl relative mx-auto flex aspect-[4/5] w-[270px] items-center justify-center overflow-hidden rounded-xs border border-line/80 bg-raised/70 shadow-float backdrop-blur-xs transition-all duration-500 hover:border-gold/70 sm:w-[320px] md:w-[360px] lg:w-[390px] xl:w-[420px]"
+              className="group/frame xs:w-[290px] relative mx-auto flex aspect-[4/5] w-[270px] items-center justify-center overflow-hidden rounded-xs border border-line/90 bg-raised/80 shadow-[0_20px_50px_rgba(0,0,0,0.35)] backdrop-blur-md transition-all duration-700 hover:border-gold/70 hover:shadow-[0_25px_60px_rgba(168,135,90,0.14)] sm:w-[330px] md:w-[370px] lg:w-[400px] xl:w-[430px]"
             >
               {slides.map((slide, index) => {
                 const isActive = index === currentIndex;
-                const isBroken = Boolean(brokenImages[slide.id || index]);
+                const slideKey = slide.id || String(index);
+                const isBroken = Boolean(brokenImages[slideKey]);
                 const isContain = slide.imageFit === 'contain';
+                const ratio = imageRatios[slideKey];
+                const isWide = ratio !== undefined && ratio > 1.25;
+                const isTall = ratio !== undefined && ratio < 0.82;
 
                 return (
                   <div
@@ -309,8 +348,8 @@ export function HeroCarousel({ settings, className }: HeroCarouselProps) {
                     {!isBroken && slide.imageUrl ? (
                       isContain ? (
                         <>
-                          {/* Ambient blurred backdrop: fills the entire 4:5 frame so canvas presence is always identical */}
-                          <div className="absolute inset-0 scale-125 opacity-35 blur-xl">
+                          {/* Ambient blurred backdrop: fills the entire 4:5 frame so canvas presence is always harmonized */}
+                          <div className="absolute inset-0 scale-125 opacity-30 blur-xl">
                             <CatalogImage
                               src={slide.imageUrl}
                               alt=""
@@ -318,74 +357,114 @@ export function HeroCarousel({ settings, className }: HeroCarouselProps) {
                               className="size-full object-cover"
                             />
                           </div>
-                          <div className="via-stone-950/40 to-stone-950/80 absolute inset-0 bg-radial from-transparent" />
+                          <div className="via-stone-950/40 to-stone-950/85 absolute inset-0 bg-radial from-transparent" />
 
-                          {/* Centered foreground garment/product on ambient pedestal */}
-                          <div className="relative z-10 flex size-full items-center justify-center p-4 sm:p-6">
-                            <CatalogImage
-                              src={slide.imageUrl}
-                              alt={slide.imageAlt || slide.title}
-                              sizes="(max-width: 640px) 270px, (max-width: 1024px) 360px, 420px"
-                              priority={index === 0}
-                              onError={() =>
-                                setBrokenImages((prev) => ({
-                                  ...prev,
-                                  [slide.id || index]: true,
-                                }))
-                              }
-                              className="size-full object-contain drop-shadow-xl transition-transform duration-700 ease-auren group-hover/frame:scale-[1.03]"
+                          {/* Subtle studio exhibition overhead light */}
+                          <div className="from-white/[0.08] pointer-events-none absolute inset-x-0 top-0 h-36 bg-gradient-to-b to-transparent" />
+
+                          {/* Dynamic foreground product canvas on ambient pedestal */}
+                          <div className="relative z-10 flex size-full flex-col items-center justify-center p-4 sm:p-6">
+                            <div
+                              className={cn(
+                                'relative flex items-center justify-center transition-all duration-500 ease-out',
+                                isWide
+                                  ? 'h-auto max-h-[75%] w-full max-w-[94%]'
+                                  : isTall
+                                    ? 'h-full max-h-[92%] w-auto max-w-[88%]'
+                                    : 'size-full max-h-[88%] max-w-[88%]',
+                              )}
+                            >
+                              <CatalogImage
+                                src={slide.imageUrl}
+                                alt={slide.imageAlt || slide.title}
+                                sizes="(max-width: 640px) 270px, (max-width: 1024px) 360px, 430px"
+                                priority={index === 0}
+                                onError={() =>
+                                  setBrokenImages((prev) => ({
+                                    ...prev,
+                                    [slideKey]: true,
+                                  }))
+                                }
+                                onLoad={(e) => handleImageLoad(slideKey, e)}
+                                className="size-full object-contain drop-shadow-2xl transition-transform duration-700 ease-auren group-hover/frame:scale-[1.03]"
+                              />
+                            </div>
+
+                            {/* Exhibition studio contact shadow beneath the garment */}
+                            <div
+                              aria-hidden="true"
+                              className="bg-black/40 pointer-events-none mt-1 h-3.5 w-3/4 max-w-[260px] rounded-full blur-md transition-all duration-700 group-hover/frame:scale-105"
                             />
                           </div>
                         </>
                       ) : (
-                        /* Uniform full-bleed cover for editorial campaign photography */
-                        <CatalogImage
-                          src={slide.imageUrl}
-                          alt={slide.imageAlt || slide.title}
-                          sizes="(max-width: 640px) 270px, (max-width: 1024px) 360px, 420px"
-                          priority={index === 0}
-                          onError={() =>
-                            setBrokenImages((prev) => ({
-                              ...prev,
-                              [slide.id || index]: true,
-                            }))
-                          }
-                          className="size-full object-cover object-center transition-transform duration-700 ease-auren group-hover/frame:scale-[1.03]"
-                        />
+                        /* Uniform full-bleed cover for editorial campaign photography with dynamic portrait/landscape focal alignment */
+                        <>
+                          <CatalogImage
+                            src={slide.imageUrl}
+                            alt={slide.imageAlt || slide.title}
+                            sizes="(max-width: 640px) 270px, (max-width: 1024px) 360px, 430px"
+                            priority={index === 0}
+                            onError={() =>
+                              setBrokenImages((prev) => ({
+                                ...prev,
+                                [slideKey]: true,
+                              }))
+                            }
+                            onLoad={(e) => handleImageLoad(slideKey, e)}
+                            className={cn(
+                              'size-full object-cover object-center transition-transform duration-1000 ease-auren group-hover/frame:scale-[1.035]',
+                              isTall && 'object-[center_16%]',
+                            )}
+                          />
+                          {/* Cinematic luxury edge vignette */}
+                          <div className="from-black/55 to-black/15 pointer-events-none absolute inset-0 bg-gradient-to-t via-transparent" />
+                        </>
                       )
                     ) : (
-                      <div className="flex size-full items-center justify-center bg-sunken p-6 text-center type-small text-fg-muted">
-                        Photography unavailable
+                      <div className="flex size-full flex-col items-center justify-center gap-2 bg-sunken p-6 text-center">
+                        <span className="type-caption font-mono tracking-widest text-gold uppercase">
+                          Auren Archive
+                        </span>
+                        <span className="type-small text-fg-muted">Atelier Photography</span>
                       </div>
                     )}
-
-                    {/* Subtle luxury edge vignette */}
-                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-page/60 via-transparent to-page/10" />
                   </div>
                 );
               })}
 
-              {/* Floating Atelier Badge */}
-              <div className="pointer-events-none absolute top-3.5 right-3.5 z-20 rounded-xs border border-line/80 bg-page/90 px-2 py-0.5 type-caption font-medium tracking-wider text-accent-text uppercase backdrop-blur-xs">
-                Auren Atelier
+              {/* Floating Atelier Badge - Top Right */}
+              <div className="shadow-xs pointer-events-none absolute top-3.5 right-3.5 z-20 flex items-center gap-1.5 rounded-xs border border-line/80 bg-page/85 px-2.5 py-1 type-caption font-mono tracking-widest text-accent-text uppercase backdrop-blur-md">
+                <span className="text-gold">✦</span>
+                <span>Auren Atelier</span>
               </div>
+
+              {/* Slide Counter Status Pill - Bottom Left */}
+              <div className="pointer-events-none absolute bottom-3.5 left-3.5 z-20 flex items-center gap-1.5 rounded-xs border border-line/70 bg-page/80 px-2 py-0.5 type-caption font-mono text-fg-muted backdrop-blur-md">
+                <span className="font-medium text-fg">
+                  {String(currentIndex + 1).padStart(2, '0')}
+                </span>
+                <span className="text-line-strong">/</span>
+                <span>{String(total).padStart(2, '0')}</span>
+                <span className="hidden text-line-strong sm:inline">·</span>
+                <span className="hidden tracking-wider text-gold-strong uppercase sm:inline dark:text-gold">
+                  {activeSlide.imageFit === 'contain' ? 'Studio Fit' : 'Campaign'}
+                </span>
+              </div>
+
+              {/* Top Gold Hairline Shimmer on Hover */}
+              <div className="pointer-events-none absolute inset-x-0 top-0 z-20 h-px bg-gradient-to-r from-transparent via-gold/60 to-transparent opacity-0 transition-opacity duration-700 group-hover/frame:opacity-100" />
             </div>
           </div>
         </div>
       </div>
 
-      {/* Bottom controls: Slide indicator bars, numbering & arrows */}
+      {/* Bottom controls: Slide indicator bars, numbering & navigation controls */}
       {total > 1 ? (
         <div className="relative z-20 container-page pb-6 md:pb-10">
           <div className="flex flex-col gap-4 border-t border-line/40 pt-5 sm:flex-row sm:items-center sm:justify-between">
-            {/* Interactive slide progress bars & numbers */}
-            <div
-              role="tablist"
-              aria-label="Slides"
-              onMouseEnter={handlePause}
-              onMouseLeave={handleResume}
-              className="flex items-center gap-2 sm:gap-3"
-            >
+            {/* Interactive slide progress bars & numbers (does NOT pause on hover) */}
+            <div role="tablist" aria-label="Slides" className="flex items-center gap-2 sm:gap-3">
               {slides.map((slide, index) => {
                 const isActive = index === currentIndex;
                 const paddedIndex = String(index + 1).padStart(2, '0');
@@ -398,8 +477,6 @@ export function HeroCarousel({ settings, className }: HeroCarouselProps) {
                     aria-selected={isActive}
                     aria-label={`Go to slide ${index + 1}: ${slide.title}`}
                     onClick={() => goTo(index)}
-                    onFocus={handlePause}
-                    onBlur={handleResume}
                     className="group/ind flex items-center gap-2 py-2 text-left focus:outline-none focus-visible:ring-1 focus-visible:ring-gold"
                   >
                     <span
@@ -411,33 +488,35 @@ export function HeroCarousel({ settings, className }: HeroCarouselProps) {
                       {paddedIndex}
                     </span>
                     <div className="relative h-0.5 w-10 overflow-hidden bg-line/40 transition-colors duration-200 sm:w-16">
-                      <div
-                        className={cn(
-                          'absolute inset-y-0 left-0 bg-gold transition-all',
-                          isActive
-                            ? 'w-full'
-                            : 'w-0 group-hover/ind:w-1/3 group-hover/ind:bg-fg-muted',
-                        )}
-                        style={
-                          isActive && isPlaying && !isHovered && !prefersReducedMotion
-                            ? {
-                                transitionDuration: `${settings.autoplayInterval}ms`,
-                                transitionTimingFunction: 'linear',
-                              }
-                            : undefined
-                        }
-                      />
+                      {isActive ? (
+                        <div
+                          key={`progress-${currentIndex}-${isPlaying}`}
+                          className={cn(
+                            'absolute inset-0 origin-left bg-gold',
+                            isPlaying && !prefersReducedMotion
+                              ? 'animate-carousel-progress'
+                              : 'w-full',
+                          )}
+                          style={{
+                            animationDuration: `${settings.autoplayInterval}ms`,
+                            animationPlayState: isHovered || !isPlaying ? 'paused' : 'running',
+                          }}
+                        />
+                      ) : (
+                        <div className="absolute inset-0 w-0 bg-line-strong transition-all duration-300 group-hover/ind:w-1/3" />
+                      )}
                     </div>
                   </button>
                 );
               })}
             </div>
 
-            {/* Play/pause toggle and Next / Prev buttons */}
+            {/* Play/pause toggle and Next / Prev buttons - Pauses on Hover */}
             <div
+              data-carousel-nav
               onMouseEnter={handlePause}
               onMouseLeave={handleResume}
-              className="flex items-center gap-3 self-end sm:self-auto"
+              className="flex items-center gap-2 self-end sm:gap-2.5 sm:self-auto"
             >
               {/* Autoplay toggle */}
               <button
@@ -446,9 +525,9 @@ export function HeroCarousel({ settings, className }: HeroCarouselProps) {
                 onFocus={handlePause}
                 onBlur={handleResume}
                 aria-label={isPlaying ? 'Pause carousel autoplay' : 'Start carousel autoplay'}
-                className="flex size-9 items-center justify-center rounded-xs border border-line/50 bg-ink/50 text-fg-muted backdrop-blur-md transition-all duration-200 hover:scale-105 hover:border-gold hover:bg-gold/10 hover:text-gold focus:outline-none focus-visible:ring-1 focus-visible:ring-gold active:scale-95"
+                className="shadow-xs flex size-9 items-center justify-center rounded-xs border border-line/60 bg-page/80 text-fg-muted backdrop-blur-md transition-all duration-200 hover:scale-105 hover:border-gold hover:bg-gold/10 hover:text-gold focus:outline-none focus-visible:ring-1 focus-visible:ring-gold active:scale-95"
               >
-                <Icon icon={isPlaying ? Pause : Play} size={16} aria-hidden />
+                <Icon icon={isPlaying ? Pause : Play} size={15} aria-hidden />
               </button>
 
               {/* Prev slide button */}
@@ -458,7 +537,7 @@ export function HeroCarousel({ settings, className }: HeroCarouselProps) {
                 onFocus={handlePause}
                 onBlur={handleResume}
                 aria-label="Previous slide"
-                className="flex size-9 items-center justify-center rounded-xs border border-line/50 bg-ink/50 text-fg-muted backdrop-blur-md transition-all duration-200 hover:scale-105 hover:border-gold hover:bg-gold/10 hover:text-gold focus:outline-none focus-visible:ring-1 focus-visible:ring-gold active:scale-95"
+                className="shadow-xs flex size-9 items-center justify-center rounded-xs border border-line/60 bg-page/80 text-fg-muted backdrop-blur-md transition-all duration-200 hover:scale-105 hover:border-gold hover:bg-gold/10 hover:text-gold focus:outline-none focus-visible:ring-1 focus-visible:ring-gold active:scale-95"
               >
                 <Icon icon={ChevronLeft} size={16} aria-hidden />
               </button>
@@ -470,7 +549,7 @@ export function HeroCarousel({ settings, className }: HeroCarouselProps) {
                 onFocus={handlePause}
                 onBlur={handleResume}
                 aria-label="Next slide"
-                className="flex size-9 items-center justify-center rounded-xs border border-line/50 bg-ink/50 text-fg-muted backdrop-blur-md transition-all duration-200 hover:scale-105 hover:border-gold hover:bg-gold/10 hover:text-gold focus:outline-none focus-visible:ring-1 focus-visible:ring-gold active:scale-95"
+                className="shadow-xs flex size-9 items-center justify-center rounded-xs border border-line/60 bg-page/80 text-fg-muted backdrop-blur-md transition-all duration-200 hover:scale-105 hover:border-gold hover:bg-gold/10 hover:text-gold focus:outline-none focus-visible:ring-1 focus-visible:ring-gold active:scale-95"
               >
                 <Icon icon={ChevronRight} size={16} aria-hidden />
               </button>
@@ -488,7 +567,7 @@ export function HeroCarouselSkeleton() {
     <section
       data-tone="ink"
       aria-hidden="true"
-      className="relative flex min-h-[520px] w-full animate-pulse flex-col justify-between bg-page pt-(--header-height) text-fg md:min-h-[560px] lg:h-[600px] lg:min-h-[600px]"
+      className="relative flex min-h-[560px] w-full animate-pulse flex-col justify-between bg-page pt-(--header-height) text-fg md:min-h-[600px] lg:min-h-[660px]"
     >
       <div className="container-page flex flex-1 flex-col justify-center py-6 md:py-8 lg:py-10">
         <div className="grid w-full items-center gap-8 lg:grid-cols-12 lg:gap-14">
@@ -500,14 +579,14 @@ export function HeroCarouselSkeleton() {
               <div className="h-11 w-36 rounded-xs bg-line" />
               <div className="h-11 w-28 rounded-xs bg-line/50" />
             </div>
-            <div className="mt-7 flex gap-4 border-t border-line/40 pt-4">
+            <div className="mt-8 flex gap-4 border-t border-line/40 pt-4">
               <div className="h-4 w-28 rounded-xs bg-line/40" />
               <div className="h-4 w-28 rounded-xs bg-line/40" />
               <div className="h-4 w-28 rounded-xs bg-line/40" />
             </div>
           </div>
           <div className="order-1 flex items-center justify-center lg:order-2 lg:col-span-6 xl:col-span-5">
-            <div className="aspect-[4/5] w-[270px] rounded-xs bg-line/40 sm:w-[320px] md:w-[360px] lg:w-[390px] xl:w-[420px]" />
+            <div className="xs:w-[290px] aspect-[4/5] w-[270px] rounded-xs bg-line/40 sm:w-[330px] md:w-[370px] lg:w-[400px] xl:w-[430px]" />
           </div>
         </div>
       </div>
